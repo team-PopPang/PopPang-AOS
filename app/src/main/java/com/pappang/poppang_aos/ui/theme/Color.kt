@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 
 val kakao = Color(0xFFFEE500)
 val apple = Color(0xFF1B1B1B)
+val google = Color(0xFFFFFFFF)
 
 val mainOrange = Color(0xFFFF7A00)
 val mainRed = Color(0xFFDD0000)
