@@ -45,14 +45,14 @@ fun NicknameScreen(viewModel: DuplicateNickname = viewModel()) {
     ) {
         Column {
             Text(
-                text = "닉네임 생성 화면",
+                text = "닉네임을\n설정해주세요.",
                 style = largeTitlie,
                 color = Color.Black,
                 modifier = Modifier
                     .padding(start = 24.dp, top = 44.dp)
             )
             Text(
-                text = "닉네임은 나중에 변경하실수 있습니다.",
+                text = "닉네임은 나중에 변경할 수 있습니다.",
                 style = title1,
                 color = mainGray1,
                 modifier = Modifier
