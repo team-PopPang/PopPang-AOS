@@ -1,32 +1,29 @@
 package com.pappang.poppang_aos.view
 
+import android.R
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.pappang.poppang_aos.ui.theme.largeTitlie
+import com.pappang.poppang_aos.ui.theme.mainBlack
 import com.pappang.poppang_aos.ui.theme.mainGray1
 import com.pappang.poppang_aos.ui.theme.mainGray2
 import com.pappang.poppang_aos.ui.theme.title1
+import com.pappang.poppang_aos.viewmodel.AddKeywordViewModel
 
 @Composable
-fun KeywordScreen() {
+fun KeywordScreen(keywordViewModel: AddKeywordViewModel) {
     val keyword = remember { mutableStateOf(TextFieldValue("")) }
     Box(
         modifier = Modifier
@@ -47,8 +44,12 @@ fun KeywordScreen() {
                 modifier = Modifier
                     .padding(start = 24.dp, top = 11.dp)
             )
-            Spacer(modifier = Modifier.height(40.dp))
-            Row {
+            Row(
+                modifier = Modifier
+                    .padding(top = 24.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = CenterVertically
+            ) {
                 TextField(
                     value = keyword.value,
                     onValueChange = { keyword.value = it },
@@ -62,9 +63,9 @@ fun KeywordScreen() {
                         unfocusedContainerColor = Color.White,
                         disabledContainerColor = Color.White,
                         errorContainerColor = Color.White,
-                        focusedIndicatorColor = mainGray1,
-                        unfocusedIndicatorColor = mainGray1,
-                        disabledIndicatorColor = mainGray1,
+                        focusedIndicatorColor = Color(0xFFF3F4F6),
+                        unfocusedIndicatorColor = Color(0xFFF3F4F6),
+                        disabledIndicatorColor = Color(0xFFF3F4F6),
                         errorIndicatorColor = Color.Red,
                         cursorColor = mainGray1,
                         focusedTextColor = Color.Black,
@@ -73,19 +74,52 @@ fun KeywordScreen() {
                     )
                 )
                 CustomButton2(
-                    onClick = {  },
+                    onClick = {
+                        keywordViewModel.addKeyword(keyword.value.text)
+                        keyword.value = TextFieldValue("")
+                    },
                     text = "등록",
                     modifier = Modifier
                         .weight(3f)
                         .padding(start = 5.dp,end = 24.dp)
                 )
             }
+            Spacer(modifier = Modifier.height(40.dp))
+            KeywordList(
+                keywords = keywordViewModel.keywordList,
+                onRemove = { keywordViewModel.removeKeyword(it) }
+            )
         }
     }
 }
 
 @Composable
-@Preview
-fun KeywordScreenPreview() {
-    KeywordScreen()
+fun KeywordList(
+    keywords: List<String>,
+    onRemove: (String) -> Unit
+) {
+    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+        keywords.forEach { item ->
+            Row(
+                verticalAlignment = CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 5.dp)
+            ) {
+                Text(
+                    text = item,
+                    style = title1,
+                    color = Color.Black,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = "✕",
+                    color = mainBlack,
+                    modifier = Modifier
+                        .clickable { onRemove(item) }
+                        .padding(start = 8.dp)
+                )
+            }
+        }
+    }
 }
