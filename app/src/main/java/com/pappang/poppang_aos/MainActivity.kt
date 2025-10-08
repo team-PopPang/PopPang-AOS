@@ -7,36 +7,33 @@ import android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Scaffold
+import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat.setDecorFitsSystemWindows
+import com.kakao.sdk.common.KakaoSdk
 import com.pappang.poppang_aos.ui.theme.PopPangAOSTheme
-import com.pappang.poppang_aos.view.LoginScreen
-import com.pappang.poppang_aos.view.OnboardingScreen
-import com.pappang.poppang_aos.view.SignUpScreen
-import com.pappang.poppang_aos.view.SplashScreen
-import kotlinx.coroutines.delay
+import com.pappang.poppang_aos.navigation.Navigation
+import com.pappang.poppang_aos.viewmodel.AddKeywordViewModel
+import com.pappang.poppang_aos.viewmodel.CategoryItemViewModel
+import com.pappang.poppang_aos.viewmodel.DuplicateNickname
 
 class MainActivity : ComponentActivity() {
+    private val nicknameViewModel: DuplicateNickname by viewModels()
+    private val keywordViewModel: AddKeywordViewModel by viewModels()
+    private val categoryViewModel: CategoryItemViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        KakaoSdk.init(this, BuildConfig.KAKAO_KEY)
         enableEdgeToEdge()
         setContent {
             PopPangAOSTheme {
-                var showSplash by remember { mutableStateOf(true) }
-                var showOnboarding by remember { mutableStateOf(true) }
-                var showLogin by remember { mutableStateOf(false) }
-                var signup by remember { mutableStateOf(false) }
                 val controller = window.insetsController
-
-                val hideSystemBars = showSplash
-
+                var hideSystemBars by remember { mutableStateOf(true) }
                 LaunchedEffect(hideSystemBars) {
                     if (hideSystemBars) {
                         setDecorFitsSystemWindows(window, false)
@@ -47,40 +44,12 @@ class MainActivity : ComponentActivity() {
                         controller?.show(statusBars() or navigationBars())
                     }
                 }
-
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                ) { _ ->
-                    when {
-                        showSplash -> {
-                            SplashScreen()
-                            LaunchedEffect(Unit) {
-                                delay(1000)
-                                showSplash = false
-                            }
-                        }
-                        showOnboarding -> {
-                            OnboardingScreen(
-                                onStartClick = {
-                                    showOnboarding = false
-                                    showLogin = true
-                                }
-                            )
-                        }
-                        showLogin -> {
-                            LoginScreen(onNextClick = {
-                                showLogin = false
-                                signup = true
-                            })
-                        }
-                        signup -> {
-                            SignUpScreen()
-                        }
-                        else -> {
-                            // 홈 화면 등 실제 컨텐츠
-                        }
-                    }
-                }
+                Navigation(
+                    nicknameViewModel = nicknameViewModel,
+                    keywordViewModel = keywordViewModel,
+                    categoryViewModel = categoryViewModel,
+                    hideSystemBars = { hide -> hideSystemBars = hide }
+                )
             }
         }
     }
