@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.pappang.poppang_aos.ui.theme.bottomBtn
 import com.pappang.poppang_aos.ui.theme.mainOrange
+import com.pappang.poppang_aos.ui.theme.title1
 
 @Composable
 fun CustomButton(onClick: () -> Unit, text: String, modifier: Modifier) {
@@ -29,6 +30,25 @@ fun CustomButton(onClick: () -> Unit, text: String, modifier: Modifier) {
         Text(
             text = text,
             style = bottomBtn,
+            color = Color.White,
+            modifier = Modifier
+                .align(Center)
+        )
+    }
+}
+
+@Composable
+fun CustomButton2(onClick: () -> Unit, text: String, modifier: Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(mainOrange, shape = RoundedCornerShape(5.dp))
+            .height(52.dp)
+            .clickable { onClick() }
+    ) {
+        Text(
+            text = text,
+            style = title1,
             color = Color.White,
             modifier = Modifier
                 .align(Center)
