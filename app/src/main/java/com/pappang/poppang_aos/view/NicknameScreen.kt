@@ -127,24 +127,7 @@ fun NicknameScreen(viewModel: DuplicateNickname = viewModel()) {
     }
 }
 
-@Composable
-fun CustomButton2(onClick: () -> Unit, text: String, modifier: Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(mainOrange, shape = RoundedCornerShape(5.dp))
-            .height(52.dp)
-            .clickable { onClick() }
-    ) {
-        Text(
-            text = text,
-            style = title1,
-            color = Color.White,
-            modifier = Modifier
-                .align(Center)
-        )
-    }
-}
+
 
 @Composable
 @Preview
