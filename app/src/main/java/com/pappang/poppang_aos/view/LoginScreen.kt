@@ -1,5 +1,11 @@
 package com.pappang.poppang_aos.view
 
+import android.app.Activity
+import android.content.Context
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,15 +30,18 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.pappang.poppang_aos.R
 import com.pappang.poppang_aos.ui.theme.google
 import com.pappang.poppang_aos.ui.theme.homeTitle
 import com.pappang.poppang_aos.ui.theme.kakao
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pappang.poppang_aos.viewmodel.loginViewModel
+import androidx.compose.ui.platform.LocalContext
+import com.pappang.poppang_aos.model.LoginResponse
 
 @Composable
-fun LoginScreen(onNextClick: () -> Unit) {
+fun LoginScreen(onNextClick: (LoginResponse, String?) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -59,8 +68,30 @@ fun LoginScreen(onNextClick: () -> Unit) {
     }
 }
 
+
 @Composable
-fun GoogleLoginButton(onClick: () -> Unit, modifier: Modifier) {
+fun GoogleLoginButton(
+    onClick: (LoginResponse, String?) -> Unit,
+    modifier: Modifier
+) {
+    val context = LocalContext.current
+    val viewModel: loginViewModel = viewModel()
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val data = result.data
+        viewModel.googleLogin(
+            data = data,
+            onSuccess = { response ->
+                viewModel.saveUid(context, response.uid ?: "")
+                onClick(response, null)
+            },
+            onError = {
+                Toast.makeText(context, "구글 로그인 실패: ${it.message}", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -68,7 +99,12 @@ fun GoogleLoginButton(onClick: () -> Unit, modifier: Modifier) {
             .background(google, shape = RoundedCornerShape(5.dp))
             .border(width = 1.dp, color = Color(0xFFCCCCCC), shape = RoundedCornerShape(5.dp))
             .height(52.dp)
-            .clickable { onClick() }
+            .clickable {
+                viewModel.GoogleLogOut(context) {
+                    val intent = viewModel.getGoogleSignInIntent(context)
+                    launcher.launch(intent)
+                }
+            }
     ) {
         Row(
             verticalAlignment = CenterVertically,
@@ -77,31 +113,58 @@ fun GoogleLoginButton(onClick: () -> Unit, modifier: Modifier) {
                 .fillMaxWidth()
                 .align(Center)
         ) {
-        Image(
-            painter = painterResource(id = R.drawable.google_icon),
-            contentDescription = null,
-            modifier = Modifier
-                .size(17.dp)
-        )
-        Text(
-            text = "구글 로그인",
-            style = homeTitle,
-            color = Color(0xFF333333),
-            modifier = Modifier
-                .padding(start = 8.dp)
-        )
+            Image(
+                painter = painterResource(id = R.drawable.google_icon),
+                contentDescription = null,
+                modifier = Modifier.size(17.dp)
+            )
+            Text(
+                text = "구글 로그인",
+                style = homeTitle,
+                color = Color(0xFF333333),
+                modifier = Modifier.padding(start = 8.dp)
+            )
         }
     }
 }
+
 @Composable
-fun KakaoLoginButton(onClick: () -> Unit, modifier: Modifier) {
+fun KakaoLoginButton(onClick: (LoginResponse, String?) -> Unit, modifier: Modifier) {
+    val context = LocalContext.current
+    val viewModel: loginViewModel = viewModel()
+    val activity = context as? Activity
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
             .background(kakao, shape = RoundedCornerShape(5.dp))
             .height(52.dp)
-            .clickable { onClick() }
+            .clickable {
+                viewModel.kakaoLogout(
+                    onComplete = {
+                        viewModel.kakaoLogin(
+                            activity = activity,
+                            context = context,
+                            onSuccess = { response ->
+                                viewModel.saveUid(context, response.uid ?: "")
+                                onClick(response, null)
+                            },
+                            onError = {
+                                Toast.makeText(
+                                    context,
+                                    "카카오 로그인 실패: ${it.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        )
+                    },
+                    onError = {
+                        Toast.makeText(context, "카카오 로그아웃 실패: ${it.message}", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                )
+            }
     ) {
         Row(
             verticalAlignment = CenterVertically,
@@ -125,10 +188,4 @@ fun KakaoLoginButton(onClick: () -> Unit, modifier: Modifier) {
             )
         }
     }
-}
-
-@Composable
-@Preview
-fun LoginScreenPreview() {
-    LoginScreen(onNextClick = {})
 }
