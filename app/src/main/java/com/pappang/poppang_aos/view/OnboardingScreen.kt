@@ -36,8 +36,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.pappang.poppang_aos.ui.theme.bottomBtn
-import com.pappang.poppang_aos.ui.theme.largeTitlie
+import com.pappang.poppang_aos.ui.theme.Medium15
+import com.pappang.poppang_aos.ui.theme.ExtraBold18
 import androidx.compose.foundation.layout.navigationBarsPadding
 
 
@@ -69,13 +69,13 @@ fun OnboardingScreen(
         ) {
             Text(
                 text = titles[page],
-                style = largeTitlie,
+                style = ExtraBold18,
                 color = Color.Black
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = descriptions[page],
-                style = bottomBtn,
+                style = Medium15,
                 color = Color.Black
             )
         }

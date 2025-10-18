@@ -1,6 +1,7 @@
 package com.pappang.poppang_aos.view
 
-import android.util.Log
+import android.widget.Toast
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -13,28 +14,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.BottomCenter
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pappang.poppang_aos.model.LoginResponse
 import com.pappang.poppang_aos.ui.theme.mainOrange
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import com.pappang.poppang_aos.viewmodel.DuplicateNickname
 import com.pappang.poppang_aos.viewmodel.AddKeywordViewModel
 import com.pappang.poppang_aos.viewmodel.CategoryItemViewModel
-import com.pappang.poppang_aos.model.UserSignUpRequest
-import com.pappang.poppang_aos.network.RetrofitInstance
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import android.widget.Toast
-import com.pappang.poppang_aos.model.LoginResponse
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pappang.poppang_aos.viewmodel.DuplicateNickname
 import com.pappang.poppang_aos.viewmodel.SignUpViewModel
 
 @Composable

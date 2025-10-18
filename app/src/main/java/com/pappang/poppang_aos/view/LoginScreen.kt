@@ -1,8 +1,6 @@
 package com.pappang.poppang_aos.view
 
 import android.app.Activity
-import android.content.Context
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,16 +27,16 @@ import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.pappang.poppang_aos.R
-import com.pappang.poppang_aos.ui.theme.google
-import com.pappang.poppang_aos.ui.theme.homeTitle
-import com.pappang.poppang_aos.ui.theme.kakao
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.pappang.poppang_aos.viewmodel.loginViewModel
-import androidx.compose.ui.platform.LocalContext
+import com.pappang.poppang_aos.R
 import com.pappang.poppang_aos.model.LoginResponse
+import com.pappang.poppang_aos.ui.theme.Bold15
+import com.pappang.poppang_aos.ui.theme.google
+import com.pappang.poppang_aos.ui.theme.kakao
+import com.pappang.poppang_aos.viewmodel.loginViewModel
 
 @Composable
 fun LoginScreen(onNextClick: (LoginResponse, String?) -> Unit) {
@@ -83,7 +81,7 @@ fun GoogleLoginButton(
         viewModel.googleLogin(
             data = data,
             onSuccess = { response ->
-                viewModel.saveUid(context, response.uid ?: "")
+                viewModel.saveuserUuid(context, response.userUuid ?: "")
                 onClick(response, null)
             },
             onError = {
@@ -120,7 +118,7 @@ fun GoogleLoginButton(
             )
             Text(
                 text = "구글 로그인",
-                style = homeTitle,
+                style = Bold15,
                 color = Color(0xFF333333),
                 modifier = Modifier.padding(start = 8.dp)
             )
@@ -147,7 +145,7 @@ fun KakaoLoginButton(onClick: (LoginResponse, String?) -> Unit, modifier: Modifi
                             activity = activity,
                             context = context,
                             onSuccess = { response ->
-                                viewModel.saveUid(context, response.uid ?: "")
+                                viewModel.saveuserUuid(context, response.userUuid ?: "")
                                 onClick(response, null)
                             },
                             onError = {
@@ -181,7 +179,7 @@ fun KakaoLoginButton(onClick: (LoginResponse, String?) -> Unit, modifier: Modifi
             )
             Text(
                 text = "카카오 로그인",
-                style = homeTitle,
+                style = Bold15,
                 color = Color(0xFF3D1D1C),
                 modifier = Modifier
                     .padding(start = 8.dp)

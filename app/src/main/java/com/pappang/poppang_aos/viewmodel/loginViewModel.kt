@@ -8,11 +8,11 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import com.kakao.sdk.user.UserApiClient
 import com.kakao.sdk.auth.model.OAuthToken
+import com.kakao.sdk.user.UserApiClient
 import com.pappang.poppang_aos.BuildConfig
-import com.pappang.poppang_aos.model.KakaoLoginRequest
 import com.pappang.poppang_aos.model.GoogleLoginRequest
+import com.pappang.poppang_aos.model.KakaoLoginRequest
 import com.pappang.poppang_aos.model.LoginResponse
 import com.pappang.poppang_aos.network.RetrofitInstance
 import kotlinx.coroutines.launch
@@ -36,7 +36,7 @@ class loginViewModel : ViewModel() {
                         if (response.isSuccessful && response.body() != null) {
                             onSuccess(response.body()!!)
                         } else {
-                            onError(Exception("Login failed: ${response.errorBody()?.string()}"))
+                            onError(Exception("로그인 실패: ${response.errorBody()?.string()}"))
                         }
                     } catch (e: Exception) {
                         onError(e)
@@ -115,13 +115,13 @@ class loginViewModel : ViewModel() {
             if (error != null) {
                 onComplete()
             } else {
-                onComplete()
+               onComplete()
             }
         }
     }
 
-    fun saveUid(context: Context, uid: String) {
+    fun saveuserUuid(context: Context, userUuid: String) {
         val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putString("uid", uid).apply()
+        prefs.edit().putString("userUuid", userUuid).apply()
    }
 }

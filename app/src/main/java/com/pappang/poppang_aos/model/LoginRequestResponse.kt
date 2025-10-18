@@ -10,6 +10,7 @@ data class GoogleLoginRequest(
 
 data class LoginResponse(
     val uid: String?,
+    val userUuid: String?,
     val provider: String?,
     val email: String?,
     val nickname: String?,

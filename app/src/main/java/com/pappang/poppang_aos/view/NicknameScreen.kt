@@ -2,30 +2,27 @@ package com.pappang.poppang_aos.view
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.pappang.poppang_aos.ui.theme.largeTitlie
+import com.pappang.poppang_aos.ui.theme.ExtraBold18
 import com.pappang.poppang_aos.ui.theme.mainGray1
 import com.pappang.poppang_aos.ui.theme.mainGray2
 import com.pappang.poppang_aos.ui.theme.mainOrange
-import com.pappang.poppang_aos.ui.theme.title1
+import com.pappang.poppang_aos.ui.theme.Medium12
 import com.pappang.poppang_aos.R
 import com.pappang.poppang_aos.viewmodel.DuplicateNickname
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,14 +43,14 @@ fun NicknameScreen(viewModel: DuplicateNickname = viewModel()) {
         Column {
             Text(
                 text = "닉네임을\n설정해주세요.",
-                style = largeTitlie,
+                style = ExtraBold18,
                 color = Color.Black,
                 modifier = Modifier
                     .padding(start = 24.dp, top = 44.dp)
             )
             Text(
                 text = "닉네임은 나중에 변경할 수 있습니다.",
-                style = title1,
+                style = Medium12,
                 color = mainGray1,
                 modifier = Modifier
                     .padding(start = 24.dp, top = 11.dp)
@@ -67,13 +64,13 @@ fun NicknameScreen(viewModel: DuplicateNickname = viewModel()) {
                 OutlinedTextField(
                     value = nickname,
                     onValueChange = { viewModel.onNicknameChange(it) },
-                    placeholder = { Text("이름을 입력해주세요.", style = title1, color = mainGray2)  },
+                    placeholder = { Text("이름을 입력해주세요.", style = Medium12, color = mainGray2)  },
                     modifier = Modifier
                         .height(52.dp)
                         .weight(6f)
                         .padding(start = 24.dp),
                     isError = isError,
-                    textStyle = title1.copy(color = Color.Black),
+                    textStyle = Medium12.copy(color = Color.Black),
                     trailingIcon = {
                         when {
                             isError -> {
@@ -119,7 +116,7 @@ fun NicknameScreen(viewModel: DuplicateNickname = viewModel()) {
                         isSuccess -> Color(0xFF006813)
                         else -> Color.Unspecified
                     },
-                    style = title1,
+                    style = Medium12,
                     modifier = Modifier.padding(start = 24.dp, top = 8.dp)
                 )
             }

@@ -13,9 +13,9 @@ import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.pappang.poppang_aos.ui.theme.bottomBtn
+import com.pappang.poppang_aos.ui.theme.Medium15
 import com.pappang.poppang_aos.ui.theme.mainOrange
-import com.pappang.poppang_aos.ui.theme.title1
+import com.pappang.poppang_aos.ui.theme.Medium12
 
 @Composable
 fun CustomButton(onClick: () -> Unit, text: String, modifier: Modifier) {
@@ -29,7 +29,7 @@ fun CustomButton(onClick: () -> Unit, text: String, modifier: Modifier) {
     ) {
         Text(
             text = text,
-            style = bottomBtn,
+            style = Medium15,
             color = Color.White,
             modifier = Modifier
                 .align(Center)
@@ -48,7 +48,7 @@ fun CustomButton2(onClick: () -> Unit, text: String, modifier: Modifier) {
     ) {
         Text(
             text = text,
-            style = title1,
+            style = Medium12,
             color = Color.White,
             modifier = Modifier
                 .align(Center)
