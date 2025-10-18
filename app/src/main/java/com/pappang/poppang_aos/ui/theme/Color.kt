@@ -2,8 +2,8 @@ package com.pappang.poppang_aos.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val kakao = Color(0xFFFEE500)
-val apple = Color(0xFF1B1B1B)
+val kakao = Color(0xFFF9E001)
+val apple = Color(0xFF000000)
 val google = Color(0xFFFFFFFF)
 
 val mainOrange = Color(0xFFFF7A00)
@@ -11,8 +11,14 @@ val mainRed = Color(0xFFDD0000)
 val mainGreen = Color(0xFF006813)
 val mainWhite = Color(0xFFF1F1F1)
 val mainBlack = Color(0xFF333333)
-
 val mainGray1 = Color(0xFF777777)
 val mainGray2 = Color(0xFFAAAAAA)
 val mainGray3 = Color(0xFFCCCCCC)
+val mainGray14 = Color(0x14CCCCCC)
+val mainGray50 = Color(0x50CCCCCC)
 val mainGray4 = Color(0xFFF8F8F8)
+
+val mainGray5 = Color(0xFFEEEEEE)
+
+
+val keyworldline =Color(0xFFF3F4F6)
