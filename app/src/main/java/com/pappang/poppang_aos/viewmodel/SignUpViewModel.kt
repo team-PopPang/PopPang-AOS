@@ -18,11 +18,10 @@ class SignUpViewModel : ViewModel() {
         categoryViewModel: CategoryItemViewModel,
         onResult: (Boolean) -> Unit
     ) {
-        val recommendList = categoryViewModel.selectedCategories.map { selected ->
-            categoryViewModel.categories.indexOf(selected).toLong()
-        }.filter { it >= 0 }
+        val recommendList = categoryViewModel.selectedCategories.map { it.id }
         val request = UserSignUpRequest(
             uid = loginResponse.uid,
+            userUuid = loginResponse.userUuid,
             provider = loginResponse.provider,
             email = loginResponse.email,
             nickname = nicknameViewModel.nickname,
