@@ -1,6 +1,5 @@
 package com.pappang.poppang_aos.view
 
-import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,11 +14,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import com.pappang.poppang_aos.ui.theme.largeTitlie
+import com.pappang.poppang_aos.ui.theme.ExtraBold18
 import com.pappang.poppang_aos.ui.theme.mainBlack
 import com.pappang.poppang_aos.ui.theme.mainGray1
 import com.pappang.poppang_aos.ui.theme.mainGray2
-import com.pappang.poppang_aos.ui.theme.title1
+import com.pappang.poppang_aos.ui.theme.Medium12
 import com.pappang.poppang_aos.viewmodel.AddKeywordViewModel
 
 @Composable
@@ -32,14 +31,14 @@ fun KeywordScreen(keywordViewModel: AddKeywordViewModel) {
         Column {
             Text(
                 text = "키워드를\n입력해주세요.",
-                style = largeTitlie,
+                style = ExtraBold18,
                 color = Color.Black,
                 modifier = Modifier
                     .padding(start = 24.dp, top = 44.dp)
             )
             Text(
                 text = "등록된 키워드에 맞춰 알림을 받아볼 수 있습니다.",
-                style = title1,
+                style = Medium12,
                 color = mainGray1,
                 modifier = Modifier
                     .padding(start = 24.dp, top = 11.dp)
@@ -53,7 +52,7 @@ fun KeywordScreen(keywordViewModel: AddKeywordViewModel) {
                 TextField(
                     value = keyword.value,
                     onValueChange = { keyword.value = it },
-                    placeholder = { Text("ex) 화장품, 애니메이션", style = title1, color = mainGray2) },
+                    placeholder = { Text("ex) 화장품, 애니메이션", style = Medium12, color = mainGray2) },
                     modifier = Modifier
                         .weight(9f)
                         .padding(horizontal = 24.dp),
@@ -108,7 +107,7 @@ fun KeywordList(
             ) {
                 Text(
                     text = item,
-                    style = title1,
+                    style = Medium12,
                     color = Color.Black,
                     modifier = Modifier.weight(1f)
                 )
