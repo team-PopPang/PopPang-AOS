@@ -25,23 +25,27 @@ android {
         val googleKey = localProperties.getProperty("GOOGLE_KEY") ?: ""
         val authurl = localProperties.getProperty("AUTH_BASE_URL") ?: ""
         val userurl = localProperties.getProperty("USER_BASE_URL") ?: ""
+        val baseurl = localProperties.getProperty("BASE_URL") ?: ""
         val authapikakao = localProperties.getProperty("AUTH_API_KAKAO") ?: ""
         val authapigoogle = localProperties.getProperty("AUTH_API_GOOGLE") ?: ""
         val authapiautologin = localProperties.getProperty("AUTH_API_AUTOLOGIN") ?: ""
         val duplicateapi = localProperties.getProperty("DUPLICATE_API") ?: ""
         val signupapikakao = localProperties.getProperty("SIGNUP_API_KAKAO") ?: ""
-        val signupapigoogle = localProperties.getProperty("SIGNUP_API_GOOGLE") ?:
+        val signupapigoogle = localProperties.getProperty("SIGNUP_API_GOOGLE") ?: ""
+        val catagoryitemapi = localProperties.getProperty("CATEGORY_ITEM_API") ?: ""
         buildConfigField("String", "KAKAO_KEY", "\"$kakaoKey\"")
         buildConfigField("String", "GOOGLE_KEY", "\"$googleKey\"")
         manifestPlaceholders["KAKAO_KEY"] = kakaoKey
         buildConfigField("String", "AUTH_BASE_URL", "\"$authurl\"")
         buildConfigField("String", "USER_BASE_URL", "\"$userurl\"")
+        buildConfigField("String", "BASE_URL", "\"$baseurl\"")
         buildConfigField("String", "AUTH_API_KAKAO", "\"$authapikakao\"")
         buildConfigField("String", "AUTH_API_GOOGLE", "\"$authapigoogle\"")
         buildConfigField("String", "AUTH_API_AUTOLOGIN", "\"$authapiautologin\"")
         buildConfigField("String", "DUPLICATE_API", "\"$duplicateapi\"")
         buildConfigField("String", "SIGNUP_API_KAKAO", "\"$signupapikakao\"")
         buildConfigField("String", "SIGNUP_API_GOOGLE", "\"$signupapigoogle\"")
+        buildConfigField("String", "CATEGORY_ITEM_API", "\"$catagoryitemapi\"")
     }
 
     buildTypes {
@@ -83,6 +87,7 @@ dependencies {
     implementation(libs.v2.user)
     implementation(libs.play.services.auth)
     implementation(libs.google.services)
+    implementation(libs.coil.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
