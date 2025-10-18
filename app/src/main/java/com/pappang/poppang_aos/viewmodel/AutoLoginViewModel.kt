@@ -3,14 +3,14 @@ package com.pappang.poppang_aos.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pappang.poppang_aos.model.AutoLoginRequest
 import com.pappang.poppang_aos.model.LoginResponse
+import com.pappang.poppang_aos.network.RetrofitInstance
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import com.pappang.poppang_aos.network.RetrofitInstance
-import com.pappang.poppang_aos.model.AutoLoginRequest
 
 class AutoLoginViewModel : ViewModel() {
     private val _loginResponse = MutableStateFlow<LoginResponse?>(null)
@@ -18,20 +18,20 @@ class AutoLoginViewModel : ViewModel() {
 
     private val _loading = MutableStateFlow(false)
 
-    fun getUid(context: Context): String? {
+    fun getuserUuid(context: Context): String? {
         val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-        val uid = prefs.getString("uid", null)
-        return uid
+        val userUuid = prefs.getString("userUuid", null)
+        return userUuid
     }
 
     fun autoLogin(context: Context) {
-        val uid = getUid(context)
-        if (uid.isNullOrBlank()) return
+        val userUuid = getuserUuid(context)
+        if (userUuid.isNullOrBlank()) return
         _loading.value = true
         viewModelScope.launch {
             val response = withContext(Dispatchers.IO) {
                 try {
-                    RetrofitInstance.authApi.autoLogin(AutoLoginRequest(uid))
+                    RetrofitInstance.authApi.autoLogin(AutoLoginRequest(userUuid))
                 } catch (e: Exception) {
                     null
                 }
