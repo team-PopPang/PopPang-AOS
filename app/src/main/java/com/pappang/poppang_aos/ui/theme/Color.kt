@@ -22,3 +22,5 @@ val mainGray5 = Color(0xFFEEEEEE)
 
 
 val keyworldline =Color(0xFFF3F4F6)
+
+val lowblack = Color(0x05000000)
