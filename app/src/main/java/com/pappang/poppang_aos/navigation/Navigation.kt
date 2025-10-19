@@ -32,7 +32,8 @@ fun Navigation(
     nicknameViewModel: DuplicateNickname,
     keywordViewModel: AddKeywordViewModel,
     categoryViewModel: CategoryItemViewModel,
-    hideSystemBars: (Boolean) -> Unit
+    hideSystemBars: (Boolean) -> Unit,
+    hideStatusBar: (Boolean) -> Unit
 ) {
     val navController = rememberNavController()
     var loginResponse by remember { mutableStateOf<LoginResponse?>(null) }
@@ -146,7 +147,7 @@ fun Navigation(
                 }
             }
             composable("main") {
-                MainScreen()
+                MainScreen(hideStatusBar)
             }
         }
     }

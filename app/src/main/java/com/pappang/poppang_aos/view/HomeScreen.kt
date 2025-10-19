@@ -68,9 +68,12 @@ import com.pappang.poppang_aos.ui.theme.mainGray5
 import com.pappang.poppang_aos.ui.theme.mainOrange
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(hideSatausBar: (Boolean) -> Unit = {}, showDetail: Boolean = false, setShowDetail: (Boolean) -> Unit = {}) {
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -78,8 +81,16 @@ fun HomeScreen() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.End
             ) {
-                TopSearchBar(modifier = Modifier.width(0.dp).weight(1f))
-                IconButton(onClick = { /* 알림 */ }, modifier = Modifier.padding(start = 8.dp)) {
+                TopSearchBar(
+                    modifier = Modifier
+                        .width(0.dp)
+                        .weight(1f)
+                )
+                IconButton(
+                    onClick = { /* 알림 */ },
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                ) {
                     Icon(
                         painter = painterResource(R.drawable.bell_icon),
                         contentDescription = "bell",
@@ -89,16 +100,23 @@ fun HomeScreen() {
                 }
             }
 
-            Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+            ) {
                 BannerCarousel()
                 Spacer(modifier = Modifier.height(40.dp))
                 BoxCarousel()
                 Spacer(modifier = Modifier.height(40.dp))
                 FilterSection()
                 Spacer(modifier = Modifier.height(15.dp))
-                MainContent()
+                MainContent(onShowDetail = { setShowDetail(true) })
             }
         }
+    }
+    if (showDetail) {
+        ContentDetail(onClose = { setShowDetail(false) },hideSatausBar)
     }
 }
 
@@ -115,7 +133,7 @@ private fun TopSearchBar(modifier: Modifier) {
         trailingIcon = {
             IconButton(onClick = { /* 검색 */ }) {
                 Icon(
-                    painter = painterResource(id = R.drawable.bell_icon),
+                    painter = painterResource(id = R.drawable.serch_icon),
                     contentDescription = "search",
                     modifier = Modifier.size(20.dp),
                 tint = Color.Unspecified
@@ -433,7 +451,7 @@ fun SortType() {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { }
+                            .clickable { selectedSort = sortType; showSheet = false }
                             .background(Color.White),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -487,9 +505,8 @@ fun FilterSection() {
 }
 
 @Composable
-fun MainContent() {
+fun MainContent(onShowDetail: () ->Unit) {
     val images = List(10) { R.drawable.bg }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -506,7 +523,7 @@ fun MainContent() {
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .clickable {  }
+                            .clickable { onShowDetail() }
                     ) {
                         Column {
                             Image(

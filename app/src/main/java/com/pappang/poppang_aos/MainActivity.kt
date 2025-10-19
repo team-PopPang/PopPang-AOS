@@ -15,8 +15,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.view.WindowCompat.setDecorFitsSystemWindows
 import com.kakao.sdk.common.KakaoSdk
-import com.pappang.poppang_aos.ui.theme.PopPangAOSTheme
 import com.pappang.poppang_aos.navigation.Navigation
+import com.pappang.poppang_aos.ui.theme.PopPangAOSTheme
 import com.pappang.poppang_aos.viewmodel.AddKeywordViewModel
 import com.pappang.poppang_aos.viewmodel.CategoryItemViewModel
 import com.pappang.poppang_aos.viewmodel.DuplicateNickname
@@ -34,6 +34,7 @@ class MainActivity : ComponentActivity() {
             PopPangAOSTheme {
                 val controller = window.insetsController
                 var hideSystemBars by remember { mutableStateOf(true) }
+                var hidestatusBar by remember { mutableStateOf(false) }
                 LaunchedEffect(hideSystemBars) {
                     if (hideSystemBars) {
                         setDecorFitsSystemWindows(window, false)
@@ -44,11 +45,22 @@ class MainActivity : ComponentActivity() {
                         controller?.show(statusBars() or navigationBars())
                     }
                 }
+                LaunchedEffect(hidestatusBar) {
+                    if (hidestatusBar) {
+                        setDecorFitsSystemWindows(window, false)
+                        controller?.hide(statusBars())
+                        controller?.systemBarsBehavior = BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    } else {
+                        setDecorFitsSystemWindows(window, true)
+                        controller?.show(statusBars())
+                    }
+                }
                 Navigation(
                     nicknameViewModel = nicknameViewModel,
                     keywordViewModel = keywordViewModel,
                     categoryViewModel = categoryViewModel,
-                    hideSystemBars = { hide -> hideSystemBars = hide }
+                    hideSystemBars = { hide -> hideSystemBars = hide },
+                    hideStatusBar = { hide -> hidestatusBar = hide }
                 )
             }
         }
