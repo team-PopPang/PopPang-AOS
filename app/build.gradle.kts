@@ -26,6 +26,7 @@ android {
         val authurl = localProperties.getProperty("AUTH_BASE_URL") ?: ""
         val userurl = localProperties.getProperty("USER_BASE_URL") ?: ""
         val baseurl = localProperties.getProperty("BASE_URL") ?: ""
+        val urlimage = localProperties.getProperty("URL_IMAGE") ?: ""
         val authapikakao = localProperties.getProperty("AUTH_API_KAKAO") ?: ""
         val authapigoogle = localProperties.getProperty("AUTH_API_GOOGLE") ?: ""
         val authapiautologin = localProperties.getProperty("AUTH_API_AUTOLOGIN") ?: ""
@@ -33,6 +34,9 @@ android {
         val signupapikakao = localProperties.getProperty("SIGNUP_API_KAKAO") ?: ""
         val signupapigoogle = localProperties.getProperty("SIGNUP_API_GOOGLE") ?: ""
         val catagoryitemapi = localProperties.getProperty("CATEGORY_ITEM_API") ?: ""
+        val popupapi = localProperties.getProperty("POPUP_API") ?: ""
+        val popupcomingapi = localProperties.getProperty("POPUP_COMING_API") ?: ""
+        val searchapi = localProperties.getProperty("SEARCH_API") ?: ""
         buildConfigField("String", "KAKAO_KEY", "\"$kakaoKey\"")
         buildConfigField("String", "GOOGLE_KEY", "\"$googleKey\"")
         manifestPlaceholders["KAKAO_KEY"] = kakaoKey
@@ -46,6 +50,10 @@ android {
         buildConfigField("String", "SIGNUP_API_KAKAO", "\"$signupapikakao\"")
         buildConfigField("String", "SIGNUP_API_GOOGLE", "\"$signupapigoogle\"")
         buildConfigField("String", "CATEGORY_ITEM_API", "\"$catagoryitemapi\"")
+        buildConfigField("String", "POPUP_API", "\"$popupapi\"")
+        buildConfigField("String", "URL_IMAGE", "\"$urlimage\"")
+        buildConfigField("String", "POPUP_COMING_API", "\"$popupcomingapi\"")
+        buildConfigField("String", "SEARCH_API", "\"$searchapi\"")
     }
 
     buildTypes {
@@ -63,6 +71,7 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
+        freeCompilerArgs += listOf("-Xopt-in=androidx.compose.material3.ExperimentalMaterial3Api")
     }
     buildFeatures {
         compose = true
@@ -88,6 +97,7 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(libs.google.services)
     implementation(libs.coil.compose)
+    implementation(libs.androidx.datastore.preferences)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
