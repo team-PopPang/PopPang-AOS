@@ -27,7 +27,6 @@ import com.pappang.poppang_aos.viewmodel.CategoryItemViewModel
 import com.pappang.poppang_aos.viewmodel.DuplicateNickname
 import com.pappang.poppang_aos.viewmodel.PopupComingViewModel
 import com.pappang.poppang_aos.viewmodel.PopupViewModel
-import com.pappang.poppang_aos.viewmodel.SearchViewModel
 import kotlinx.coroutines.delay
 
 @Composable
@@ -37,7 +36,6 @@ fun Navigation(
     categoryViewModel: CategoryItemViewModel,
     popupViewModel: PopupViewModel,
     popupcomingViewModel: PopupComingViewModel,
-    searchViewModel: SearchViewModel,
     hideSystemBars: (Boolean) -> Unit,
     hideStatusBar: (Boolean) -> Unit
 ) {
@@ -157,7 +155,7 @@ fun Navigation(
                     hideStatusBar,
                     popupViewModel = popupViewModel,
                     popupcomingViewModel = popupcomingViewModel,
-                    searchViewModel = searchViewModel)
+                    loginResponse = loginResponse)
             }
         }
     }

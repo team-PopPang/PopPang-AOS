@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.pappang.poppang_aos.R
+import com.pappang.poppang_aos.model.LoginResponse
 import com.pappang.poppang_aos.model.PopupEvent
 import com.pappang.poppang_aos.ui.theme.Bold10
 import com.pappang.poppang_aos.ui.theme.Bold15
@@ -68,7 +69,6 @@ import com.pappang.poppang_aos.ui.theme.mainGray2
 import com.pappang.poppang_aos.ui.theme.mainGray4
 import com.pappang.poppang_aos.ui.theme.mainGray5
 import com.pappang.poppang_aos.ui.theme.mainOrange
-import com.pappang.poppang_aos.viewmodel.SearchViewModel
 import java.time.LocalDate.now
 import java.time.LocalDate.parse
 import java.time.format.DateTimeFormatter.ofPattern
@@ -77,13 +77,13 @@ import java.time.temporal.ChronoUnit
 @Composable
 fun HomeScreen(
     hideSatausBar: (Boolean) -> Unit = {},
-    searchViewModel: SearchViewModel,
     showDetail: Boolean = false,
     setShowDetail: (Boolean) -> Unit,
     showSearch: Boolean = false,
     setSearchScreen: (Boolean) -> Unit,
     popupList: List<PopupEvent>,
-    popupcomingList: List<PopupEvent>
+    popupcomingList: List<PopupEvent>,
+    loginResponse: LoginResponse?
 ) {
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
@@ -93,7 +93,6 @@ fun HomeScreen(
             TopSearchBar(
                 modifier = Modifier,
                 onSearchBarClick = { setSearchScreen(true) },
-                searchViewModel = searchViewModel
             )
             Column(
                 modifier = Modifier
@@ -124,12 +123,12 @@ fun HomeScreen(
         )
     }
     if (showSearch) {
-        SearchScreen(onClose = { setSearchScreen(false) })
+        SearchScreen(onClose = { setSearchScreen(false) }, loginResponse = loginResponse, hideSatausBar = hideSatausBar)
     }
 }
 
 @Composable
-private fun TopSearchBar(modifier: Modifier, onSearchBarClick: () -> Unit = {}, searchViewModel: SearchViewModel) {
+private fun TopSearchBar(modifier: Modifier, onSearchBarClick: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -142,7 +141,6 @@ private fun TopSearchBar(modifier: Modifier, onSearchBarClick: () -> Unit = {}, 
                 .heightIn(min = 45.dp)
                 .weight(1f)
                 .clickable {
-                    Log.d("TopSearchBar", "SearchBar clicked")
                     onSearchBarClick()
                 }
                 .background(mainGray4, RoundedCornerShape(3.dp))
@@ -648,6 +646,6 @@ fun MainContent(onShowDetail: (PopupEvent) -> Unit, popupList: List<PopupEvent>)
 @Composable
 @Preview
 fun HomeScreenPreview() {
-    HomeScreen(setSearchScreen = {}, setShowDetail = {}, popupList = listOf(), popupcomingList = listOf(), searchViewModel = SearchViewModel() )
+    HomeScreen(setSearchScreen = {}, setShowDetail = {}, popupList = listOf(), popupcomingList = listOf(), loginResponse = LoginResponse("", "", "", "", "", "", "",false) )
 }
 
