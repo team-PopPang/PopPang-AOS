@@ -2,6 +2,7 @@
 agp = "8.13.0"
 coilCompose = "2.7.0"
 converterGson = "3.0.0"
+datastorePreferences = "1.1.7"
 googleServices = "4.4.3"
 kotlin = "2.0.0"
 coreKtx = "1.17.0"
@@ -19,6 +20,7 @@ v2User = "2.22.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
