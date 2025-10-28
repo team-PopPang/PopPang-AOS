@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -36,9 +37,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.pappang.poppang_aos.ui.theme.Medium15
 import com.pappang.poppang_aos.ui.theme.ExtraBold18
-import androidx.compose.foundation.layout.navigationBarsPadding
+import com.pappang.poppang_aos.ui.theme.Medium15
 
 
 @Composable
@@ -125,7 +125,7 @@ fun PageDot(
 fun ImageIndicator(
     modifier: Modifier = Modifier,
     currentPage: () -> Int = { 0 },
-    totalPages: () -> Int = { 4 },
+    totalPages: () -> Int = { 10 },
     dotSpace: Dp = INDICATOR_DEFAULT_DOT_SPACE,
 
     ) {

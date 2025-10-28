@@ -9,6 +9,6 @@ data class UserSignUpRequest(
     val role: String?,
     val isAlerted: Boolean?,
     val fcmToken: String?,
-    val keywordList: List<String>,
+    val alertKeywordList: List<String>,
     val recommendList: List<Long>
 )

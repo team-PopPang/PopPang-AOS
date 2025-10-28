@@ -28,7 +28,7 @@ class SignUpViewModel : ViewModel() {
             role = loginResponse.role,
             isAlerted = loginResponse.isAlerted,
             fcmToken = fcmToken,
-            keywordList = keywordViewModel.keywordList.toList(),
+            alertKeywordList = keywordViewModel.keywordList.toList(),
             recommendList = recommendList
         )
         CoroutineScope(Dispatchers.IO).launch {

@@ -20,11 +20,17 @@ import com.pappang.poppang_aos.ui.theme.PopPangAOSTheme
 import com.pappang.poppang_aos.viewmodel.AddKeywordViewModel
 import com.pappang.poppang_aos.viewmodel.CategoryItemViewModel
 import com.pappang.poppang_aos.viewmodel.DuplicateNickname
+import com.pappang.poppang_aos.viewmodel.PopupComingViewModel
+import com.pappang.poppang_aos.viewmodel.PopupViewModel
+import com.pappang.poppang_aos.viewmodel.SearchViewModel
 
 class MainActivity : ComponentActivity() {
     private val nicknameViewModel: DuplicateNickname by viewModels()
     private val keywordViewModel: AddKeywordViewModel by viewModels()
     private val categoryViewModel: CategoryItemViewModel by viewModels()
+    private val popupViewModel: PopupViewModel by viewModels()
+    private val popupcomingViewModel: PopupComingViewModel by viewModels()
+    private val searchViewModel: SearchViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +65,9 @@ class MainActivity : ComponentActivity() {
                     nicknameViewModel = nicknameViewModel,
                     keywordViewModel = keywordViewModel,
                     categoryViewModel = categoryViewModel,
+                    popupViewModel = popupViewModel,
+                    popupcomingViewModel = popupcomingViewModel,
+                    searchViewModel = searchViewModel,
                     hideSystemBars = { hide -> hideSystemBars = hide },
                     hideStatusBar = { hide -> hidestatusBar = hide }
                 )

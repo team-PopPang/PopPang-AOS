@@ -27,9 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,15 +41,20 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush.Companion.linearGradient
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.pappang.poppang_aos.R
+import com.pappang.poppang_aos.model.PopupEvent
 import com.pappang.poppang_aos.ui.theme.Bold10
 import com.pappang.poppang_aos.ui.theme.Bold15
 import com.pappang.poppang_aos.ui.theme.Bold17
 import com.pappang.poppang_aos.ui.theme.Light10
+import com.pappang.poppang_aos.ui.theme.Medium11
 import com.pappang.poppang_aos.ui.theme.Medium12
 import com.pappang.poppang_aos.ui.theme.Medium13
 import com.pappang.poppang_aos.ui.theme.Medium17
@@ -62,92 +65,125 @@ import com.pappang.poppang_aos.ui.theme.mainBlack
 import com.pappang.poppang_aos.ui.theme.mainGray1
 import com.pappang.poppang_aos.ui.theme.mainGray14
 import com.pappang.poppang_aos.ui.theme.mainGray2
-import com.pappang.poppang_aos.ui.theme.mainGray3
 import com.pappang.poppang_aos.ui.theme.mainGray4
 import com.pappang.poppang_aos.ui.theme.mainGray5
 import com.pappang.poppang_aos.ui.theme.mainOrange
+import com.pappang.poppang_aos.viewmodel.SearchViewModel
+import java.time.LocalDate.now
+import java.time.LocalDate.parse
+import java.time.format.DateTimeFormatter.ofPattern
+import java.time.temporal.ChronoUnit
 
 @Composable
-fun HomeScreen(hideSatausBar: (Boolean) -> Unit = {}, showDetail: Boolean = false, setShowDetail: (Boolean) -> Unit = {}) {
+fun HomeScreen(
+    hideSatausBar: (Boolean) -> Unit = {},
+    searchViewModel: SearchViewModel,
+    showDetail: Boolean = false,
+    setShowDetail: (Boolean) -> Unit,
+    showSearch: Boolean = false,
+    setSearchScreen: (Boolean) -> Unit,
+    popupList: List<PopupEvent>,
+    popupcomingList: List<PopupEvent>
+) {
+    var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp, vertical = 15.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End
-            ) {
-                TopSearchBar(
-                    modifier = Modifier
-                        .width(0.dp)
-                        .weight(1f)
-                )
-                IconButton(
-                    onClick = { /* 알림 */ },
-                    modifier = Modifier
-                        .padding(start = 8.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.bell_icon),
-                        contentDescription = "bell",
-                        modifier = Modifier.size(23.dp),
-                        tint = Color.Unspecified
-                    )
-                }
-            }
-
+            TopSearchBar(
+                modifier = Modifier,
+                onSearchBarClick = { setSearchScreen(true) },
+                searchViewModel = searchViewModel
+            )
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
                 BannerCarousel()
-                Spacer(modifier = Modifier.height(40.dp))
-                BoxCarousel()
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(50.dp))
+                BoxCarousel(popupcomingList = popupcomingList, onShowDetail = { popup ->
+                    selectedPopup = popup
+                    setShowDetail(true)
+                })
+                Spacer(modifier = Modifier.height(50.dp))
                 FilterSection()
                 Spacer(modifier = Modifier.height(15.dp))
-                MainContent(onShowDetail = { setShowDetail(true) })
+                MainContent(popupList = popupList, onShowDetail = { popup ->
+                    selectedPopup = popup
+                    setShowDetail(true)
+                })
             }
         }
     }
-    if (showDetail) {
-        ContentDetail(onClose = { setShowDetail(false) },hideSatausBar)
+    if (showDetail && selectedPopup != null) {
+        ContentDetail(
+            popup = selectedPopup!!,
+            onClose = { setShowDetail(false) },
+            hideSatausBar = hideSatausBar
+        )
+    }
+    if (showSearch) {
+        SearchScreen(onClose = { setSearchScreen(false) })
     }
 }
 
 @Composable
-private fun TopSearchBar(modifier: Modifier) {
-    var query by remember { mutableStateOf("") }
-    OutlinedTextField(
-        value = query,
-        onValueChange = { query = it },
-        modifier = modifier.heightIn(min = 45.dp),
-        singleLine = true,
-        maxLines = 1,
-        placeholder = { Text(text = "궁금한 장소를 검색해 보세요.", style = Regular12, color = mainGray1) },
-        trailingIcon = {
-            IconButton(onClick = { /* 검색 */ }) {
-                Icon(
-                    painter = painterResource(id = R.drawable.serch_icon),
-                    contentDescription = "search",
-                    modifier = Modifier.size(20.dp),
+private fun TopSearchBar(modifier: Modifier, onSearchBarClick: () -> Unit = {}, searchViewModel: SearchViewModel) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 15.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.End
+    ) {
+        Box(
+            modifier = modifier
+                .heightIn(min = 45.dp)
+                .weight(1f)
+                .clickable {
+                    Log.d("TopSearchBar", "SearchBar clicked")
+                    onSearchBarClick()
+                }
+                .background(mainGray4, RoundedCornerShape(3.dp))
+                .padding(horizontal = 15.dp, vertical = 3.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "궁금한 장소를 검색해 보세요.",
+                    style = Regular11,
+                    color = mainGray1,
+
+                )
+                IconButton(onClick = { /* 검색 */ }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.serch_icon),
+                        contentDescription = "search",
+                        modifier = Modifier
+                            .padding(start = 10.dp)
+                            .size(20.dp),
+                        tint = Color.Unspecified
+                    )
+                }
+            }
+        }
+        IconButton(
+            onClick = { /* 알림 */ },
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.bell_icon),
+                contentDescription = "bell",
+                modifier = Modifier
+                    .padding(start = 15.dp)
+                    .size(23.dp),
                 tint = Color.Unspecified
             )
-            }
-        },
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = mainGray4,
-            unfocusedContainerColor = mainGray4,
-            cursorColor = mainBlack,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent
-        )
-    )
+        }
+    }
 }
 
 @Composable
@@ -156,7 +192,7 @@ fun BannerCarousel(modifier: Modifier = Modifier) {
     HorizontalPager(
         state = pagerState,
         pageSize = PageSize.Fixed(194.dp),
-        contentPadding = PaddingValues(end = 64.dp),
+        contentPadding = PaddingValues(end = 15.dp),
         pageSpacing = 15.dp,
         modifier = modifier
             .padding(start = 15.dp)
@@ -223,29 +259,31 @@ fun BannerCarousel(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun BoxCarousel(modifier: Modifier = Modifier) {
-    val pagerState = rememberPagerState(initialPage = 0) { 5 }
+fun BoxCarousel(onShowDetail: (PopupEvent) -> Unit, popupcomingList: List<PopupEvent>) {
+    val sortedList = popupcomingList.sortedBy { it.startDate }
+    val pagerState = rememberPagerState(initialPage = 0) { sortedList.size }
     Column {
         Box(
             modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 15.dp)
+                .fillMaxWidth()
+                .padding(start = 15.dp)
         ) {
             Column {
                 Text(
                     text = "COMING SOON",
-                    style = Medium12,
+                    style = Medium11,
                     color = mainOrange,
                     modifier = Modifier
                         .padding(bottom = 3.dp)
                 )
                 Text(
                     text = "곧 생기는 팝업",
-                    style = Bold17,
+                    style = Bold15,
                     color = mainBlack,
                     modifier = Modifier
-                        .padding(top = 6.dp,
-                            bottom = 10.dp)
+                        .padding(
+                            top = 6.dp
+                        )
                 )
             }
             Icon(
@@ -257,25 +295,35 @@ fun BoxCarousel(modifier: Modifier = Modifier) {
                     .size(16.dp)
             )
         }
-
+        Spacer(modifier = Modifier.height(15.dp))
         HorizontalPager(
             state = pagerState,
             pageSize = PageSize.Fixed(283.dp),
-            contentPadding = PaddingValues(end = 64.dp),
+            contentPadding = PaddingValues(start = 0.dp, end = 15.dp),
             pageSpacing = 15.dp,
-            modifier = modifier
-                .padding(start = 15.dp)
+            modifier = Modifier
+                .padding(start = 15.dp),
         ) { page ->
+            val popup = sortedList[page]
             Box(
                 modifier = Modifier
                     .width(283.dp)
                     .height(138.dp)
-                    .clickable { Log.d("BannerCarousel", "Banner $page clicked") }
+                    .clickable { onShowDetail(popup) }
                     .border(1.dp, mainGray14, RoundedCornerShape(5.dp))
                     .padding(10.dp)
             ) {
-                Box(modifier = Modifier.width(94.4.dp).height(118.dp)){
-                    Image(painter = painterResource(id = R.drawable.bg), contentDescription = "Box $page", contentScale = ContentScale.Crop)
+                Box(modifier = Modifier.width(94.4.dp).height(118.dp)) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(popup.fullImageUrlList.getOrNull(0))
+                            .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                            .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                            .build(),
+                        contentDescription = popup.name,
+                        modifier = Modifier,
+                        contentScale = ContentScale.Crop
+                    )
                 }
                 Column(
                     modifier = Modifier
@@ -285,14 +333,20 @@ fun BoxCarousel(modifier: Modifier = Modifier) {
                 ) {
                     Column {
                         Text(
-                            text = "오픈 D-10",
+                            text = "오픈 D-" + runCatching {
+                                val formatter = ofPattern("yyyy-MM-dd")
+                                val start = parse(popup.startDate, formatter)
+                                val today = now()
+                                val days = ChronoUnit.DAYS.between(today, start)
+                                days.coerceAtLeast(0).toString()
+                            }.getOrDefault(""),
                             style = Bold10,
                             color = mainOrange,
                             modifier = Modifier
                                 .padding(top = 5.dp)
                         )
                         Text(
-                            text = "팝업스토어 <라부부의 수상한 실험실> 팝업스토어",
+                            text = popup.name,
                             style = Medium13,
                             color = mainBlack,
                             maxLines = 2,
@@ -302,7 +356,8 @@ fun BoxCarousel(modifier: Modifier = Modifier) {
                         )
                     }
                     Text(
-                        text = "서울 성동구", style = Regular11,
+                        text = popup.roadAddress.split(" ").take(2).joinToString(" "),
+                        style = Regular11,
                         color = mainGray1,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -314,7 +369,6 @@ fun BoxCarousel(modifier: Modifier = Modifier) {
         }
     }
 }
-
 @Composable
 fun LocalFilterButton() {
     var showSheet by remember { mutableStateOf(false) }
@@ -413,10 +467,27 @@ fun SortType() {
     var selectedSort by remember { mutableStateOf("최신순") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    Box(modifier = Modifier.clickable { showSheet = true }.background(mainGray5, RoundedCornerShape(20.dp)).border(1.dp, mainGray3, RoundedCornerShape(20.dp)).padding(horizontal = 10.dp, vertical = 8.dp)) {
+    Box(modifier = Modifier
+        .clickable { showSheet = true }
+        .background(mainGray5, RoundedCornerShape(20.dp))
+        .border(1.dp, mainGray1, RoundedCornerShape(20.dp))
+        .padding(horizontal = 10.dp, vertical = 8.dp)
+    ){
         Row {
-            Text(text = selectedSort, color = mainGray1, style = Light10)
-            Icon(painter = painterResource(R.drawable.arrow_up), contentDescription = "정렬 선택", modifier = Modifier.padding(start = 3.dp).size(10.dp).rotate(if (showSheet) 270f else 90f), tint = mainGray2)
+            Text(
+                text = selectedSort,
+                color = mainGray1,
+                style = Light10
+            )
+            Icon(
+                painter = painterResource(R.drawable.arrow_up),
+                contentDescription = "정렬 선택",
+                modifier = Modifier
+                    .padding(start = 3.dp)
+                    .size(10.dp)
+                    .rotate(if (showSheet) 270f else 90f),
+                tint = mainGray2
+            )
         }
     }
 
@@ -505,53 +576,60 @@ fun FilterSection() {
 }
 
 @Composable
-fun MainContent(onShowDetail: () ->Unit) {
-    val images = List(10) { R.drawable.bg }
+fun MainContent(onShowDetail: (PopupEvent) -> Unit, popupList: List<PopupEvent>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(start = 15.dp, end = 15.dp)
     ) {
-        images.chunked(2).forEach { pair ->
+        popupList.chunked(2).forEach { pair ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(15.dp)
             ) {
-                pair.forEach { resId ->
+                pair.forEach { popup ->
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { onShowDetail() }
+                            .clickable { onShowDetail(popup) }
                     ) {
                         Column {
-                            Image(
-                                painter = painterResource(id = resId),
-                                contentDescription = "이미지",
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(popup.fullImageUrlList.getOrNull(0))
+                                    .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                    .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                    .build(),
+                                contentDescription = popup.name,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(217.5.dp),
                                 contentScale = ContentScale.Crop
                             )
                             Text(
-                                text = "서울 성동구",
+                                text = popup.roadAddress.split(" ").take(2).joinToString(" "),
                                 style = Regular12,
                                 color = mainBlack,
                                 modifier = Modifier
-                                    .padding(top = 8.dp)
+                                    .padding(top = 10.dp)
                             )
                             Text(
-                                text = "팝업스토어 <라부부의 수상한 실험실> 팝업스토어",
+                                text = popup.name,
                                 style = Bold15,
                                 color = mainBlack,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .padding(top = 5.dp)
                             )
                             Text(
-                                text = "2024.08.01 ~ 2024.08.31",
+                                text = popup.startDate + " - " + popup.endDate,
                                 style = Regular12,
-                                color = mainGray1
+                                color = mainGray1,
+                                modifier = Modifier
+                                    .padding(top = 4.dp)
                             )
                         }
                     }
@@ -570,6 +648,6 @@ fun MainContent(onShowDetail: () ->Unit) {
 @Composable
 @Preview
 fun HomeScreenPreview() {
-    HomeScreen()
+    HomeScreen(setSearchScreen = {}, setShowDetail = {}, popupList = listOf(), popupcomingList = listOf(), searchViewModel = SearchViewModel() )
 }
 
