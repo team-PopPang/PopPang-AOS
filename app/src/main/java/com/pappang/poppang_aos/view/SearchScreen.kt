@@ -26,8 +26,10 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.TopCenter
 import androidx.compose.ui.Modifier
@@ -46,6 +48,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.pappang.poppang_aos.R
+import com.pappang.poppang_aos.datastore.SearchQueryDataStore
+import com.pappang.poppang_aos.model.LoginResponse
 import com.pappang.poppang_aos.model.PopupEvent
 import com.pappang.poppang_aos.ui.theme.Bold15
 import com.pappang.poppang_aos.ui.theme.Medium12
@@ -56,14 +60,25 @@ import com.pappang.poppang_aos.ui.theme.mainGray1
 import com.pappang.poppang_aos.ui.theme.mainGray4
 import com.pappang.poppang_aos.ui.theme.mainOrange
 import com.pappang.poppang_aos.viewmodel.SearchViewModel
+import com.pappang.poppang_aos.viewmodel.SearchViewModelFactory
 
 @Composable
-fun SearchScreen(onClose: () -> Unit, viewModel: SearchViewModel = viewModel()) {
+fun SearchScreen(onClose: () -> Unit,
+                 viewModel: SearchViewModel = viewModel(
+                     factory = SearchViewModelFactory(
+                         SearchQueryDataStore(LocalContext.current)
+                     )
+                 ),
+                 loginResponse: LoginResponse?,
+                 hideSatausBar: (Boolean) -> Unit = {}) {
     val query = remember { mutableStateOf("") }
     val isSearched = remember { mutableStateOf(false) }
     val popupList = viewModel.popupList.value
+    var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    var showDetail by remember { mutableStateOf(false) } // 추가
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
+    val isTextFieldEnabled = remember { mutableStateOf(true) }
 
     BackHandler { onClose() }
     LaunchedEffect(Unit) {
@@ -93,7 +108,9 @@ fun SearchScreen(onClose: () -> Unit, viewModel: SearchViewModel = viewModel()) 
                     onValueChange = {
                         query.value = it
                         isSearched.value = false
+                        isTextFieldEnabled.value = true
                     },
+                    enabled = isTextFieldEnabled.value,
                     placeholder = {
                         Text(
                             text = "궁금한 장소를 검색해 보세요.",
@@ -112,11 +129,11 @@ fun SearchScreen(onClose: () -> Unit, viewModel: SearchViewModel = viewModel()) 
                         unfocusedContainerColor = mainGray4,
                         disabledContainerColor = mainGray4,
                         errorContainerColor = Color.White,
-                        focusedIndicatorColor = Color(0xFFF3F4F6),
-                        unfocusedIndicatorColor = Color(0xFFF3F4F6),
-                        disabledIndicatorColor = Color(0xFFF3F4F6),
-                        errorIndicatorColor = Color.Red,
-                        cursorColor = mainGray1,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                        errorIndicatorColor = Color.Transparent,
+                        cursorColor = if (isTextFieldEnabled.value) mainBlack else Color.Transparent,
                         focusedTextColor = Color.Black,
                         unfocusedTextColor = Color.Black,
                         disabledTextColor = Color.Black,
@@ -126,6 +143,8 @@ fun SearchScreen(onClose: () -> Unit, viewModel: SearchViewModel = viewModel()) 
                             viewModel.search(query.value)
                             viewModel.addRecentQuery(query.value)
                             isSearched.value = true
+                            query.value = ""
+                            keyboard?.hide()
                         }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.serch_icon),
@@ -145,6 +164,8 @@ fun SearchScreen(onClose: () -> Unit, viewModel: SearchViewModel = viewModel()) 
                             viewModel.search(query.value)
                             viewModel.addRecentQuery(query.value)
                             isSearched.value = true
+                            query.value = ""
+                            keyboard?.hide()
                         }
                     )
                 )
@@ -164,21 +185,34 @@ fun SearchScreen(onClose: () -> Unit, viewModel: SearchViewModel = viewModel()) 
                 }
             }
             if (!isSearched.value) {
-                RecentSearchContent(recentQueries = viewModel.recentQueries.value)
+                RecentSearchContent(recentQueries = viewModel.recentQueries.value,
+                    loginResponse = loginResponse ,
+                    viewModel = viewModel)
             } else {
-                SearchContent(popupList = popupList)
+                SearchContent(popupList = popupList,
+                    onShowDetail = { popup ->
+                    selectedPopup = popup
+                    showDetail = true
+                })
             }
         }
+    }
+    if (showDetail && selectedPopup != null) {
+        ContentDetail(
+            popup = selectedPopup!!,
+            onClose = { showDetail = false },
+            hideSatausBar = hideSatausBar
+        )
     }
 }
 
 @Composable
-fun RecentSearchContent(recentQueries: List<String>) {
+fun RecentSearchContent(recentQueries: List<String>, loginResponse: LoginResponse?, viewModel: SearchViewModel) {
     Spacer(modifier = Modifier.height(20.dp))
     Column(modifier = Modifier.padding(start = 24.dp)) {
         Row {
             Text(
-                text = "이준태",
+                text = loginResponse?.nickname ?: "null",
                 style = Medium12,
                 color = mainOrange
             )
@@ -194,7 +228,7 @@ fun RecentSearchContent(recentQueries: List<String>) {
         ) {
         recentQueries.forEach { query ->
             CustomButton5(
-                onClick = { /* TODO: 해당 검색어로 검색 */ },
+                onClick = { viewModel.removeRecentQuery(query) },
                 text = query,
                 modifier = Modifier
             )}
@@ -203,7 +237,7 @@ fun RecentSearchContent(recentQueries: List<String>) {
 }
 
 @Composable
-fun SearchContent(popupList: List<PopupEvent>) {
+fun SearchContent(popupList: List<PopupEvent>, onShowDetail: (PopupEvent) -> Unit) {
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
@@ -220,7 +254,7 @@ fun SearchContent(popupList: List<PopupEvent>) {
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { }
+                            .clickable {onShowDetail(popup) }
                     ) {
                         Column {
                             AsyncImage(
@@ -274,5 +308,5 @@ fun SearchContent(popupList: List<PopupEvent>) {
 @Composable
 @Preview
 fun SearchScreenPreview() {
-    SearchScreen(onClose = {})
+    SearchScreen(onClose = {}, loginResponse = LoginResponse("", "", "", "", "", "", "",false))
 }

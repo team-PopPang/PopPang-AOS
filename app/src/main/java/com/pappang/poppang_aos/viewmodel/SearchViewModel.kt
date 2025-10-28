@@ -3,22 +3,30 @@ package com.pappang.poppang_aos.viewmodel
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pappang.poppang_aos.datastore.SearchQueryDataStore
 import com.pappang.poppang_aos.model.PopupEvent
 import com.pappang.poppang_aos.network.RetrofitInstance
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class SearchViewModel : ViewModel() {
+class SearchViewModel(private val searchQueryDataStore: SearchQueryDataStore) : ViewModel() {
     val popupList = mutableStateOf<List<PopupEvent>>(emptyList())
     val recentQueries = mutableStateOf<List<String>>(emptyList())
 
     private var searchJob: Job? = null
 
+    init {
+        viewModelScope.launch {
+            searchQueryDataStore.queriesFlow.collect { queries ->
+                recentQueries.value = queries.toList()
+            }
+        }
+    }
+
     fun search(query: String) {
+        popupList.value = emptyList()
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            delay(300) // 디바운스
             try {
                 val result = RetrofitInstance.searchApi.search(query)
                 popupList.value = result
@@ -29,8 +37,17 @@ class SearchViewModel : ViewModel() {
     }
 
     fun addRecentQuery(query: String) {
-        if (query.isNotBlank() && !recentQueries.value.contains(query)) {
-            recentQueries.value = listOf(query) + recentQueries.value.take(4) // 최대 5개 저장
+        viewModelScope.launch {
+            if (query.isNotBlank()) {
+                searchQueryDataStore.addQuery(query)
+            }
+        }
+    }
+
+    fun removeRecentQuery(query: String) {
+        viewModelScope.launch {
+            searchQueryDataStore.removeQuery(query)
+            recentQueries.value = searchQueryDataStore.getQueries()
         }
     }
 }
