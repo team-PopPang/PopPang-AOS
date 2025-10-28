@@ -39,4 +39,28 @@ object RetrofitInstance {
             .build()
             .create(CategoryItemApi::class.java)
     }
+
+    val popupApi: PopupApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(PopupApi::class.java)
+    }
+
+    val popupComingApi: PopupComingApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(PopupComingApi::class.java)
+    }
+
+    val searchApi: SearchApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(SearchApi::class.java)
+    }
 }

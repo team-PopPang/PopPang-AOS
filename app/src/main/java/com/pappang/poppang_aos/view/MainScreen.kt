@@ -13,6 +13,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -21,22 +23,33 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.pappang.poppang_aos.model.BottomNavItem
 import com.pappang.poppang_aos.model.NavIcon
 import com.pappang.poppang_aos.ui.theme.Light10
+import com.pappang.poppang_aos.viewmodel.PopupComingViewModel
+import com.pappang.poppang_aos.viewmodel.PopupViewModel
+import com.pappang.poppang_aos.viewmodel.SearchViewModel
 
 @Composable
-fun MainScreen(hideSatausBar: (Boolean) -> Unit = {}) {
+fun MainScreen(hideSatausBar: (Boolean) -> Unit = {}, popupViewModel: PopupViewModel,popupcomingViewModel: PopupComingViewModel, searchViewModel: SearchViewModel) {
     var selectedIndex by rememberSaveable { mutableStateOf(0) }
     var showDetail by rememberSaveable { mutableStateOf(false) }
+    var showSearch by rememberSaveable { mutableStateOf(false) }
     val items = BottomNavItem.items
+    val popupList by popupViewModel.popupList.collectAsState()
+    val popupcomingList by popupcomingViewModel.popupcomingList.collectAsState()
+    val hideBottomNav = showDetail || showSearch
+
+    LaunchedEffect(Unit) {
+        popupViewModel.fetchPopupEventsOnce()
+        popupcomingViewModel.fetchPopupComingEventsOnce()
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
-            if (!showDetail) {
+            if (!hideBottomNav) {
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth(),
@@ -82,7 +95,16 @@ fun MainScreen(hideSatausBar: (Boolean) -> Unit = {}) {
             contentAlignment = Alignment.TopStart
         ) {
             when (items[selectedIndex]) {
-                is BottomNavItem.Home -> HomeScreen(hideSatausBar, showDetail = showDetail, setShowDetail = { showDetail = it })
+                is BottomNavItem.Home -> HomeScreen(
+                    hideSatausBar,
+                    searchViewModel = searchViewModel,
+                    showDetail = showDetail,
+                    setShowDetail = { showDetail = it },
+                    showSearch = showSearch,
+                    setSearchScreen = { showSearch = it },
+                    popupList = popupList,
+                    popupcomingList = popupcomingList
+                )
                 is BottomNavItem.Calendar -> CalendarScreen()
                 is BottomNavItem.Map -> MapScreen()
                 is BottomNavItem.PopPang -> LikeScreen()
@@ -90,10 +112,4 @@ fun MainScreen(hideSatausBar: (Boolean) -> Unit = {}) {
             }
         }
     }
-}
-
-@Composable
-@Preview
-fun MainScreenPreview() {
-    MainScreen()
 }

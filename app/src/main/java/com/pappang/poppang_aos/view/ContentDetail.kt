@@ -1,7 +1,6 @@
 package com.pappang.poppang_aos.view
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -22,6 +23,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment.Companion.BottomCenter
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Alignment.Companion.TopStart
 import androidx.compose.ui.Modifier
@@ -29,12 +31,16 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale.Companion.Crop
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.pappang.poppang_aos.R
+import com.pappang.poppang_aos.model.PopupEvent
 import com.pappang.poppang_aos.ui.theme.Bold17
+import com.pappang.poppang_aos.ui.theme.Medium12
 import com.pappang.poppang_aos.ui.theme.Medium15
 import com.pappang.poppang_aos.ui.theme.Regular12
 import com.pappang.poppang_aos.ui.theme.lowblack
@@ -43,7 +49,10 @@ import com.pappang.poppang_aos.ui.theme.mainGray1
 import com.pappang.poppang_aos.ui.theme.mainGray5
 
 @Composable
-fun ContentDetail(onClose: () -> Unit,hideSatausBar: (Boolean) -> Unit = {}) {
+fun ContentDetail(popup: PopupEvent, onClose: () -> Unit, hideSatausBar: (Boolean) -> Unit = {}) {
+    val imageList = popup.fullImageUrlList
+    val pagerState = rememberPagerState { imageList.size }
+
     LaunchedEffect(Unit) {
         hideSatausBar(true)
     }
@@ -82,13 +91,30 @@ fun ContentDetail(onClose: () -> Unit,hideSatausBar: (Boolean) -> Unit = {}) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(379.dp)
+                    .height(394.dp)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.bg),
-                    contentDescription = "세부내용이미지",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = Crop
+                HorizontalPager(
+                    state = pagerState,
+                ) { page ->
+                    AsyncImage(
+                        model =ImageRequest.Builder(LocalContext.current)
+                            .data(imageList[page])
+                            .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                            .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                            .build(),
+                        contentDescription = popup.name,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(394.dp),
+                        contentScale = Crop
+                    )
+                }
+                ImageIndicator(
+                    modifier = Modifier
+                        .align(BottomCenter)
+                        .padding(bottom = 16.dp),
+                    currentPage = { pagerState.currentPage },
+                    totalPages = { imageList.size }
                 )
                 Row(
                     modifier = Modifier
@@ -111,7 +137,7 @@ fun ContentDetail(onClose: () -> Unit,hideSatausBar: (Boolean) -> Unit = {}) {
                 }
             }
             Text(
-                text = "팝마트 <라부부의 수상한 실험실> 팝업스토어",
+                text = popup.name,
                 style = Bold17,
                 color = mainBlack,
                 modifier = Modifier
@@ -146,8 +172,8 @@ fun ContentDetail(onClose: () -> Unit,hideSatausBar: (Boolean) -> Unit = {}) {
                         modifier = Modifier.padding(end = 20.dp)
                     )
                     Text(
-                        text = "서울특별시 강남구 테헤란로 427 위워크타워 B1 팝마트 팝업스토어",
-                        style = Regular12,
+                        text = popup.roadAddress,
+                        style = Medium12,
                         color = mainBlack,
                     )
                 }
@@ -161,8 +187,8 @@ fun ContentDetail(onClose: () -> Unit,hideSatausBar: (Boolean) -> Unit = {}) {
                         modifier = Modifier.padding(end = 20.dp)
                     )
                     Text(
-                        text = "2024.06.01 ~ 2024.06.30",
-                        style = Regular12,
+                        text = popup.startDate + " ~ " + popup.endDate,
+                        style = Medium12,
                         color = mainBlack,
                     )
                 }
@@ -174,8 +200,8 @@ fun ContentDetail(onClose: () -> Unit,hideSatausBar: (Boolean) -> Unit = {}) {
                         modifier = Modifier.padding(end = 20.dp)
                     )
                     Text(
-                        text = "10:00 ~ 20:00",
-                        style = Regular12,
+                        text = popup.openTime + " ~ " + popup.closeTime,
+                        style = Medium12,
                         color = mainBlack,
                     )
                 }
@@ -188,8 +214,8 @@ fun ContentDetail(onClose: () -> Unit,hideSatausBar: (Boolean) -> Unit = {}) {
                 )
                 Spacer(modifier = Modifier.height(15.dp))
                 Text(
-                    text = "팝마트의 인기 시리즈 <라부부의 수상한 실험실>이 팝업스토어로 찾아옵니다! 이번 팝업스토어에서는 라부부 캐릭터 상품을 비롯해 다양한 한정판 아이템과 특별 이벤트가 준비되어 있습니다. 팝업스토어 방문객들에게는 특별한 혜택과 기념품도 제공될 예정이니, 팝마트 팬이라면 절대 놓치지 마세요! 친구들과 함께 즐거운 시간을 보내고, 라부부의 매력에 빠져보세요!",
-                    style = Regular12.copy(letterSpacing = 0.5.sp, lineHeight = 16.8.sp),
+                    text =popup.captionSummary,
+                    style = Regular12,
                     color = mainBlack,
                 )
                 Spacer(modifier = Modifier.height(15.dp))
@@ -214,5 +240,26 @@ fun ContentDetail(onClose: () -> Unit,hideSatausBar: (Boolean) -> Unit = {}) {
 @Composable
 @Preview
 fun ContentDetailPreview() {
-    ContentDetail(onClose = {})
+    ContentDetail(onClose = {}, popup = PopupEvent(
+        popupUuid = "1",
+        name = "팝업 스토어 이름",
+        startDate = "2024-01-01",
+        endDate = "2024-01-31",
+        openTime = "10:00",
+        closeTime = "20:00",
+        address = "서울특별시 강남구 테헤란로 123",
+        roadAddress = "서울특별시 강남구 테헤란로 123",
+        region = "강남구",
+        latitude = 37.123456,
+        longitude = 127.123456,
+        instaPostId = "1234567890",
+        instaPostUrl = "https://www.instagram.com/p/1234567890/",
+        captionSummary = "이곳은 팝업 스토어의 간단한 설명이 들어가는 곳입니다. 다양한 상품과 이벤트가 준비되어 있습니다.",
+        imageUrlList = listOf(
+            "/images/popup1.jpg",
+            "/images/popup2.jpg"
+        ),
+        mediaType = "image",
+        recommend = "친구에게 추천하고 싶은 팝업 스토어입니다."
+    ), hideSatausBar = {})
 }
