@@ -81,54 +81,62 @@ fun HomeScreen(
     setShowDetail: (Boolean) -> Unit,
     showSearch: Boolean = false,
     setSearchScreen: (Boolean) -> Unit,
+    showAlarm: Boolean = false,
+    setShowAlarm: (Boolean) -> Unit,
     popupList: List<PopupEvent>,
     popupcomingList: List<PopupEvent>,
     loginResponse: LoginResponse?
 ) {
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
-    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            TopSearchBar(
-                modifier = Modifier,
-                onSearchBarClick = { setSearchScreen(true) },
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                BannerCarousel()
-                Spacer(modifier = Modifier.height(50.dp))
-                BoxCarousel(popupcomingList = popupcomingList, onShowDetail = { popup ->
-                    selectedPopup = popup
-                    setShowDetail(true)
-                })
-                Spacer(modifier = Modifier.height(50.dp))
-                FilterSection()
-                Spacer(modifier = Modifier.height(15.dp))
-                MainContent(popupList = popupList, onShowDetail = { popup ->
-                    selectedPopup = popup
-                    setShowDetail(true)
-                })
-            }
-        }
-    }
-    if (showDetail && selectedPopup != null) {
-        ContentDetail(
-            popup = selectedPopup!!,
-            onClose = { setShowDetail(false) },
-            hideSatausBar = hideSatausBar
-        )
-    }
     if (showSearch) {
         SearchScreen(onClose = { setSearchScreen(false) }, loginResponse = loginResponse, hideSatausBar = hideSatausBar)
+    }
+    else if(showAlarm) {
+        AlarmScreen(onClose = { setShowAlarm(false) },loginResponse = loginResponse)
+    }
+    else {
+        Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                TopSearchBar(
+                    modifier = Modifier,
+                    onSearchBarClick = { setSearchScreen(true) },
+                    onAlarmClick = { setShowAlarm(true) }
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    BannerCarousel()
+                    Spacer(modifier = Modifier.height(50.dp))
+                    BoxCarousel(popupcomingList = popupcomingList, onShowDetail = { popup ->
+                        selectedPopup = popup
+                        setShowDetail(true)
+                    })
+                    Spacer(modifier = Modifier.height(50.dp))
+                    FilterSection()
+                    Spacer(modifier = Modifier.height(15.dp))
+                    MainContent(popupList = popupList, onShowDetail = { popup ->
+                        selectedPopup = popup
+                        setShowDetail(true)
+                    })
+                }
+            }
+        }
+        if (showDetail && selectedPopup != null) {
+            ContentDetail(
+                popup = selectedPopup!!,
+                onClose = { setShowDetail(false) },
+                hideSatausBar = hideSatausBar
+            )
+        }
     }
 }
 
 @Composable
-private fun TopSearchBar(modifier: Modifier, onSearchBarClick: () -> Unit = {}) {
+private fun TopSearchBar(modifier: Modifier, onSearchBarClick: () -> Unit = {}, onAlarmClick: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -156,8 +164,8 @@ private fun TopSearchBar(modifier: Modifier, onSearchBarClick: () -> Unit = {}) 
                     style = Regular11,
                     color = mainGray1,
 
-                )
-                IconButton(onClick = { /* 검색 */ }) {
+                    )
+                IconButton({}) {
                     Icon(
                         painter = painterResource(id = R.drawable.serch_icon),
                         contentDescription = "search",
@@ -170,7 +178,7 @@ private fun TopSearchBar(modifier: Modifier, onSearchBarClick: () -> Unit = {}) 
             }
         }
         IconButton(
-            onClick = { /* 알림 */ },
+            onClick = { onAlarmClick() },
         ) {
             Icon(
                 painter = painterResource(R.drawable.bell_icon),
@@ -646,6 +654,6 @@ fun MainContent(onShowDetail: (PopupEvent) -> Unit, popupList: List<PopupEvent>)
 @Composable
 @Preview
 fun HomeScreenPreview() {
-    HomeScreen(setSearchScreen = {}, setShowDetail = {}, popupList = listOf(), popupcomingList = listOf(), loginResponse = LoginResponse("", "", "", "", "", "", "",false) )
+    HomeScreen(setSearchScreen = {}, setShowDetail = {}, setShowAlarm = {}, popupList = listOf(), popupcomingList = listOf(), loginResponse = LoginResponse("", "", "", "", "", "", "",false) )
 }
 

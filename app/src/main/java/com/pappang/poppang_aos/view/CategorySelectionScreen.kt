@@ -20,8 +20,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.pappang.poppang_aos.model.CategoryItem
-import com.pappang.poppang_aos.ui.theme.ExtraBold18
+import com.pappang.poppang_aos.ui.theme.ExtraBold24
 import com.pappang.poppang_aos.ui.theme.Medium12
+import com.pappang.poppang_aos.ui.theme.Medium15
+import com.pappang.poppang_aos.ui.theme.mainBlack
 import com.pappang.poppang_aos.ui.theme.mainGray1
 import com.pappang.poppang_aos.ui.theme.mainGray2
 import com.pappang.poppang_aos.ui.theme.mainGray4
@@ -41,13 +43,13 @@ fun CategorySelectionScreen(categoryViewModel: CategoryItemViewModel) {
         Column {
             Text(
                 text = "추천받고 싶은 항목을\n선택해주세요.",
-                style = ExtraBold18,
-                color = Color.Black,
+                style = ExtraBold24,
+                color = mainBlack,
                 modifier = Modifier.padding(start = 24.dp, top = 44.dp)
             )
             Text(
                 text = "선택하신 항목에 맞게 추천해드려요.",
-                style = Medium12,
+                style = Medium15,
                 color = mainGray1,
                 modifier = Modifier.padding(start = 24.dp, top = 11.dp)
             )

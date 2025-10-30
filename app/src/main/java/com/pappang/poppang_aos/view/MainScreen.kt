@@ -42,10 +42,11 @@ fun MainScreen(
     var selectedIndex by rememberSaveable { mutableStateOf(0) }
     var showDetail by rememberSaveable { mutableStateOf(false) }
     var showSearch by rememberSaveable { mutableStateOf(false) }
+    var showAlarm by rememberSaveable { mutableStateOf(false) }
     val items = BottomNavItem.items
     val popupList by popupViewModel.popupList.collectAsState()
     val popupcomingList by popupcomingViewModel.popupcomingList.collectAsState()
-    val hideBottomNav = showDetail || showSearch
+    val hideBottomNav = showDetail || showSearch || showAlarm
 
     LaunchedEffect(Unit) {
         popupViewModel.fetchPopupEventsOnce()
@@ -107,6 +108,8 @@ fun MainScreen(
                     setShowDetail = { showDetail = it },
                     showSearch = showSearch,
                     setSearchScreen = { showSearch = it },
+                    showAlarm = showAlarm,
+                    setShowAlarm = { showAlarm = it },
                     popupList = popupList,
                     popupcomingList = popupcomingList,
                     loginResponse = loginResponse

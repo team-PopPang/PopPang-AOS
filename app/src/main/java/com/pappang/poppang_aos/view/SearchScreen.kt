@@ -75,7 +75,8 @@ fun SearchScreen(onClose: () -> Unit,
     val isSearched = remember { mutableStateOf(false) }
     val popupList = viewModel.popupList.value
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
-    var showDetail by remember { mutableStateOf(false) } // 추가
+    var showDetail by remember { mutableStateOf(false) }
+    var showAlarmScreen by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     val isTextFieldEnabled = remember { mutableStateOf(true) }
@@ -85,124 +86,130 @@ fun SearchScreen(onClose: () -> Unit,
         focusRequester.requestFocus()
         keyboard?.show()
     }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White),
-        contentAlignment = TopCenter
-    ) {
-        Column(
+    if (showAlarmScreen) {
+        AlarmScreen(onClose = { showAlarmScreen = false }, loginResponse = loginResponse)
+    } else {
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
+                .background(Color.White),
+            contentAlignment = TopCenter
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 15.dp, vertical = 15.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End
             ) {
-                TextField(
-                    value = query.value,
-                    onValueChange = {
-                        query.value = it
-                        isSearched.value = false
-                        isTextFieldEnabled.value = true
-                    },
-                    enabled = isTextFieldEnabled.value,
-                    placeholder = {
-                        Text(
-                            text = "궁금한 장소를 검색해 보세요.",
-                            style = Regular11,
-                            color = mainGray1
-                        )
-                    },
-                    singleLine = true,
+                Row(
                     modifier = Modifier
-                        .heightIn(min = 45.dp)
-                        .weight(1f)
-                        .focusRequester(focusRequester),
-                    shape = RoundedCornerShape(3.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = mainGray4,
-                        unfocusedContainerColor = mainGray4,
-                        disabledContainerColor = mainGray4,
-                        errorContainerColor = Color.White,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent,
-                        errorIndicatorColor = Color.Transparent,
-                        cursorColor = if (isTextFieldEnabled.value) mainBlack else Color.Transparent,
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black,
-                        disabledTextColor = Color.Black,
-                    ),
-                    trailingIcon = {
-                        IconButton(onClick = {
-                            viewModel.search(query.value)
-                            viewModel.addRecentQuery(query.value)
-                            isSearched.value = true
-                            query.value = ""
-                            keyboard?.hide()
-                        }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.serch_icon),
-                                contentDescription = "search",
-                                modifier = Modifier
-                                    .padding(end = 20.dp)
-                                    .size(20.dp),
-                                tint = Color.Unspecified
-                            )
-                        }
-                    },
-                    keyboardOptions = KeyboardOptions.Default.copy(
-                        imeAction = ImeAction.Search
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onSearch = {
-                            viewModel.search(query.value)
-                            viewModel.addRecentQuery(query.value)
-                            isSearched.value = true
-                            query.value = ""
-                            keyboard?.hide()
-                        }
-                    )
-                )
-                IconButton(
-                    onClick = { /* 알림 */ },
-                    modifier = Modifier
-
+                        .fillMaxWidth()
+                        .padding(horizontal = 15.dp, vertical = 15.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.bell_icon),
-                        contentDescription = "bell",
+                    TextField(
+                        value = query.value,
+                        onValueChange = {
+                            query.value = it
+                            isSearched.value = false
+                            isTextFieldEnabled.value = true
+                        },
+                        enabled = isTextFieldEnabled.value,
+                        placeholder = {
+                            Text(
+                                text = "궁금한 장소를 검색해 보세요.",
+                                style = Regular11,
+                                color = mainGray1
+                            )
+                        },
+                        singleLine = true,
                         modifier = Modifier
-                            .padding(start = 15.dp)
-                            .size(23.dp),
-                        tint = Color.Unspecified
+                            .heightIn(min = 45.dp)
+                            .weight(1f)
+                            .focusRequester(focusRequester),
+                        shape = RoundedCornerShape(3.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = mainGray4,
+                            unfocusedContainerColor = mainGray4,
+                            disabledContainerColor = mainGray4,
+                            errorContainerColor = Color.White,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            disabledIndicatorColor = Color.Transparent,
+                            errorIndicatorColor = Color.Transparent,
+                            cursorColor = if (isTextFieldEnabled.value) mainBlack else Color.Transparent,
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            disabledTextColor = Color.Black,
+                        ),
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                viewModel.search(query.value)
+                                viewModel.addRecentQuery(query.value)
+                                isSearched.value = true
+                                query.value = ""
+                                keyboard?.hide()
+                            }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.serch_icon),
+                                    contentDescription = "search",
+                                    modifier = Modifier
+                                        .padding(end = 20.dp)
+                                        .size(20.dp),
+                                    tint = Color.Unspecified
+                                )
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions.Default.copy(
+                            imeAction = ImeAction.Search
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onSearch = {
+                                viewModel.search(query.value)
+                                viewModel.addRecentQuery(query.value)
+                                isSearched.value = true
+                                query.value = ""
+                                keyboard?.hide()
+                            }
+                        )
                     )
+                    IconButton(
+                        onClick = { showAlarmScreen = true },
+                        modifier = Modifier
+
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.bell_icon),
+                            contentDescription = "bell",
+                            modifier = Modifier
+                                .padding(start = 15.dp)
+                                .size(23.dp),
+                            tint = Color.Unspecified
+                        )
+                    }
+                }
+                if (!isSearched.value) {
+                    RecentSearchContent(
+                        recentQueries = viewModel.recentQueries.value,
+                        loginResponse = loginResponse,
+                        viewModel = viewModel
+                    )
+                } else {
+                    SearchContent(
+                        popupList = popupList,
+                        onShowDetail = { popup ->
+                            selectedPopup = popup
+                            showDetail = true
+                        })
                 }
             }
-            if (!isSearched.value) {
-                RecentSearchContent(recentQueries = viewModel.recentQueries.value,
-                    loginResponse = loginResponse ,
-                    viewModel = viewModel)
-            } else {
-                SearchContent(popupList = popupList,
-                    onShowDetail = { popup ->
-                    selectedPopup = popup
-                    showDetail = true
-                })
-            }
         }
-    }
-    if (showDetail && selectedPopup != null) {
-        ContentDetail(
-            popup = selectedPopup!!,
-            onClose = { showDetail = false },
-            hideSatausBar = hideSatausBar
-        )
+        if (showDetail && selectedPopup != null) {
+            ContentDetail(
+                popup = selectedPopup!!,
+                onClose = { showDetail = false },
+                hideSatausBar = hideSatausBar
+            )
+        }
     }
 }
 

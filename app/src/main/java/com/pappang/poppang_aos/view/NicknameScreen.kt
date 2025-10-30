@@ -18,15 +18,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.pappang.poppang_aos.ui.theme.ExtraBold18
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pappang.poppang_aos.R
+import com.pappang.poppang_aos.ui.theme.ExtraBold24
+import com.pappang.poppang_aos.ui.theme.Medium12
+import com.pappang.poppang_aos.ui.theme.Medium15
+import com.pappang.poppang_aos.ui.theme.mainBlack
 import com.pappang.poppang_aos.ui.theme.mainGray1
 import com.pappang.poppang_aos.ui.theme.mainGray2
 import com.pappang.poppang_aos.ui.theme.mainOrange
-import com.pappang.poppang_aos.ui.theme.Medium12
-import com.pappang.poppang_aos.R
 import com.pappang.poppang_aos.viewmodel.DuplicateNickname
-import androidx.lifecycle.viewmodel.compose.viewModel
-
 
 
 @Composable
@@ -43,14 +44,14 @@ fun NicknameScreen(viewModel: DuplicateNickname = viewModel()) {
         Column {
             Text(
                 text = "닉네임을\n설정해주세요.",
-                style = ExtraBold18,
-                color = Color.Black,
+                style = ExtraBold24,
+                color = mainBlack,
                 modifier = Modifier
                     .padding(start = 24.dp, top = 44.dp)
             )
             Text(
                 text = "닉네임은 나중에 변경할 수 있습니다.",
-                style = Medium12,
+                style = Medium15,
                 color = mainGray1,
                 modifier = Modifier
                     .padding(start = 24.dp, top = 11.dp)

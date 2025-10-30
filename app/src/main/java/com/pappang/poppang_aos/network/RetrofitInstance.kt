@@ -63,4 +63,12 @@ object RetrofitInstance {
             .build()
             .create(SearchApi::class.java)
     }
+
+    val keywordApi: KeywordApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(KeywordApi::class.java)
+    }
 }
