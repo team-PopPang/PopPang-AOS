@@ -7,9 +7,10 @@ val apple = Color(0xFF000000)
 val google = Color(0xFFFFFFFF)
 
 val mainOrange = Color(0xFFFF7A00)
-val mainRed = Color(0xFFDD0000)
+val mainRed = Color(0xFFE06B00)
 val mainGreen = Color(0xFF006813)
 val mainWhite = Color(0xFFF1F1F1)
+
 val mainBlack = Color(0xFF333333)
 val mainGray1 = Color(0xFF777777)
 val mainGray2 = Color(0xFFAAAAAA)
