@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -44,6 +43,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -102,7 +102,7 @@ fun SearchScreen(onClose: () -> Unit,
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 15.dp, vertical = 15.dp),
+                        .padding(horizontal = 15.dp, vertical = 11.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.End
                 ) {
@@ -123,7 +123,6 @@ fun SearchScreen(onClose: () -> Unit,
                         },
                         singleLine = true,
                         modifier = Modifier
-                            .heightIn(min = 45.dp)
                             .weight(1f)
                             .focusRequester(focusRequester),
                         shape = RoundedCornerShape(3.dp),
@@ -153,7 +152,7 @@ fun SearchScreen(onClose: () -> Unit,
                                     painter = painterResource(id = R.drawable.serch_icon),
                                     contentDescription = "search",
                                     modifier = Modifier
-                                        .padding(end = 20.dp)
+                                        .padding(end = 10.dp)
                                         .size(20.dp),
                                     tint = Color.Unspecified
                                 )
@@ -293,8 +292,8 @@ fun SearchContent(popupList: List<PopupEvent>, onShowDetail: (PopupEvent) -> Uni
                                     .padding(top = 5.dp)
                             )
                             Text(
-                                text = popup.startDate + " - " + popup.endDate,
-                                style = Regular12,
+                                text = popup.startDateFormatted + " - " + popup.endDateFormatted,
+                                style = Regular12.copy(letterSpacing = (-1).sp),
                                 color = mainGray1,
                                 modifier = Modifier
                                     .padding(top = 4.dp)
