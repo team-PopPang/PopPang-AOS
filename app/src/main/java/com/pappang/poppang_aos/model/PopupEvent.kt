@@ -23,4 +23,8 @@ data class PopupEvent(
 ){
     val fullImageUrlList: List<String>
         get() = imageUrlList.map { BuildConfig.URL_IMAGE + it }
+    val startDateFormatted: String
+        get() = startDate?.replace("-", ".") ?: ""
+    val endDateFormatted: String
+        get() = endDate?.replace("-", ".") ?: ""
 }
