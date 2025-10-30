@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -37,6 +38,7 @@ android {
         val popupapi = localProperties.getProperty("POPUP_API") ?: ""
         val popupcomingapi = localProperties.getProperty("POPUP_COMING_API") ?: ""
         val searchapi = localProperties.getProperty("SEARCH_API") ?: ""
+        val keywordapi = localProperties.getProperty("KEYWORD_API") ?: ""
         buildConfigField("String", "KAKAO_KEY", "\"$kakaoKey\"")
         buildConfigField("String", "GOOGLE_KEY", "\"$googleKey\"")
         manifestPlaceholders["KAKAO_KEY"] = kakaoKey
@@ -54,6 +56,7 @@ android {
         buildConfigField("String", "URL_IMAGE", "\"$urlimage\"")
         buildConfigField("String", "POPUP_COMING_API", "\"$popupcomingapi\"")
         buildConfigField("String", "SEARCH_API", "\"$searchapi\"")
+        buildConfigField("String", "KEYWORD_API", "\"$keywordapi\"")
     }
 
     buildTypes {
@@ -98,6 +101,8 @@ dependencies {
     implementation(libs.google.services)
     implementation(libs.coil.compose)
     implementation(libs.androidx.datastore.preferences)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
