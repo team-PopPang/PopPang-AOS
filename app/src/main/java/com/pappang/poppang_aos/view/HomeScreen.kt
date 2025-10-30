@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -46,11 +45,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.pappang.poppang_aos.R
 import com.pappang.poppang_aos.model.LoginResponse
 import com.pappang.poppang_aos.model.PopupEvent
+import com.pappang.poppang_aos.ui.theme.Black20
 import com.pappang.poppang_aos.ui.theme.Bold10
 import com.pappang.poppang_aos.ui.theme.Bold15
 import com.pappang.poppang_aos.ui.theme.Bold17
@@ -64,7 +65,6 @@ import com.pappang.poppang_aos.ui.theme.Regular12
 import com.pappang.poppang_aos.ui.theme.Regular15
 import com.pappang.poppang_aos.ui.theme.mainBlack
 import com.pappang.poppang_aos.ui.theme.mainGray1
-import com.pappang.poppang_aos.ui.theme.mainGray14
 import com.pappang.poppang_aos.ui.theme.mainGray2
 import com.pappang.poppang_aos.ui.theme.mainGray4
 import com.pappang.poppang_aos.ui.theme.mainGray5
@@ -137,57 +137,45 @@ fun HomeScreen(
 
 @Composable
 private fun TopSearchBar(modifier: Modifier, onSearchBarClick: () -> Unit = {}, onAlarmClick: () -> Unit = {}) {
-    Row(
-        modifier = Modifier
+    Box(
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 15.dp, vertical = 15.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.End
+            .background(Color.White)
+            .padding(horizontal = 15.dp, vertical = 15.dp)
     ) {
-        Box(
-            modifier = modifier
-                .heightIn(min = 45.dp)
-                .weight(1f)
-                .clickable {
-                    onSearchBarClick()
-                }
-                .background(mainGray4, RoundedCornerShape(3.dp))
-                .padding(horizontal = 15.dp, vertical = 3.dp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = "궁금한 장소를 검색해 보세요.",
-                    style = Regular11,
-                    color = mainGray1,
-
-                    )
-                IconButton({}) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.serch_icon),
-                        contentDescription = "search",
-                        modifier = Modifier
-                            .padding(start = 10.dp)
-                            .size(20.dp),
-                        tint = Color.Unspecified
-                    )
-                }
-            }
-        }
-        IconButton(
-            onClick = { onAlarmClick() },
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.bell_icon),
-                contentDescription = "bell",
+            Text(
+                text = "POP PANG",
+                style = Black20,
+                color = mainOrange,
                 modifier = Modifier
-                    .padding(start = 15.dp)
-                    .size(23.dp),
-                tint = Color.Unspecified
+                    .weight(1f)
             )
+            IconButton(onClick = { onSearchBarClick() }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.serch_icon),
+                    contentDescription = "search",
+                    modifier = Modifier
+                        .padding(end = 10.dp)
+                        .size(20.dp),
+                    tint = Color.Unspecified
+                )
+            }
+            IconButton(
+                onClick = { onAlarmClick() },
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.bell_icon),
+                    contentDescription = "bell",
+                    modifier = Modifier
+                        .padding(start = 15.dp)
+                        .size(23.dp),
+                    tint = Color.Unspecified
+                )
+            }
         }
     }
 }
@@ -280,16 +268,13 @@ fun BoxCarousel(onShowDetail: (PopupEvent) -> Unit, popupcomingList: List<PopupE
                     style = Medium11,
                     color = mainOrange,
                     modifier = Modifier
-                        .padding(bottom = 3.dp)
                 )
                 Text(
                     text = "곧 생기는 팝업",
                     style = Bold15,
                     color = mainBlack,
                     modifier = Modifier
-                        .padding(
-                            top = 6.dp
-                        )
+                        .padding(top = 5.dp)
                 )
             }
             Icon(
@@ -316,7 +301,7 @@ fun BoxCarousel(onShowDetail: (PopupEvent) -> Unit, popupcomingList: List<PopupE
                     .width(283.dp)
                     .height(138.dp)
                     .clickable { onShowDetail(popup) }
-                    .border(1.dp, mainGray14, RoundedCornerShape(5.dp))
+                    .border(1.dp, mainGray5, RoundedCornerShape(5.dp))
                     .padding(10.dp)
             ) {
                 Box(modifier = Modifier.width(94.4.dp).height(118.dp)) {
@@ -411,12 +396,12 @@ fun LocalFilterButton() {
         ) {
             Column(
                 modifier = Modifier
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 28.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 20.dp, bottom = 30.dp),
+                        .padding(top = 28.dp, bottom = 30.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -475,8 +460,8 @@ fun SortType() {
 
     Box(modifier = Modifier
         .clickable { showSheet = true }
-        .background(mainGray5, RoundedCornerShape(20.dp))
-        .border(1.dp, mainGray1, RoundedCornerShape(20.dp))
+        .background(Color.White, RoundedCornerShape(20.dp))
+        .border(0.dp, mainGray1, RoundedCornerShape(20.dp))
         .padding(horizontal = 10.dp, vertical = 8.dp)
     ){
         Row {
@@ -506,14 +491,14 @@ fun SortType() {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth().
-                        padding(top = 20.dp, bottom = 30.dp),
+                        padding(start = 12.dp, top = 28.dp, bottom = 30.dp, end = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "정렬",
                         style = Bold17,
-                        color = mainBlack
+                        color = mainBlack,
                     )
                     Icon(
                         painter = painterResource(id = R.drawable.close_icon),
@@ -631,11 +616,11 @@ fun MainContent(onShowDetail: (PopupEvent) -> Unit, popupList: List<PopupEvent>)
                                     .padding(top = 5.dp)
                             )
                             Text(
-                                text = popup.startDate + " - " + popup.endDate,
-                                style = Regular12,
+                                text = popup.startDateFormatted + " - " + popup.endDateFormatted,
+                                style = Regular12.copy(letterSpacing = (-1).sp),
                                 color = mainGray1,
                                 modifier = Modifier
-                                    .padding(top = 4.dp)
+                                    .padding(top = 5.dp)
                             )
                         }
                     }

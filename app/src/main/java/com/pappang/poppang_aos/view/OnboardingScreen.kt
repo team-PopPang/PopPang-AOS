@@ -115,7 +115,7 @@ fun PageDot(
             .size(size)
             .clip(CircleShape)
             .background(
-                color = if (isSelected) Color.Black
+                color = if (isSelected) Color.White
                 else Color.Black.copy(0.3f)
             )
     )

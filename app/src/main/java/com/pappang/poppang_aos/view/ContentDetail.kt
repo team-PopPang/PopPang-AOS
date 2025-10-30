@@ -27,23 +27,21 @@ import androidx.compose.ui.Alignment.Companion.BottomCenter
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Alignment.Companion.TopStart
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale.Companion.Crop
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.pappang.poppang_aos.R
 import com.pappang.poppang_aos.model.PopupEvent
-import com.pappang.poppang_aos.ui.theme.Bold17
-import com.pappang.poppang_aos.ui.theme.Medium12
+import com.pappang.poppang_aos.ui.theme.Bold20
 import com.pappang.poppang_aos.ui.theme.Medium15
 import com.pappang.poppang_aos.ui.theme.Regular12
-import com.pappang.poppang_aos.ui.theme.lowblack
+import com.pappang.poppang_aos.ui.theme.Regular15
 import com.pappang.poppang_aos.ui.theme.mainBlack
 import com.pappang.poppang_aos.ui.theme.mainGray1
 import com.pappang.poppang_aos.ui.theme.mainGray5
@@ -75,8 +73,8 @@ fun ContentDetail(popup: PopupEvent, onClose: () -> Unit, hideSatausBar: (Boolea
                     modifier = Modifier
                         .padding(horizontal = 24.dp)
                 ) {
-                    CustomButton3(onClick = {}, text = "찜하기", modifier = Modifier.weight(1f))
                     CustomButton4(onClick = {}, text = "친구에게 공유하기", modifier = Modifier.weight(1f))
+                    CustomButton3(onClick = {}, text = "찜하기", modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -91,7 +89,7 @@ fun ContentDetail(popup: PopupEvent, onClose: () -> Unit, hideSatausBar: (Boolea
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(394.dp)
+                    .height(450.dp)
             ) {
                 HorizontalPager(
                     state = pagerState,
@@ -105,7 +103,7 @@ fun ContentDetail(popup: PopupEvent, onClose: () -> Unit, hideSatausBar: (Boolea
                         contentDescription = popup.name,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(394.dp),
+                            .height(450.dp),
                         contentScale = Crop
                     )
                 }
@@ -130,7 +128,7 @@ fun ContentDetail(popup: PopupEvent, onClose: () -> Unit, hideSatausBar: (Boolea
                         Icon(
                             painter = painterResource(id = R.drawable.back_icon),
                             contentDescription = "뒤로가기",
-                            tint = Color.Black
+                            tint = Color.White
                         )
                     }
                     Spacer(modifier = Modifier.weight(1f))
@@ -138,42 +136,37 @@ fun ContentDetail(popup: PopupEvent, onClose: () -> Unit, hideSatausBar: (Boolea
             }
             Text(
                 text = popup.name,
-                style = Bold17,
+                style = Bold20,
                 color = mainBlack,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
+                    .padding(start = 20.dp, top = 20.dp, end = 20.dp)
 
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(2.dp)
-                    .shadow(
-                        elevation = 1.dp,
-                        shape = RectangleShape,
-                        clip = false,
-                        ambientColor = lowblack.copy(alpha = 0.13f),
-                        spotColor = lowblack.copy(alpha = 0.13f)
-                    )
             )
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, top = 24.dp)
+                    .padding(start = 24.dp, end = 24.dp, top = 20.dp)
             ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(mainGray5)
+                )
+                Spacer(modifier = Modifier.height(20.dp))
                 Row(
                     modifier = Modifier.padding(bottom = 8.dp)
                 ) {
                     Text(
                         text = "운영 장소",
-                        style = Regular12,
+                        style = Regular15,
                         color = mainGray1,
                         modifier = Modifier.padding(end = 20.dp)
                     )
                     Text(
                         text = popup.roadAddress,
-                        style = Medium12,
+                        style = Regular15,
                         color = mainBlack,
                     )
                 }
@@ -182,56 +175,56 @@ fun ContentDetail(popup: PopupEvent, onClose: () -> Unit, hideSatausBar: (Boolea
                 ) {
                     Text(
                         text = "운영 날짜",
-                        style = Regular12,
+                        style = Regular15,
                         color = mainGray1,
                         modifier = Modifier.padding(end = 20.dp)
                     )
                     Text(
-                        text = popup.startDate + " ~ " + popup.endDate,
-                        style = Medium12,
+                        text = popup.startDateFormatted + " - " + popup.endDateFormatted,
+                        style = Regular15.copy(letterSpacing = (-1).sp),
                         color = mainBlack,
                     )
                 }
                 Row {
                     Text(
                         text = "운영 시간",
-                        style = Regular12,
+                        style = Regular15,
                         color = mainGray1,
                         modifier = Modifier.padding(end = 20.dp)
                     )
                     Text(
                         text = popup.openTime + " ~ " + popup.closeTime,
-                        style = Medium12,
+                        style = Regular15,
                         color = mainBlack,
                     )
                 }
-                Spacer(modifier = Modifier.height(15.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(1.dp)
                         .background(mainGray5)
                 )
-                Spacer(modifier = Modifier.height(15.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 Text(
                     text =popup.captionSummary,
                     style = Regular12,
                     color = mainBlack,
                 )
-                Spacer(modifier = Modifier.height(15.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(1.dp)
                         .background(mainGray5)
                 )
-                Spacer(modifier = Modifier.height(15.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 Text(
                     text = "SNS / 홈페이지",
                     style = Medium15,
                     color = mainBlack,
                 )
-                Spacer(modifier = Modifier.height(15.dp))
+                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     }

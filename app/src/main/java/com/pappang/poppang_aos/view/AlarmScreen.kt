@@ -337,7 +337,7 @@ fun HomeKeywordScreen(loginResponse: LoginResponse?, viewModel: AlarmKeywordView
                 TextField(
                     value = keyword.value,
                     onValueChange = { keyword.value = it },
-                    placeholder = { Text("알림받을 키워드를 입력해주세요.", style = Medium15, color = mainGray2) },
+                    placeholder = { Text("알림받을 키워드를 입력해주세요.", style = Medium12, color = mainGray2) },
                     modifier = Modifier
                         .weight(1f)
                         .padding(horizontal = 24.dp),
