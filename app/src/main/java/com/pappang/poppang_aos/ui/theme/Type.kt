@@ -6,6 +6,13 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.sp
 import com.pappang.poppang_aos.R
 
+val Black20 = TextStyle(
+    fontFamily = FontFamily(Font(R.font.scdream9)),
+    //fontWeight = FontWeight.Black,
+    fontSize = 20.sp,
+    letterSpacing = 0.4.sp,
+    lineHeight = 28.sp
+)
 //ExtraBold
 
 val ExtraBold24 = TextStyle(
@@ -25,6 +32,13 @@ val ExtraBold18 = TextStyle(
 
 //Bold
 
+val Bold20 = TextStyle(
+    fontFamily = FontFamily(Font(R.font.scdream6)),
+    //fontWeight = FontWeight.Bold,
+    fontSize = 20.sp,
+    letterSpacing = 0.4.sp,
+    lineHeight = 28.sp
+)
 val Bold17 = TextStyle(
     fontFamily = FontFamily(Font(R.font.scdream6)),
     //fontWeight = FontWeight.Bold,
