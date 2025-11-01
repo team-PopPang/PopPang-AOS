@@ -35,8 +35,9 @@ android {
         val signupapikakao = localProperties.getProperty("SIGNUP_API_KAKAO") ?: ""
         val signupapigoogle = localProperties.getProperty("SIGNUP_API_GOOGLE") ?: ""
         val catagoryitemapi = localProperties.getProperty("CATEGORY_ITEM_API") ?: ""
-        val popupapi = localProperties.getProperty("POPUP_API") ?: ""
+        val popupprogressapi = localProperties.getProperty("POPUP_PROGRESS_API") ?: ""
         val popupcomingapi = localProperties.getProperty("POPUP_COMING_API") ?: ""
+        val popupapi = localProperties.getProperty("POPUP_API") ?: ""
         val searchapi = localProperties.getProperty("SEARCH_API") ?: ""
         val keywordapi = localProperties.getProperty("KEYWORD_API") ?: ""
         buildConfigField("String", "KAKAO_KEY", "\"$kakaoKey\"")
@@ -52,9 +53,10 @@ android {
         buildConfigField("String", "SIGNUP_API_KAKAO", "\"$signupapikakao\"")
         buildConfigField("String", "SIGNUP_API_GOOGLE", "\"$signupapigoogle\"")
         buildConfigField("String", "CATEGORY_ITEM_API", "\"$catagoryitemapi\"")
-        buildConfigField("String", "POPUP_API", "\"$popupapi\"")
+        buildConfigField("String", "POPUP_PROGRESS_API", "\"$popupprogressapi\"")
         buildConfigField("String", "URL_IMAGE", "\"$urlimage\"")
         buildConfigField("String", "POPUP_COMING_API", "\"$popupcomingapi\"")
+        buildConfigField("String", "POPUP_API", "\"$popupapi\"")
         buildConfigField("String", "SEARCH_API", "\"$searchapi\"")
         buildConfigField("String", "KEYWORD_API", "\"$keywordapi\"")
     }
