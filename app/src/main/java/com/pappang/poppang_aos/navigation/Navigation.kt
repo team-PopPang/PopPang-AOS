@@ -26,6 +26,7 @@ import com.pappang.poppang_aos.viewmodel.AutoLoginViewModel
 import com.pappang.poppang_aos.viewmodel.CategoryItemViewModel
 import com.pappang.poppang_aos.viewmodel.DuplicateNickname
 import com.pappang.poppang_aos.viewmodel.PopupComingViewModel
+import com.pappang.poppang_aos.viewmodel.PopupProgressViewModel
 import com.pappang.poppang_aos.viewmodel.PopupViewModel
 import kotlinx.coroutines.delay
 
@@ -34,8 +35,9 @@ fun Navigation(
     nicknameViewModel: DuplicateNickname,
     keywordViewModel: AddKeywordViewModel,
     categoryViewModel: CategoryItemViewModel,
-    popupViewModel: PopupViewModel,
+    popupprogressViewModel: PopupProgressViewModel,
     popupcomingViewModel: PopupComingViewModel,
+    popupViewModel: PopupViewModel,
     hideSystemBars: (Boolean) -> Unit,
     hideStatusBar: (Boolean) -> Unit
 ) {
@@ -153,8 +155,9 @@ fun Navigation(
             composable("main") {
                 MainScreen(
                     hideStatusBar,
-                    popupViewModel = popupViewModel,
+                    popupprogressViewModel = popupprogressViewModel,
                     popupcomingViewModel = popupcomingViewModel,
+                    popupViewModel = popupViewModel,
                     loginResponse = loginResponse)
             }
         }

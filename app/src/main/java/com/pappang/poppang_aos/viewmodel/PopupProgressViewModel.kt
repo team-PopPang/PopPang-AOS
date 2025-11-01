@@ -8,23 +8,24 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class PopupViewModel: ViewModel() {
+class PopupProgressViewModel: ViewModel() {
     private val _popupList = MutableStateFlow<List<PopupEvent>>(emptyList())
     private var isLoaded = false
-    val popupList: StateFlow<List<PopupEvent>> = _popupList
+    val popupprogressList: StateFlow<List<PopupEvent>> = _popupList
 
-    fun fetchPopupEvents() {
+    fun fetchPopupProgressEvents() {
         viewModelScope.launch {
             try {
                 val response =
-                    RetrofitInstance.popupApi.getPopupEvent("all")
+                    RetrofitInstance.popupProgressApi.getPopupProgressEvent("all") // API에 맞게 수정
                 _popupList.value = response
             } catch (e: Exception) {
             }
         }
     }
-    fun fetchPopupEventsOnce() {
+    fun fetchPopupProgressEventsOnce() {
         if (isLoaded) return
         isLoaded = true
-        fetchPopupEvents()
-    }}
+        fetchPopupProgressEvents()
+    }
+}

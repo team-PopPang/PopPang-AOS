@@ -30,13 +30,15 @@ import com.pappang.poppang_aos.model.LoginResponse
 import com.pappang.poppang_aos.model.NavIcon
 import com.pappang.poppang_aos.ui.theme.Light10
 import com.pappang.poppang_aos.viewmodel.PopupComingViewModel
+import com.pappang.poppang_aos.viewmodel.PopupProgressViewModel
 import com.pappang.poppang_aos.viewmodel.PopupViewModel
 
 @Composable
 fun MainScreen(
     hideSatausBar: (Boolean) -> Unit = {},
-    popupViewModel: PopupViewModel,
+    popupprogressViewModel: PopupProgressViewModel,
     popupcomingViewModel: PopupComingViewModel,
+    popupViewModel: PopupViewModel,
     loginResponse: LoginResponse? = null
 ) {
     var selectedIndex by rememberSaveable { mutableStateOf(0) }
@@ -44,13 +46,15 @@ fun MainScreen(
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var showAlarm by rememberSaveable { mutableStateOf(false) }
     val items = BottomNavItem.items
-    val popupList by popupViewModel.popupList.collectAsState()
+    val popupprogressList by popupprogressViewModel.popupprogressList.collectAsState()
     val popupcomingList by popupcomingViewModel.popupcomingList.collectAsState()
+    val popupList by popupViewModel.popupList.collectAsState()
     val hideBottomNav = showDetail || showSearch || showAlarm
 
     LaunchedEffect(Unit) {
-        popupViewModel.fetchPopupEventsOnce()
+        popupprogressViewModel.fetchPopupProgressEventsOnce()
         popupcomingViewModel.fetchPopupComingEventsOnce()
+        popupViewModel.fetchPopupEventsOnce()
     }
 
     Scaffold(
@@ -110,11 +114,18 @@ fun MainScreen(
                     setSearchScreen = { showSearch = it },
                     showAlarm = showAlarm,
                     setShowAlarm = { showAlarm = it },
-                    popupList = popupList,
+                    popupprogressList = popupprogressList,
                     popupcomingList = popupcomingList,
                     loginResponse = loginResponse
                 )
-                is BottomNavItem.Calendar -> CalendarScreen()
+                is BottomNavItem.Calendar -> CalendarScreen(
+                    hideSatausBar,
+                    popupList = popupList,
+                    showDetail = showDetail,
+                    setShowDetail = { showDetail = it },
+                    showAlarm = showAlarm,
+                    setShowAlarm = { showAlarm = it },
+                    loginResponse = loginResponse)
                 is BottomNavItem.Map -> MapScreen()
                 is BottomNavItem.PopPang -> LikeScreen()
                 is BottomNavItem.My -> MeScreen()

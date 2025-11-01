@@ -40,12 +40,12 @@ object RetrofitInstance {
             .create(CategoryItemApi::class.java)
     }
 
-    val popupApi: PopupApi by lazy {
+    val popupProgressApi: PopupProgressApi by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(PopupApi::class.java)
+            .create(PopupProgressApi::class.java)
     }
 
     val popupComingApi: PopupComingApi by lazy {
@@ -56,6 +56,13 @@ object RetrofitInstance {
             .create(PopupComingApi::class.java)
     }
 
+    val popupApi: PopupApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(PopupApi::class.java)
+    }
     val searchApi: SearchApi by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
