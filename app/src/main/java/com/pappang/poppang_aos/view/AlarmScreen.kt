@@ -36,7 +36,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign.Companion.Center
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pappang.poppang_aos.R
@@ -93,11 +95,9 @@ fun AlarmTopBar(onClose: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(45.dp)
+            .padding(vertical = 15.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxSize(),
             verticalAlignment = CenterVertically
         ) {
             Image(
@@ -108,22 +108,15 @@ fun AlarmTopBar(onClose: () -> Unit) {
                     .size(14.dp)
                     .clickable { onClose() }
             )
-            Spacer(modifier = Modifier.weight(1f))
             Text(
                 text = "알림",
                 style = Medium18,
                 color = Color.Black,
                 modifier = Modifier
-                    .align(CenterVertically)
-                    .clickable{}
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Image(
-                painter = painterResource(id = R.drawable.setting_icon),
-                contentDescription = "알림 설정",
-                modifier = Modifier
-                    .padding(end = 24.dp)
-                    .size(16.dp)
+                    .fillMaxWidth()
+                    .padding(end = 31.dp)
+                    .align(CenterVertically),
+                textAlign = Center
             )
         }
     }
@@ -211,7 +204,7 @@ fun ActivityTab() {
                                 .width(106.dp)
                                 .align(CenterVertically)
                         )
-                        Spacer(modifier = Modifier.width(18.dp))
+                        Spacer(modifier = Modifier.width(20.dp))
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -425,5 +418,11 @@ fun HomeKeywordList(
             )
         }
     }
+}
+
+@Composable
+@Preview
+fun AlarmScreenPreview() {
+    AlarmScreen(onClose = {}, loginResponse = null)
 }
 

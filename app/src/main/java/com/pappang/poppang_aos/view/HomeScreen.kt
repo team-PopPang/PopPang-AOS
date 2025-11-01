@@ -83,7 +83,7 @@ fun HomeScreen(
     setSearchScreen: (Boolean) -> Unit,
     showAlarm: Boolean = false,
     setShowAlarm: (Boolean) -> Unit,
-    popupList: List<PopupEvent>,
+    popupprogressList: List<PopupEvent>,
     popupcomingList: List<PopupEvent>,
     loginResponse: LoginResponse?
 ) {
@@ -109,6 +109,7 @@ fun HomeScreen(
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
                 ) {
+                    Spacer(modifier = Modifier.height(15.dp))
                     BannerCarousel()
                     Spacer(modifier = Modifier.height(50.dp))
                     BoxCarousel(popupcomingList = popupcomingList, onShowDetail = { popup ->
@@ -118,7 +119,7 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(50.dp))
                     FilterSection()
                     Spacer(modifier = Modifier.height(15.dp))
-                    MainContent(popupList = popupList, onShowDetail = { popup ->
+                    MainContent(popupprogressList = popupprogressList, onShowDetail = { popup ->
                         selectedPopup = popup
                         setShowDetail(true)
                     })
@@ -141,7 +142,7 @@ private fun TopSearchBar(modifier: Modifier, onSearchBarClick: () -> Unit = {}, 
         modifier = modifier
             .fillMaxWidth()
             .background(Color.White)
-            .padding(horizontal = 15.dp, vertical = 15.dp)
+            .padding(start = 15.dp,end =15.dp, top = 15.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -567,13 +568,13 @@ fun FilterSection() {
 }
 
 @Composable
-fun MainContent(onShowDetail: (PopupEvent) -> Unit, popupList: List<PopupEvent>) {
+fun MainContent(onShowDetail: (PopupEvent) -> Unit, popupprogressList: List<PopupEvent>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 15.dp, end = 15.dp)
     ) {
-        popupList.chunked(2).forEach { pair ->
+        popupprogressList.chunked(2).forEach { pair ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -639,6 +640,6 @@ fun MainContent(onShowDetail: (PopupEvent) -> Unit, popupList: List<PopupEvent>)
 @Composable
 @Preview
 fun HomeScreenPreview() {
-    HomeScreen(setSearchScreen = {}, setShowDetail = {}, setShowAlarm = {}, popupList = listOf(), popupcomingList = listOf(), loginResponse = LoginResponse("", "", "", "", "", "", "",false) )
+    HomeScreen(setSearchScreen = {}, setShowDetail = {}, setShowAlarm = {}, popupprogressList = listOf(), popupcomingList = listOf(), loginResponse = LoginResponse("", "", "", "", "", "", "",false) )
 }
 
