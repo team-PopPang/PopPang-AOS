@@ -113,6 +113,14 @@ val Medium11 = TextStyle(
     lineHeight = 15.4.sp
 )
 
+val Medium10 = TextStyle(
+    fontFamily = FontFamily(Font(R.font.scdream5)),
+    //fontWeight = FontWeight.Medium,
+    fontSize = 10.sp,
+    letterSpacing = 0.2.sp,
+    lineHeight = 14.sp
+)
+
 val Medium8 = TextStyle(
     fontFamily = FontFamily(Font(R.font.scdream5)),
     //fontWeight = FontWeight.Medium,
