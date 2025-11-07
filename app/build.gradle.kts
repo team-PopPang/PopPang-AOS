@@ -40,6 +40,7 @@ android {
         val popupapi = localProperties.getProperty("POPUP_API") ?: ""
         val searchapi = localProperties.getProperty("SEARCH_API") ?: ""
         val keywordapi = localProperties.getProperty("KEYWORD_API") ?: ""
+        val navermapkey = localProperties.getProperty("NAVER_MAP_KEY") ?: ""
         buildConfigField("String", "KAKAO_KEY", "\"$kakaoKey\"")
         buildConfigField("String", "GOOGLE_KEY", "\"$googleKey\"")
         manifestPlaceholders["KAKAO_KEY"] = kakaoKey
@@ -59,6 +60,7 @@ android {
         buildConfigField("String", "POPUP_API", "\"$popupapi\"")
         buildConfigField("String", "SEARCH_API", "\"$searchapi\"")
         buildConfigField("String", "KEYWORD_API", "\"$keywordapi\"")
+        manifestPlaceholders["NAVER_MAP_KEY"] = navermapkey
     }
 
     buildTypes {
@@ -105,6 +107,9 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+    implementation (libs.naver.map.compose)
+    implementation (libs.play.services.location)
+    implementation (libs.naver.map.location)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
