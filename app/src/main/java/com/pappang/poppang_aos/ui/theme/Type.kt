@@ -160,6 +160,14 @@ val Regular11 = TextStyle(
     letterSpacing = 0.22.sp,
     lineHeight = 15.4.sp
 )
+
+val Regular10 = TextStyle(
+    fontFamily = FontFamily(Font(R.font.scdream4)),
+    //fontWeight = FontWeight.Regular,
+    fontSize = 10.sp,
+    letterSpacing = 0.2.sp,
+    lineHeight = 14.sp
+)
 val Regular9 = TextStyle(
     fontFamily = FontFamily(Font(R.font.scdream4)),
     //fontWeight = FontWeight.Regular,
