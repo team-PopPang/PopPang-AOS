@@ -135,6 +135,7 @@ fun CalendarTopBar(onAlarmClick: () -> Unit) {
         }
     }
 }
+
 @Composable
 fun CustomCalendar(popupList: List<PopupEvent>,
                    selectedDate: LocalDate?,
@@ -386,8 +387,7 @@ fun CalendarContent(
                                                 )
                                                 Spacer(modifier = Modifier.height(3.dp))
                                                 Text(
-                                                    text = popup.roadAddress.split(" ").take(2)
-                                                        .joinToString(" "),
+                                                    text = popup.startDateFormatted + " - " + popup.endDateFormatted,
                                                     style = Regular12,
                                                     color = mainGray1
                                                 )
@@ -415,7 +415,7 @@ fun CalendarContent(
                                                 )
                                                 Spacer(modifier = Modifier.width(10.dp))
                                                 Icon(
-                                                    painter = painterResource(id = R.drawable.heart_icon),
+                                                    painter = painterResource(id = R.drawable.heart_gray_icon),
                                                     contentDescription = "새알림 아이콘",
                                                     tint = mainRed,
                                                     modifier = Modifier.size(12.dp)
