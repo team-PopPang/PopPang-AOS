@@ -258,7 +258,7 @@ fun ActivityTab() {
                                         )
                                         Spacer(modifier = Modifier.width(10.dp))
                                         Icon(
-                                            painter = painterResource(id = R.drawable.heart_icon),
+                                            painter = painterResource(id = R.drawable.heart_gray_icon),
                                             contentDescription = "새알림 아이콘",
                                             tint = mainRed,
                                             modifier = Modifier.size(12.dp)
