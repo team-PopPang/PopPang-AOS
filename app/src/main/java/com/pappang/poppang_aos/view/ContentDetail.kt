@@ -253,6 +253,8 @@ fun ContentDetailPreview() {
             "/images/popup2.jpg"
         ),
         mediaType = "image",
-        recommend = "친구에게 추천하고 싶은 팝업 스토어입니다."
+        recommend = "친구에게 추천하고 싶은 팝업 스토어입니다.",
+        favoriteCount = 150.0,
+        viewCount = 2000.0
     ), hideSatausBar = {})
 }
