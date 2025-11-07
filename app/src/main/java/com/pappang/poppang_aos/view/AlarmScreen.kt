@@ -136,15 +136,14 @@ fun AlarmItem( selectedIndex: MutableState<Int>) {
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(37.dp),
+                    .height(37.dp)
+                    .clickable { selectedIndex.value = 0 },
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "활동",
                     style = Medium12,
                     color = if (selectedIndex.value == 0) mainRed else mainGray3,
-                    modifier = Modifier
-                        .clickable { selectedIndex.value = 0 }
                 )
                 Box(
                     modifier = Modifier
@@ -157,15 +156,14 @@ fun AlarmItem( selectedIndex: MutableState<Int>) {
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(37.dp),
+                    .height(37.dp)
+                    .clickable { selectedIndex.value = 1 },
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "키워드 설정",
                     style = Medium12,
                     color = if (selectedIndex.value == 1) mainRed else mainGray3,
-                    modifier = Modifier
-                        .clickable { selectedIndex.value = 1 }
                 )
                 Box(
                     modifier = Modifier
