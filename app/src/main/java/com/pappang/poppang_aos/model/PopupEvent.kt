@@ -19,7 +19,9 @@ data class PopupEvent(
     val captionSummary: String,
     val imageUrlList: List<String>,
     val mediaType: String,
-    val recommend: String
+    val recommend: String,
+    val favoriteCount: Double,
+    val viewCount: Double,
 ){
     val fullImageUrlList: List<String>
         get() = imageUrlList.map { BuildConfig.URL_IMAGE + it }
