@@ -45,11 +45,12 @@ fun MainScreen(
     var showDetail by rememberSaveable { mutableStateOf(false) }
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var showAlarm by rememberSaveable { mutableStateOf(false) }
+    var showProfile by rememberSaveable { mutableStateOf(false) }
     val items = BottomNavItem.items
     val popupprogressList by popupprogressViewModel.popupprogressList.collectAsState()
     val popupcomingList by popupcomingViewModel.popupcomingList.collectAsState()
     val popupList by popupViewModel.popupList.collectAsState()
-    val hideBottomNav = showDetail || showSearch || showAlarm
+    val hideBottomNav = showDetail || showSearch || showAlarm || showProfile
 
     LaunchedEffect(Unit) {
         popupprogressViewModel.fetchPopupProgressEventsOnce()
@@ -126,9 +127,30 @@ fun MainScreen(
                     showAlarm = showAlarm,
                     setShowAlarm = { showAlarm = it },
                     loginResponse = loginResponse)
-                is BottomNavItem.Map -> MapScreen()
-                is BottomNavItem.PopPang -> LikeScreen()
-                is BottomNavItem.My -> MeScreen()
+                is BottomNavItem.Map -> MapScreen(
+                    hideSatausBar,
+                    popupList = popupList,
+                    showDetail = showDetail,
+                    setShowDetail = { showDetail = it },
+                    showAlarm = showAlarm,
+                    setShowAlarm = { showAlarm = it },
+                    loginResponse = loginResponse)
+                is BottomNavItem.PopPang -> LikeScreen(
+                    hideSatausBar,
+                    popupList = popupList,
+                    showDetail = showDetail,
+                    setShowDetail = { showDetail = it },
+                    showAlarm = showAlarm,
+                    setShowAlarm = { showAlarm = it },
+                    loginResponse = loginResponse
+                )
+                is BottomNavItem.My -> MeScreen(
+                    showAlarm = showAlarm,
+                    setShowAlarm = { showAlarm = it },
+                    showProfile = showProfile,
+                    setShowProfile = { showProfile = it },
+                    loginResponse = loginResponse
+                )
             }
         }
     }
