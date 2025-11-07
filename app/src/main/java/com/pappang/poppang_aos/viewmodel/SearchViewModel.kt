@@ -7,11 +7,15 @@ import com.pappang.poppang_aos.datastore.SearchQueryDataStore
 import com.pappang.poppang_aos.model.PopupEvent
 import com.pappang.poppang_aos.network.RetrofitInstance
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class SearchViewModel(private val searchQueryDataStore: SearchQueryDataStore) : ViewModel() {
     val popupList = mutableStateOf<List<PopupEvent>>(emptyList())
     val recentQueries = mutableStateOf<List<String>>(emptyList())
+    private val _searchedPopups = MutableStateFlow<List<PopupEvent>>(emptyList())
+    val searchedPopups: StateFlow<List<PopupEvent>> = _searchedPopups
 
     private var searchJob: Job? = null
 
@@ -50,4 +54,5 @@ class SearchViewModel(private val searchQueryDataStore: SearchQueryDataStore) : 
             recentQueries.value = searchQueryDataStore.getQueries()
         }
     }
+
 }
