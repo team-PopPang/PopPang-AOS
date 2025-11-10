@@ -41,6 +41,11 @@ android {
         val searchapi = localProperties.getProperty("SEARCH_API") ?: ""
         val keywordapi = localProperties.getProperty("KEYWORD_API") ?: ""
         val navermapkey = localProperties.getProperty("NAVER_MAP_KEY") ?: ""
+        val favoriteapi = localProperties.getProperty("FAVORITE_API") ?: ""
+        val favoriteusercheckapi = localProperties.getProperty("FAVORITE_USER_CHECK_API") ?: ""
+        val favoritecheckapi = localProperties.getProperty("FAVORITE_CHECK_API") ?: ""
+        val viewcountapi = localProperties.getProperty("VIEW_COUNT_API") ?: ""
+        val viewcounttotalapi = localProperties.getProperty("VIEW_COUNT_TOTAL_API") ?: ""
         buildConfigField("String", "KAKAO_KEY", "\"$kakaoKey\"")
         buildConfigField("String", "GOOGLE_KEY", "\"$googleKey\"")
         manifestPlaceholders["KAKAO_KEY"] = kakaoKey
@@ -61,6 +66,11 @@ android {
         buildConfigField("String", "SEARCH_API", "\"$searchapi\"")
         buildConfigField("String", "KEYWORD_API", "\"$keywordapi\"")
         manifestPlaceholders["NAVER_MAP_KEY"] = navermapkey
+        buildConfigField("String", "FAVORITE_API", "\"$favoriteapi\"")
+        buildConfigField("String", "FAVORITE_USER_CHECK_API", "\"$favoriteusercheckapi\"")
+        buildConfigField("String", "FAVORITE_CHECK_API", "\"$favoritecheckapi\"")
+        buildConfigField("String", "VIEW_COUNT_API", "\"$viewcountapi\"")
+        buildConfigField("String", "VIEW_COUNT_TOTAL_API", "\"$viewcounttotalapi\"")
     }
 
     buildTypes {
