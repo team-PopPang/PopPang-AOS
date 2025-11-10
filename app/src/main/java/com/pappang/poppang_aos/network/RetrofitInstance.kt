@@ -78,4 +78,20 @@ object RetrofitInstance {
             .build()
             .create(KeywordApi::class.java)
     }
+
+    val favoriteApi: FavoriteApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(FavoriteApi::class.java)
+    }
+
+    val viewCountApi: ViewCountApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(ViewCountApi::class.java)
+    }
 }
