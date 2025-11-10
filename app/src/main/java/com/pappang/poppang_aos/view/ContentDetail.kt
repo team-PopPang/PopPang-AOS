@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,20 +24,23 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.BottomCenter
 import androidx.compose.ui.Alignment.Companion.CenterVertically
-import androidx.compose.ui.Alignment.Companion.TopStart
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale.Companion.Crop
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.pappang.poppang_aos.R
+import com.pappang.poppang_aos.model.LoginResponse
 import com.pappang.poppang_aos.model.PopupEvent
 import com.pappang.poppang_aos.ui.theme.Bold20
 import com.pappang.poppang_aos.ui.theme.Medium15
@@ -45,17 +49,29 @@ import com.pappang.poppang_aos.ui.theme.Regular15
 import com.pappang.poppang_aos.ui.theme.mainBlack
 import com.pappang.poppang_aos.ui.theme.mainGray1
 import com.pappang.poppang_aos.ui.theme.mainGray5
+import com.pappang.poppang_aos.ui.theme.mainOrange
+import com.pappang.poppang_aos.viewmodel.FavoriteViewModel
+import com.pappang.poppang_aos.viewmodel.ViewCountViewModel
 
 @Composable
-fun ContentDetail(popup: PopupEvent, onClose: () -> Unit, hideSatausBar: (Boolean) -> Unit = {}) {
+fun ContentDetail(
+    popup: PopupEvent,
+    onClose: () -> Unit,
+    loginResponse: LoginResponse?,
+    favoriteViewModel: FavoriteViewModel,
+    viewCountViewModel: ViewCountViewModel = viewModel()
+) {
+
+    val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
+    val userUuid = loginResponse?.userUuid.orEmpty()
+    val isLiked = favoritePopupUuids.contains(popup.popupUuid)
     val imageList = popup.fullImageUrlList
     val pagerState = rememberPagerState { imageList.size }
 
     LaunchedEffect(Unit) {
-        hideSatausBar(true)
+        viewCountViewModel.incrementViewCount(popup.popupUuid)
     }
     BackHandler {
-        hideSatausBar(false)
         onClose()
     }
     Scaffold(
@@ -73,8 +89,21 @@ fun ContentDetail(popup: PopupEvent, onClose: () -> Unit, hideSatausBar: (Boolea
                     modifier = Modifier
                         .padding(horizontal = 24.dp)
                 ) {
-                    CustomButton4(onClick = {}, text = "친구에게 공유하기", modifier = Modifier.weight(1f))
-                    CustomButton3(onClick = {}, text = "찜하기", modifier = Modifier.weight(1f))
+                    CustomButton3(onClick = {}, text = "친구에게 공유하기", modifier = Modifier.weight(1f))
+                    CustomButton4(
+                        onClick = {
+                        if(userUuid.isNotEmpty()) {
+                            if (isLiked) {
+                                favoriteViewModel.deleteFavorite(userUuid, popup.popupUuid)
+                            } else {
+                                favoriteViewModel.addFavorite(userUuid, popup.popupUuid)
+                            }
+                        } },
+                        text = if (isLiked) "찜 취소하기" else "찜하기",
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(if (isLiked) Color(0xFF999999) else mainOrange, shape = RoundedCornerShape(5.dp)),
+                    )
                 }
             }
         }
@@ -107,24 +136,16 @@ fun ContentDetail(popup: PopupEvent, onClose: () -> Unit, hideSatausBar: (Boolea
                         contentScale = Crop
                     )
                 }
-                ImageIndicator(
-                    modifier = Modifier
-                        .align(BottomCenter)
-                        .padding(bottom = 16.dp),
-                    currentPage = { pagerState.currentPage },
-                    totalPages = { imageList.size }
-                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 24.dp, top = 54.dp)
-                        .align(TopStart),
+                        .padding(start = 24.dp, top = 15.dp)
+                        .align(Alignment.TopStart),
                     verticalAlignment = CenterVertically
                 ) {
-                    IconButton(onClick = {
-                        hideSatausBar(false)
-                        onClose()
-                    }) {
+                    IconButton(
+                        onClick = { onClose() },
+                    ) {
                         Icon(
                             painter = painterResource(id = R.drawable.back_icon),
                             contentDescription = "뒤로가기",
@@ -133,6 +154,13 @@ fun ContentDetail(popup: PopupEvent, onClose: () -> Unit, hideSatausBar: (Boolea
                     }
                     Spacer(modifier = Modifier.weight(1f))
                 }
+                ImageIndicator(
+                    modifier = Modifier
+                        .align(BottomCenter)
+                        .padding(bottom = 16.dp),
+                    currentPage = { pagerState.currentPage },
+                    totalPages = { imageList.size }
+                )
             }
             Text(
                 text = popup.name,
@@ -228,33 +256,4 @@ fun ContentDetail(popup: PopupEvent, onClose: () -> Unit, hideSatausBar: (Boolea
             }
         }
     }
-}
-
-@Composable
-@Preview
-fun ContentDetailPreview() {
-    ContentDetail(onClose = {}, popup = PopupEvent(
-        popupUuid = "1",
-        name = "팝업 스토어 이름",
-        startDate = "2024-01-01",
-        endDate = "2024-01-31",
-        openTime = "10:00",
-        closeTime = "20:00",
-        address = "서울특별시 강남구 테헤란로 123",
-        roadAddress = "서울특별시 강남구 테헤란로 123",
-        region = "강남구",
-        latitude = 37.123456,
-        longitude = 127.123456,
-        instaPostId = "1234567890",
-        instaPostUrl = "https://www.instagram.com/p/1234567890/",
-        captionSummary = "이곳은 팝업 스토어의 간단한 설명이 들어가는 곳입니다. 다양한 상품과 이벤트가 준비되어 있습니다.",
-        imageUrlList = listOf(
-            "/images/popup1.jpg",
-            "/images/popup2.jpg"
-        ),
-        mediaType = "image",
-        recommend = "친구에게 추천하고 싶은 팝업 스토어입니다.",
-        favoriteCount = 150.0,
-        viewCount = 2000.0
-    ), hideSatausBar = {})
 }

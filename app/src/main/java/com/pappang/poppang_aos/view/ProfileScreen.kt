@@ -1,5 +1,6 @@
 package com.pappang.poppang_aos.view
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,13 +41,14 @@ import com.pappang.poppang_aos.viewmodel.DuplicateNickname
 
 @Composable
 fun ProfileScreen(onClose: () -> Unit, loginResponse: LoginResponse? ,DuplicateNickname: DuplicateNickname = DuplicateNickname()) {
+    BackHandler { onClose() }
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(color = Color.White)
     ) {
         Column {
-            ProfileTopBar(onClose = {})
+            ProfileTopBar(onClose = onClose)
             ProfileNicknameChange(DuplicateNickname = DuplicateNickname)
             Spacer(modifier = Modifier.height(20.dp))
             ProfileContent()

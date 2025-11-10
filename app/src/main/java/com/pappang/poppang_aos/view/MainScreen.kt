@@ -25,21 +25,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pappang.poppang_aos.model.BottomNavItem
 import com.pappang.poppang_aos.model.LoginResponse
 import com.pappang.poppang_aos.model.NavIcon
 import com.pappang.poppang_aos.ui.theme.Light10
+import com.pappang.poppang_aos.viewmodel.FavoriteViewModel
 import com.pappang.poppang_aos.viewmodel.PopupComingViewModel
 import com.pappang.poppang_aos.viewmodel.PopupProgressViewModel
 import com.pappang.poppang_aos.viewmodel.PopupViewModel
 
 @Composable
 fun MainScreen(
-    hideSatausBar: (Boolean) -> Unit = {},
     popupprogressViewModel: PopupProgressViewModel,
     popupcomingViewModel: PopupComingViewModel,
     popupViewModel: PopupViewModel,
-    loginResponse: LoginResponse? = null
+    loginResponse: LoginResponse? = null,
+    favoriteViewModel: FavoriteViewModel = viewModel()
 ) {
     var selectedIndex by rememberSaveable { mutableStateOf(0) }
     var showDetail by rememberSaveable { mutableStateOf(false) }
@@ -47,6 +49,7 @@ fun MainScreen(
     var showAlarm by rememberSaveable { mutableStateOf(false) }
     var showProfile by rememberSaveable { mutableStateOf(false) }
     val items = BottomNavItem.items
+    val userUuid = loginResponse?.userUuid.orEmpty()
     val popupprogressList by popupprogressViewModel.popupprogressList.collectAsState()
     val popupcomingList by popupcomingViewModel.popupcomingList.collectAsState()
     val popupList by popupViewModel.popupList.collectAsState()
@@ -57,7 +60,11 @@ fun MainScreen(
         popupcomingViewModel.fetchPopupComingEventsOnce()
         popupViewModel.fetchPopupEventsOnce()
     }
-
+    LaunchedEffect(userUuid) {
+        if (userUuid.isNotEmpty()) {
+            favoriteViewModel.getFavoriteUserCheck(userUuid)
+        }
+    }
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
@@ -108,7 +115,6 @@ fun MainScreen(
         ) {
             when (items[selectedIndex]) {
                 is BottomNavItem.Home -> HomeScreen(
-                    hideSatausBar,
                     showDetail = showDetail,
                     setShowDetail = { showDetail = it },
                     showSearch = showSearch,
@@ -117,32 +123,33 @@ fun MainScreen(
                     setShowAlarm = { showAlarm = it },
                     popupprogressList = popupprogressList,
                     popupcomingList = popupcomingList,
-                    loginResponse = loginResponse
+                    loginResponse = loginResponse,
+                    favoriteViewModel = favoriteViewModel
                 )
                 is BottomNavItem.Calendar -> CalendarScreen(
-                    hideSatausBar,
                     popupList = popupList,
                     showDetail = showDetail,
                     setShowDetail = { showDetail = it },
                     showAlarm = showAlarm,
                     setShowAlarm = { showAlarm = it },
-                    loginResponse = loginResponse)
+                    loginResponse = loginResponse,
+                    favoriteViewModel = favoriteViewModel)
                 is BottomNavItem.Map -> MapScreen(
-                    hideSatausBar,
                     popupList = popupList,
                     showDetail = showDetail,
                     setShowDetail = { showDetail = it },
                     showAlarm = showAlarm,
                     setShowAlarm = { showAlarm = it },
-                    loginResponse = loginResponse)
+                    loginResponse = loginResponse,
+                    favoriteViewModel = favoriteViewModel)
                 is BottomNavItem.PopPang -> LikeScreen(
-                    hideSatausBar,
                     popupList = popupList,
                     showDetail = showDetail,
                     setShowDetail = { showDetail = it },
                     showAlarm = showAlarm,
                     setShowAlarm = { showAlarm = it },
-                    loginResponse = loginResponse
+                    loginResponse = loginResponse,
+                    favoriteViewModel = favoriteViewModel
                 )
                 is BottomNavItem.My -> MeScreen(
                     showAlarm = showAlarm,

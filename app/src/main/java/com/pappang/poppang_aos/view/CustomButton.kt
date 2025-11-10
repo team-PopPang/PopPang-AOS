@@ -88,7 +88,6 @@ fun CustomButton4(onClick: () -> Unit, text: String, modifier: Modifier) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(mainOrange, shape = RoundedCornerShape(5.dp))
             .height(40.dp)
             .clickable { onClick() }
     ) {

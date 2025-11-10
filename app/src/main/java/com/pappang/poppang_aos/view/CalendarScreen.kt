@@ -17,10 +17,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.pappang.poppang_aos.R
@@ -51,7 +54,10 @@ import com.pappang.poppang_aos.ui.theme.mainBlack
 import com.pappang.poppang_aos.ui.theme.mainGray1
 import com.pappang.poppang_aos.ui.theme.mainGray2
 import com.pappang.poppang_aos.ui.theme.mainGray5
+import com.pappang.poppang_aos.ui.theme.mainOrange
 import com.pappang.poppang_aos.ui.theme.mainRed
+import com.pappang.poppang_aos.viewmodel.FavoriteViewModel
+import com.pappang.poppang_aos.viewmodel.ViewCountViewModel
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale.KOREAN
@@ -59,15 +65,19 @@ import java.util.Locale.KOREAN
 
 @Composable
 fun CalendarScreen(
-    hideSatausBar: (Boolean) -> Unit = {},
     popupList: List<PopupEvent>,
     showDetail: Boolean = false,
     setShowDetail: (Boolean) -> Unit,
     showAlarm: Boolean = false,
     setShowAlarm: (Boolean) -> Unit,
-    loginResponse: LoginResponse?) {
-    val selectedDate = remember { mutableStateOf<LocalDate?>(null) }
+    loginResponse: LoginResponse?,
+    favoriteViewModel: FavoriteViewModel,
+    viewCountViewModel: ViewCountViewModel = viewModel()
+) {
+    val selectedDate = remember { mutableStateOf<LocalDate?>(LocalDate.now()) }
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+
+
     if (showAlarm) {
         AlarmScreen(onClose = { setShowAlarm(false) }, loginResponse = loginResponse)
     } else {
@@ -88,14 +98,18 @@ fun CalendarScreen(
                 onShowDetail = { popup ->
                     selectedPopup = popup
                     setShowDetail(true)
-                }
+                },
+                favoriteViewModel = favoriteViewModel,
+                viewCountViewModel = viewCountViewModel,
+                refreshTrigger = showDetail
             )
         }
         if (showDetail && selectedPopup != null) {
             ContentDetail(
                 popup = selectedPopup!!,
                 onClose = { setShowDetail(false) },
-                hideSatausBar = hideSatausBar
+                loginResponse = loginResponse,
+                favoriteViewModel = favoriteViewModel
             )
         }
     }
@@ -113,7 +127,7 @@ fun CalendarTopBar(onAlarmClick: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth(),
             verticalAlignment = CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = SpaceBetween
         ) {
             Text(
                 text = "캘린더",
@@ -158,8 +172,8 @@ fun CustomCalendar(popupList: List<PopupEvent>,
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = SpaceBetween,
+                    verticalAlignment = CenterVertically
                 ) {
                     IconButton(
                         onClick = {
@@ -218,7 +232,7 @@ fun CustomCalendar(popupList: List<PopupEvent>,
                 for (week in 0 until 6) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = SpaceBetween
                     ) {
                         for (dayOfWeek in 0..6) {
                             val showDate =
@@ -244,12 +258,23 @@ fun CustomCalendar(popupList: List<PopupEvent>,
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (!showDate) {
+                                    val isSelected = currentDate == selectedDate
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            text = dayCounter.toString(),
-                                            style = Regular12,
-                                            color = mainBlack
-                                        )
+                                        Box(
+                                            modifier =  if (isSelected)
+                                                Modifier
+                                                    .size(28.dp)
+                                                    .background(color = mainOrange , shape = CircleShape)
+                                            else Modifier.size(28.dp)
+                                        ) {
+                                            Text(
+                                                text = dayCounter.toString(),
+                                                style = Regular12,
+                                                color = if (isSelected) Color.White else mainBlack,
+                                                modifier = Modifier
+                                                    .align(Alignment.Center)
+                                            )
+                                        }
                                         if (popupCount > 0) {
                                             Text(
                                                 text = "+${popupCount}건",
@@ -293,7 +318,10 @@ fun CustomCalendar(popupList: List<PopupEvent>,
 fun CalendarContent(
     popupList: List<PopupEvent>,
     selectedDate: LocalDate?,
-    onShowDetail: (PopupEvent) -> Unit
+    onShowDetail: (PopupEvent) -> Unit,
+    favoriteViewModel: FavoriteViewModel,
+    viewCountViewModel: ViewCountViewModel,
+    refreshTrigger:Boolean
 ) {
     val filteredList = if (selectedDate != null) {
         popupList.filter { popup ->
@@ -337,6 +365,17 @@ fun CalendarContent(
             ) {
                 LazyColumn {
                     items(filteredList) { popup ->
+                        var favoriteCount by remember { mutableStateOf(0) }
+                        var viewCount by remember { mutableStateOf(0) }
+
+                        LaunchedEffect(popup.popupUuid,refreshTrigger) {
+                            favoriteViewModel.getFavoriteCount(popup.popupUuid) { count ->
+                                favoriteCount = count.toInt()
+                            }
+                            viewCountViewModel.getTotalViewCount(popup.popupUuid) { count ->
+                                viewCount = count.toInt()
+                            }
+                        }
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -404,24 +443,24 @@ fun CalendarContent(
                                             ) {
                                                 Icon(
                                                     painter = painterResource(id = R.drawable.eye_icon),
-                                                    contentDescription = "시간 아이콘",
+                                                    contentDescription = "조회수 아이콘",
                                                     tint = mainGray1,
                                                     modifier = Modifier.size(12.dp)
                                                 )
                                                 Text(
-                                                    text = " 100",
+                                                    text = viewCount.toString(),
                                                     style = Regular12,
                                                     color = mainGray1,
                                                 )
                                                 Spacer(modifier = Modifier.width(10.dp))
                                                 Icon(
                                                     painter = painterResource(id = R.drawable.heart_gray_icon),
-                                                    contentDescription = "새알림 아이콘",
+                                                    contentDescription = "좋아요 아이콘",
                                                     tint = mainRed,
                                                     modifier = Modifier.size(12.dp)
                                                 )
                                                 Text(
-                                                    text = " 50",
+                                                    text = favoriteCount.toString(),
                                                     style = Regular12,
                                                     color = mainGray1,
                                                 )

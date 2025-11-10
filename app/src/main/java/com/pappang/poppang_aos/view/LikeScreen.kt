@@ -1,22 +1,32 @@
 package com.pappang.poppang_aos.view
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Arrangement.SpaceBetween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,14 +34,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.pappang.poppang_aos.R
 import com.pappang.poppang_aos.model.LoginResponse
 import com.pappang.poppang_aos.model.PopupEvent
+import com.pappang.poppang_aos.ui.theme.Bold15
 import com.pappang.poppang_aos.ui.theme.Medium10
 import com.pappang.poppang_aos.ui.theme.Medium12
 import com.pappang.poppang_aos.ui.theme.Medium17
@@ -39,24 +58,32 @@ import com.pappang.poppang_aos.ui.theme.Medium18
 import com.pappang.poppang_aos.ui.theme.Regular12
 import com.pappang.poppang_aos.ui.theme.mainAmber
 import com.pappang.poppang_aos.ui.theme.mainBlack
+import com.pappang.poppang_aos.ui.theme.mainGray1
 import com.pappang.poppang_aos.ui.theme.mainGray2
 import com.pappang.poppang_aos.ui.theme.mainGray3
 import com.pappang.poppang_aos.ui.theme.mainGray5
+import com.pappang.poppang_aos.ui.theme.mainOrange
 import com.pappang.poppang_aos.ui.theme.mainRed
+import com.pappang.poppang_aos.viewmodel.FavoriteViewModel
+import com.pappang.poppang_aos.viewmodel.ViewCountViewModel
 import java.time.LocalDate
+import java.time.format.TextStyle
+import java.util.Locale.KOREAN
 
 @Composable
 fun LikeScreen(
-    hideSatausBar: (Boolean) -> Unit = {},
     popupList: List<PopupEvent>,
     showDetail: Boolean = false,
     setShowDetail: (Boolean) -> Unit,
     showAlarm: Boolean = false,
     setShowAlarm: (Boolean) -> Unit,
-    loginResponse: LoginResponse?
+    loginResponse: LoginResponse?,
+    favoriteViewModel : FavoriteViewModel,
+    viewCountViewModel: ViewCountViewModel = viewModel()
 ) {
     val selectedIndex = remember { mutableStateOf(0) }
-    val selectedDate = remember { mutableStateOf<LocalDate?>(null) }
+    val selectedDate = remember { mutableStateOf<LocalDate?>(LocalDate.now()) }
+    val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
     if (showAlarm) {
         AlarmScreen(onClose = { setShowAlarm(false) }, loginResponse = loginResponse)
@@ -69,12 +96,51 @@ fun LikeScreen(
             LikeTopBar(onAlarmClick = { setShowAlarm(true) })
             LikeItem(selectedIndex = selectedIndex)
             when (selectedIndex.value) {
-                0 -> LikeActivityTab()
-                1 -> LikeCalendarTab(
-                    popupList = popupList,
-                    selectedDate = selectedDate.value,
-                    onDateSelected = { selectedDate.value = it })
+                0 -> if (popupList.isEmpty()) {
+                    LikeActivityTab()
+                } else {
+                    LikeListItem(
+                        loginResponse = loginResponse,
+                        onShowDetail = { popup ->
+                            selectedPopup = popup
+                            setShowDetail(true)
+                        },
+                        favoriteViewModel = favoriteViewModel,
+                        popupList = popupList.filter { popup ->
+                            favoritePopupUuids.contains(popup.popupUuid)
+                        }
+                    )
+                }
+                1 -> Column {
+                    LikeCalendarTab(
+                        popupList = popupList.filter { popup ->
+                            favoritePopupUuids.contains(popup.popupUuid)
+                        },
+                        selectedDate = selectedDate.value,
+                        onDateSelected = { selectedDate.value = it })
+                    LikeCalendarItem(
+                        popupList = popupList.filter { popup ->
+                            favoritePopupUuids.contains(popup.popupUuid)
+                        },
+                        selectedDate = selectedDate.value,
+                        onShowDetail = { popup ->
+                            selectedPopup = popup
+                            setShowDetail(true)
+                        },
+                        favoriteViewModel = favoriteViewModel,
+                        viewCountViewModel = viewCountViewModel,
+                        refreshTrigger = showDetail,
+                    )
+                }
             }
+        }
+        if (showDetail && selectedPopup != null) {
+            ContentDetail(
+                popup = selectedPopup!!,
+                onClose = { setShowDetail(false) },
+                loginResponse = loginResponse,
+                favoriteViewModel = favoriteViewModel
+            )
         }
     }
 }
@@ -115,7 +181,6 @@ fun LikeTopBar(onAlarmClick: () -> Unit) {
 
 @Composable
 fun LikeItem( selectedIndex: MutableState<Int>) {
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -191,6 +256,7 @@ fun LikeActivityTab() {
                 modifier = Modifier
                     .padding(start = 49.dp, end = 49.dp, top = 8.dp, bottom = 8.dp)
                     .size(width = 206.dp, height = 33.dp)
+                    .background(mainOrange, shape = RoundedCornerShape(5.dp))
             )
         }
     }
@@ -200,7 +266,7 @@ fun LikeActivityTab() {
 fun LikeCalendarTab(popupList: List<PopupEvent>,
                     selectedDate: LocalDate?,
                     onDateSelected: (LocalDate) -> Unit
-){
+) {
     val daysOfWeek = listOf("일", "월", "화", "수", "목", "금", "토")
     val displayedDate = remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
     val year = displayedDate.value.year
@@ -218,7 +284,7 @@ fun LikeCalendarTab(popupList: List<PopupEvent>,
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = SpaceBetween,
                     verticalAlignment = CenterVertically
                 ) {
                     IconButton(
@@ -278,7 +344,7 @@ fun LikeCalendarTab(popupList: List<PopupEvent>,
                 for (week in 0 until 6) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = SpaceBetween
                     ) {
                         for (dayOfWeek in 0..6) {
                             val showDate =
@@ -304,12 +370,26 @@ fun LikeCalendarTab(popupList: List<PopupEvent>,
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (!showDate) {
+                                    val isSelected = currentDate == selectedDate
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            text = dayCounter.toString(),
-                                            style = Regular12,
-                                            color = mainBlack
-                                        )
+                                        Box(
+                                            modifier = if (isSelected)
+                                                Modifier
+                                                    .size(28.dp)
+                                                    .background(
+                                                        color = mainOrange,
+                                                        shape = CircleShape
+                                                    )
+                                            else Modifier.size(28.dp)
+                                        ) {
+                                            Text(
+                                                text = dayCounter.toString(),
+                                                style = Regular12,
+                                                color = if (isSelected) Color.White else mainBlack,
+                                                modifier = Modifier
+                                                    .align(Alignment.Center)
+                                            )
+                                        }
                                         if (popupCount > 0) {
                                             Text(
                                                 text = "+${popupCount}건",
@@ -346,6 +426,281 @@ fun LikeCalendarTab(popupList: List<PopupEvent>,
                     )
                 )
         )
+    }
+}
+
+@Composable
+fun LikeListItem(
+    onShowDetail: (PopupEvent) -> Unit,
+    loginResponse: LoginResponse?,
+    favoriteViewModel: FavoriteViewModel,
+    popupList: List<PopupEvent>
+) {
+    val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
+    val userUuid = loginResponse?.userUuid.orEmpty()
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 15.dp, end = 15.dp)
+    ) {
+        items(popupList.chunked(2)) { pair ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(15.dp)
+            ) {
+                pair.forEach { popup ->
+                    val isLiked = favoritePopupUuids.contains(popup.popupUuid)
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { onShowDetail(popup)
+                            Log.d("LikeListItem", "Popup clicked: ${popup.name}") }
+                    ) {
+                        Column {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(217.5.dp),
+                            ) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(popup.fullImageUrlList.getOrNull(0))
+                                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                        .build(),
+                                    contentDescription = popup.name,
+                                    modifier = Modifier
+                                        .fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                                IconButton(
+                                    onClick = {
+                                        val newLikeStatus = !isLiked
+                                        if (newLikeStatus) {
+                                            favoriteViewModel.addFavorite(userUuid, popup.popupUuid)
+                                        } else {
+                                            favoriteViewModel.deleteFavorite(userUuid, popup.popupUuid)
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(top =5.dp, end =14.dp)
+                                        .size(24.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = if (isLiked) R.drawable.heart_gray_icon else R.drawable.heart_icon),
+                                        contentDescription = "Like Icon",
+                                        modifier = Modifier
+                                            .shadow(elevation = 5.dp, shape = RoundedCornerShape(16.dp), clip = false),
+                                    )
+                                }
+                            }
+                            Text(
+                                text = popup.roadAddress.split(" ").take(2).joinToString(" "),
+                                style = Regular12,
+                                color = mainBlack,
+                                modifier = Modifier
+                                    .padding(top = 10.dp)
+                            )
+                            Text(
+                                text = popup.name,
+                                style = Bold15,
+                                color = mainBlack,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .padding(top = 5.dp)
+                            )
+                            Text(
+                                text = popup.startDateFormatted + " - " + popup.endDateFormatted,
+                                style = Regular12.copy(letterSpacing = (-1).sp),
+                                color = mainGray1,
+                                modifier = Modifier
+                                    .padding(top = 5.dp)
+                            )
+                        }
+                    }
+                }
+                if (pair.size == 1)
+                    Spacer(
+                        modifier = Modifier
+                            .weight(1f)
+                    )
+            }
+        }
+    }
+}
+
+@Composable
+fun LikeCalendarItem(
+    popupList: List<PopupEvent>,
+    selectedDate: LocalDate?,
+    onShowDetail: (PopupEvent) -> Unit,
+    favoriteViewModel: FavoriteViewModel,
+    viewCountViewModel: ViewCountViewModel,
+    refreshTrigger:Boolean
+) {
+    val filteredList = if (selectedDate != null) {
+        popupList.filter { popup ->
+            val start = LocalDate.parse(popup.startDate)
+            val end = LocalDate.parse(popup.endDate)
+            !selectedDate.isBefore(start) && !selectedDate.isAfter(end)
+        }
+    } else emptyList()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+        ) {
+            if (selectedDate != null) {
+                Row(
+                    modifier = Modifier
+                        .padding(vertical = 20.dp)
+                ){
+                    Text(
+                        text = "${selectedDate.dayOfMonth}일",
+                        style = Medium12,
+                        color = mainBlack,
+                    )
+                    Text(
+                        text = "${selectedDate.dayOfWeek.getDisplayName(TextStyle.SHORT, KOREAN)}요일",
+                        style = Medium12,
+                        color = mainBlack,
+                        modifier = Modifier
+                            .padding(start = 5.dp)
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                LazyColumn {
+                    items(filteredList) { popup ->
+                        var favoriteCount by remember { mutableStateOf(0) }
+                        var viewCount by remember { mutableStateOf(0) }
+
+                        LaunchedEffect(popup.popupUuid,refreshTrigger) {
+                            favoriteViewModel.getFavoriteCount(popup.popupUuid) { count ->
+                                favoriteCount = count.toInt()
+                            }
+                            viewCountViewModel.getTotalViewCount(popup.popupUuid) { count ->
+                                viewCount = count.toInt()
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(163.dp)
+                                .padding(vertical = 12.dp)
+                                .clickable { onShowDetail(popup) }
+                        ) {
+                            Row {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(popup.fullImageUrlList.getOrNull(0))
+                                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                        .build(),
+                                    contentDescription = popup.name,
+                                    modifier = Modifier
+                                        .height(133.dp)
+                                        .width(106.dp)
+                                        .align(CenterVertically),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Spacer(modifier = Modifier.width(20.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(vertical = 10.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxHeight(),
+                                        verticalArrangement = SpaceBetween
+                                    ) {
+                                        Box {
+                                            Column {
+                                                Text(
+                                                    text = popup.roadAddress.split(" ").take(2)
+                                                        .joinToString(" "),
+                                                    style = Regular12,
+                                                    color = mainBlack
+                                                )
+                                                Spacer(modifier = Modifier.height(3.dp))
+                                                Text(
+                                                    text = popup.name,
+                                                    style = Bold15,
+                                                    color = mainBlack,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                Spacer(modifier = Modifier.height(3.dp))
+                                                Text(
+                                                    text = popup.startDateFormatted + " - " + popup.endDateFormatted,
+                                                    style = Regular12,
+                                                    color = mainGray1
+                                                )
+                                            }
+                                        }
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 5.dp),
+                                            contentAlignment = Alignment.BottomEnd
+                                        ) {
+                                            Row(
+                                                verticalAlignment = CenterVertically
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.eye_icon),
+                                                    contentDescription = "조회수 아이콘",
+                                                    tint = mainGray1,
+                                                    modifier = Modifier.size(12.dp)
+                                                )
+                                                Text(
+                                                    text = viewCount.toString(),
+                                                    style = Regular12,
+                                                    color = mainGray1,
+                                                )
+                                                Spacer(modifier = Modifier.width(10.dp))
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.heart_gray_icon),
+                                                    contentDescription = "좋아요 아이콘",
+                                                    tint = mainRed,
+                                                    modifier = Modifier.size(12.dp)
+                                                )
+                                                Text(
+                                                    text = favoriteCount.toString(),
+                                                    style = Regular12,
+                                                    color = mainGray1,
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                        }
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .height(0.5.dp)
+                                .fillMaxWidth()
+                                .background(mainGray5)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -96,20 +96,23 @@ import com.pappang.poppang_aos.ui.theme.mainBlack
 import com.pappang.poppang_aos.ui.theme.mainGray1
 import com.pappang.poppang_aos.ui.theme.mainGray5
 import com.pappang.poppang_aos.ui.theme.mainRed
+import com.pappang.poppang_aos.viewmodel.FavoriteViewModel
 import com.pappang.poppang_aos.viewmodel.MapViewModel
+import com.pappang.poppang_aos.viewmodel.ViewCountViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
 fun MapScreen(
-    hideSatausBar: (Boolean) -> Unit = {},
     popupList: List<PopupEvent>,
     showDetail: Boolean = false,
     setShowDetail: (Boolean) -> Unit,
     showAlarm: Boolean = false,
     setShowAlarm: (Boolean) -> Unit,
     loginResponse: LoginResponse?,
+    favoriteViewModel: FavoriteViewModel,
     mapviewmodel: MapViewModel = viewModel(),
+    viewCountViewModel: ViewCountViewModel = viewModel(),
 ) {
     LaunchedEffect(popupList) { mapviewmodel.setPopups(popupList) }
 
@@ -146,7 +149,10 @@ fun MapScreen(
                     coroutineScope.launch {
                         scaffoldState.bottomSheetState.partialExpand()
                     }
-                }
+                },
+                viewCountViewModel = viewCountViewModel,
+                favoriteViewModel = favoriteViewModel,
+                refreshTrigger = showDetail
             )
         },
     ) {
@@ -204,7 +210,8 @@ fun MapScreen(
         ContentDetail(
             popup = selectedPopup!!,
             onClose = { setShowDetail(false) },
-            hideSatausBar = hideSatausBar
+            loginResponse = loginResponse,
+            favoriteViewModel = favoriteViewModel
         )
     }
 }
@@ -316,7 +323,10 @@ fun MapView(
 @Composable
 fun MapSheetContent(
     popupList: List<PopupEvent>,
-    onPopupClick: (PopupEvent) -> Unit
+    onPopupClick: (PopupEvent) -> Unit,
+    viewCountViewModel: ViewCountViewModel,
+    favoriteViewModel: FavoriteViewModel,
+    refreshTrigger: Boolean,
 ) {
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     Column(
@@ -330,6 +340,17 @@ fun MapSheetContent(
         LazyColumn {
             items(popupList.size) { index ->
                 val popup = popupList[index]
+                var favoriteCount by remember { mutableStateOf(0) }
+                var viewCount by remember { mutableStateOf(0) }
+
+                LaunchedEffect(popup.popupUuid,refreshTrigger) {
+                    favoriteViewModel.getFavoriteCount(popup.popupUuid) { count ->
+                        favoriteCount = count.toInt()
+                    }
+                    viewCountViewModel.getTotalViewCount(popup.popupUuid) { count ->
+                        viewCount = count.toInt()
+                    }
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -397,24 +418,24 @@ fun MapSheetContent(
                                     ) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.eye_icon),
-                                            contentDescription = "시간 아이콘",
+                                            contentDescription = "조회수 아이콘",
                                             tint = mainGray1,
                                             modifier = Modifier.size(12.dp)
                                         )
                                         Text(
-                                            text = " 100",
+                                            text = viewCount.toString(),
                                             style = Regular12,
                                             color = mainGray1,
                                         )
                                         Spacer(modifier = Modifier.width(10.dp))
                                         Icon(
                                             painter = painterResource(id = R.drawable.heart_gray_icon),
-                                            contentDescription = "새알림 아이콘",
+                                            contentDescription = "좋아요 아이콘",
                                             tint = mainRed,
                                             modifier = Modifier.size(12.dp)
                                         )
                                         Text(
-                                            text = " 50",
+                                            text = favoriteCount.toString(),
                                             style = Regular12,
                                             color = mainGray1,
                                         )

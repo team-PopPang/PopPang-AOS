@@ -39,7 +39,6 @@ fun Navigation(
     popupcomingViewModel: PopupComingViewModel,
     popupViewModel: PopupViewModel,
     hideSystemBars: (Boolean) -> Unit,
-    hideStatusBar: (Boolean) -> Unit
 ) {
     val navController = rememberNavController()
     var loginResponse by remember { mutableStateOf<LoginResponse?>(null) }
@@ -154,7 +153,6 @@ fun Navigation(
             }
             composable("main") {
                 MainScreen(
-                    hideStatusBar,
                     popupprogressViewModel = popupprogressViewModel,
                     popupcomingViewModel = popupcomingViewModel,
                     popupViewModel = popupViewModel,

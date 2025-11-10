@@ -41,7 +41,6 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -59,6 +58,7 @@ import com.pappang.poppang_aos.ui.theme.mainBlack
 import com.pappang.poppang_aos.ui.theme.mainGray1
 import com.pappang.poppang_aos.ui.theme.mainGray4
 import com.pappang.poppang_aos.ui.theme.mainOrange
+import com.pappang.poppang_aos.viewmodel.FavoriteViewModel
 import com.pappang.poppang_aos.viewmodel.SearchViewModel
 import com.pappang.poppang_aos.viewmodel.SearchViewModelFactory
 
@@ -70,7 +70,8 @@ fun SearchScreen(onClose: () -> Unit,
                      )
                  ),
                  loginResponse: LoginResponse?,
-                 hideSatausBar: (Boolean) -> Unit = {}) {
+                 favoriteViewModel: FavoriteViewModel
+){
     val query = remember { mutableStateOf("") }
     val isSearched = remember { mutableStateOf(false) }
     val popupList = viewModel.popupList.value
@@ -206,7 +207,8 @@ fun SearchScreen(onClose: () -> Unit,
             ContentDetail(
                 popup = selectedPopup!!,
                 onClose = { showDetail = false },
-                hideSatausBar = hideSatausBar
+                loginResponse = loginResponse,
+                favoriteViewModel = favoriteViewModel
             )
         }
     }
@@ -309,10 +311,4 @@ fun SearchContent(popupList: List<PopupEvent>, onShowDetail: (PopupEvent) -> Uni
             }
         }
     }
-}
-
-@Composable
-@Preview
-fun SearchScreenPreview() {
-    SearchScreen(onClose = {}, loginResponse = LoginResponse("", "", "", "", "", "", "",false))
 }

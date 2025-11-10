@@ -29,6 +29,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush.Companion.linearGradient
 import androidx.compose.ui.graphics.Color
@@ -43,7 +45,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -69,6 +70,7 @@ import com.pappang.poppang_aos.ui.theme.mainGray2
 import com.pappang.poppang_aos.ui.theme.mainGray4
 import com.pappang.poppang_aos.ui.theme.mainGray5
 import com.pappang.poppang_aos.ui.theme.mainOrange
+import com.pappang.poppang_aos.viewmodel.FavoriteViewModel
 import java.time.LocalDate.now
 import java.time.LocalDate.parse
 import java.time.format.DateTimeFormatter.ofPattern
@@ -76,7 +78,6 @@ import java.time.temporal.ChronoUnit
 
 @Composable
 fun HomeScreen(
-    hideSatausBar: (Boolean) -> Unit = {},
     showDetail: Boolean = false,
     setShowDetail: (Boolean) -> Unit,
     showSearch: Boolean = false,
@@ -85,11 +86,12 @@ fun HomeScreen(
     setShowAlarm: (Boolean) -> Unit,
     popupprogressList: List<PopupEvent>,
     popupcomingList: List<PopupEvent>,
-    loginResponse: LoginResponse?
+    loginResponse: LoginResponse?,
+    favoriteViewModel: FavoriteViewModel
 ) {
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
     if (showSearch) {
-        SearchScreen(onClose = { setSearchScreen(false) }, loginResponse = loginResponse, hideSatausBar = hideSatausBar)
+        SearchScreen(onClose = { setSearchScreen(false) }, loginResponse = loginResponse, favoriteViewModel = favoriteViewModel)
     }
     else if(showAlarm) {
         AlarmScreen(onClose = { setShowAlarm(false) },loginResponse = loginResponse)
@@ -122,7 +124,9 @@ fun HomeScreen(
                     MainContent(popupprogressList = popupprogressList, onShowDetail = { popup ->
                         selectedPopup = popup
                         setShowDetail(true)
-                    })
+                    },
+                        loginResponse = loginResponse,
+                        favoriteViewModel = favoriteViewModel)
                 }
             }
         }
@@ -130,7 +134,8 @@ fun HomeScreen(
             ContentDetail(
                 popup = selectedPopup!!,
                 onClose = { setShowDetail(false) },
-                hideSatausBar = hideSatausBar
+                loginResponse = loginResponse,
+                favoriteViewModel = favoriteViewModel
             )
         }
     }
@@ -568,7 +573,14 @@ fun FilterSection() {
 }
 
 @Composable
-fun MainContent(onShowDetail: (PopupEvent) -> Unit, popupprogressList: List<PopupEvent>) {
+fun MainContent(
+    onShowDetail: (PopupEvent) -> Unit,
+    popupprogressList: List<PopupEvent>,
+    loginResponse: LoginResponse?,
+    favoriteViewModel: FavoriteViewModel
+) {
+    val userUuid = loginResponse?.userUuid.orEmpty()
+    val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -582,24 +594,51 @@ fun MainContent(onShowDetail: (PopupEvent) -> Unit, popupprogressList: List<Popu
                 horizontalArrangement = Arrangement.spacedBy(15.dp)
             ) {
                 pair.forEach { popup ->
+                    val isLiked = favoritePopupUuids.contains(popup.popupUuid)
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .clickable { onShowDetail(popup) }
                     ) {
                         Column {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(popup.fullImageUrlList.getOrNull(0))
-                                    .diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                                    .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                                    .build(),
-                                contentDescription = popup.name,
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(217.5.dp),
-                                contentScale = ContentScale.Crop
-                            )
+                                .fillMaxWidth()
+                                .height(217.5.dp),
+                                ) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(popup.fullImageUrlList.getOrNull(0))
+                                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                        .build(),
+                                    contentDescription = popup.name,
+                                    modifier = Modifier
+                                        .fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                                IconButton(
+                                    onClick = {
+                                        val newLikeStatus = !isLiked
+                                        if (newLikeStatus) {
+                                            favoriteViewModel.addFavorite(userUuid, popup.popupUuid)
+                                        } else {
+                                            favoriteViewModel.deleteFavorite(userUuid, popup.popupUuid)
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(top =5.dp, end =14.dp)
+                                        .size(24.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = if (isLiked) R.drawable.heart_gray_icon else R.drawable.heart_icon),
+                                        contentDescription = "Like Icon",
+                                        modifier = Modifier
+                                            .shadow(elevation = 5.dp, shape = RoundedCornerShape(16.dp), clip = false),
+                                    )
+                                }
+                            }
                             Text(
                                 text = popup.roadAddress.split(" ").take(2).joinToString(" "),
                                 style = Regular12,
@@ -634,12 +673,5 @@ fun MainContent(onShowDetail: (PopupEvent) -> Unit, popupprogressList: List<Popu
             }
         }
     }
-}
-
-
-@Composable
-@Preview
-fun HomeScreenPreview() {
-    HomeScreen(setSearchScreen = {}, setShowDetail = {}, setShowAlarm = {}, popupprogressList = listOf(), popupcomingList = listOf(), loginResponse = LoginResponse("", "", "", "", "", "", "",false) )
 }
 
