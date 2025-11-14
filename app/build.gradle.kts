@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.pappang.poppang_aos"
+    namespace = "com.poppang.PopPang"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.pappang.poppang_aos"
+        applicationId = "com.poppang.PopPang"
         minSdk = 30
         targetSdk = 36
         versionCode = 1
@@ -46,6 +46,11 @@ android {
         val favoritecheckapi = localProperties.getProperty("FAVORITE_CHECK_API") ?: ""
         val viewcountapi = localProperties.getProperty("VIEW_COUNT_API") ?: ""
         val viewcounttotalapi = localProperties.getProperty("VIEW_COUNT_TOTAL_API") ?: ""
+        val fcmapi = localProperties.getProperty("FCM_API") ?: ""
+        val alertapi = localProperties.getProperty("ALERT_API") ?: ""
+        val regionsapi = localProperties.getProperty("REGIONS_API") ?: ""
+        val changenicknameapi = localProperties.getProperty("CHANGE_NICKNAME_API") ?: ""
+        val userwithdrawapi = localProperties.getProperty("USER_WITHDRAW_API") ?: ""
         buildConfigField("String", "KAKAO_KEY", "\"$kakaoKey\"")
         buildConfigField("String", "GOOGLE_KEY", "\"$googleKey\"")
         manifestPlaceholders["KAKAO_KEY"] = kakaoKey
@@ -71,6 +76,11 @@ android {
         buildConfigField("String", "FAVORITE_CHECK_API", "\"$favoritecheckapi\"")
         buildConfigField("String", "VIEW_COUNT_API", "\"$viewcountapi\"")
         buildConfigField("String", "VIEW_COUNT_TOTAL_API", "\"$viewcounttotalapi\"")
+        buildConfigField("String", "FCM_API", "\"$fcmapi\"")
+        buildConfigField("String", "ALERT_API", "\"$alertapi\"")
+        buildConfigField("String", "REGIONS_API", "\"$regionsapi\"")
+        buildConfigField("String", "USER_WITHDRAW_API", "\"$userwithdrawapi\"")
+        buildConfigField("String", "CHANGE_NICKNAME_API", "\"$changenicknameapi\"")
     }
 
     buildTypes {
@@ -120,6 +130,7 @@ dependencies {
     implementation (libs.naver.map.compose)
     implementation (libs.play.services.location)
     implementation (libs.naver.map.location)
+    implementation(libs.firebase.messaging)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

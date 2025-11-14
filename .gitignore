@@ -12,4 +12,9 @@
 /captures
 .externalNativeBuild
 .cxx
-local.properties
+local.
+
+/google-services.json
+/app/google-services.json
+/firebase-debug.log
+/app/firebase-debug.log
