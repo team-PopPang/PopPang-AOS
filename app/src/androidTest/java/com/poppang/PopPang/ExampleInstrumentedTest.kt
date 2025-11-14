@@ -1,4 +1,4 @@
-package com.pappang.poppang_aos
+package com.poppang.PopPang
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

@@ -1,4 +1,4 @@
-package com.pappang.poppang_aos
+package com.poppang.PopPang
 
 import org.junit.Test
 
