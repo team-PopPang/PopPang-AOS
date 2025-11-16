@@ -22,7 +22,8 @@ data class PopupEvent(
     val recommend: String,
     val favoriteCount: Double,
     val viewCount: Double,
-    val isFavorited: Boolean
+    val isFavorited: Boolean,
+    val isRead: Boolean
 ){
     val fullImageUrlList: List<String>
         get() = imageUrlList.map { BuildConfig.URL_IMAGE + it }
@@ -31,3 +32,6 @@ data class PopupEvent(
     val endDateFormatted: String
         get() = endDate?.replace("-", ".") ?: ""
 }
+
+
+

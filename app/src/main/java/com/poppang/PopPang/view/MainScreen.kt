@@ -180,6 +180,8 @@ fun MainScreen(
                     favoriteViewModel = favoriteViewModel
                 )
                 is BottomNavItem.My -> MeScreen(
+                    showDetail = showDetail,
+                    setShowDetail = { showDetail = it },
                     showAlarm = showAlarm,
                     setShowAlarm = { showAlarm = it },
                     showProfile = showProfile,
@@ -187,7 +189,8 @@ fun MainScreen(
                     loginResponse = loginResponse,
                     navController = navController,
                     userDataViewModel = userDataViewModel,
-                    onUpdateLoginResponse = onUpdateLoginResponse
+                    onUpdateLoginResponse = onUpdateLoginResponse,
+                    favoriteViewModel = favoriteViewModel
                 )
             }
         }

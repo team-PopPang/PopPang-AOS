@@ -70,7 +70,9 @@ fun SearchScreen(onClose: () -> Unit,
                      )
                  ),
                  loginResponse: LoginResponse?,
-                 favoriteViewModel: FavoriteViewModel
+                 favoriteViewModel: FavoriteViewModel,
+                 showDetail: Boolean = false,
+                 setShowDetail: (Boolean) -> Unit,
 ){
     val query = remember { mutableStateOf("") }
     val isSearched = remember { mutableStateOf(false) }
@@ -88,7 +90,12 @@ fun SearchScreen(onClose: () -> Unit,
         keyboard?.show()
     }
     if (showAlarmScreen) {
-        AlarmScreen(onClose = { showAlarmScreen = false }, loginResponse = loginResponse)
+        AlarmScreen(
+            onClose = { showAlarmScreen = false },
+            loginResponse = loginResponse,
+            favoriteViewModel = favoriteViewModel,
+            showDetail = showDetail,
+            setShowDetail = setShowDetail,)
     } else {
         Box(
             modifier = Modifier

@@ -30,6 +30,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +48,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.poppang.PopPang.R
@@ -72,6 +74,7 @@ import com.poppang.PopPang.ui.theme.mainGray4
 import com.poppang.PopPang.ui.theme.mainGray5
 import com.poppang.PopPang.ui.theme.mainOrange
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
+import com.poppang.PopPang.viewmodel.HomePopupfilterViewModel
 import com.poppang.PopPang.viewmodel.RegionsViewModel
 import java.time.LocalDate.now
 import java.time.LocalDate.parse
@@ -91,17 +94,40 @@ fun HomeScreen(
     recommendpopupList: List<PopupEvent>,
     loginResponse: LoginResponse?,
     favoriteViewModel: FavoriteViewModel,
-    regionsViewModel: RegionsViewModel
+    regionsViewModel: RegionsViewModel,
+    homePopupfilterViewModel: HomePopupfilterViewModel = viewModel()
 ) {
+    var selectedRegion by remember { mutableStateOf("전체") }
+    var selectedDistrict by remember { mutableStateOf("전체") }
+    var selectedSort by remember { mutableStateOf("NEWEST") }
+    val homepopupfilterList by homePopupfilterViewModel.homePopupfilterList.collectAsState()
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+
+    LaunchedEffect(selectedRegion, selectedDistrict, selectedSort, loginResponse?.userUuid) {
+        homePopupfilterViewModel.fetchhomepopupfilter(
+            userUuid = loginResponse?.userUuid.orEmpty(),
+            region = selectedRegion,
+            district = selectedDistrict,
+            homeSortStandard = selectedSort
+        )
+    }
+
     if (showSearch) {
         SearchScreen(
             onClose = { setSearchScreen(false) },
             loginResponse = loginResponse,
-            favoriteViewModel = favoriteViewModel
+            favoriteViewModel = favoriteViewModel,
+            showDetail = showDetail,
+            setShowDetail = setShowDetail,
         )
     } else if (showAlarm) {
-        AlarmScreen(onClose = { setShowAlarm(false) }, loginResponse = loginResponse)
+        AlarmScreen(
+            onClose = { setShowAlarm(false) },
+            loginResponse = loginResponse,
+            showDetail = showDetail,
+            setShowDetail = setShowDetail,
+            favoriteViewModel = favoriteViewModel
+        )
     } else {
         Box(
             modifier = Modifier
@@ -132,10 +158,22 @@ fun HomeScreen(
                         setShowDetail(true)
                     })
                     Spacer(modifier = Modifier.height(50.dp))
-                    FilterSection(regionsViewModel = regionsViewModel)
+                    FilterSection(
+                        regionsViewModel = regionsViewModel,
+                        selectedRegion = selectedRegion,
+                        selectedDistrict = selectedDistrict,
+                        selectedSort = selectedSort,
+                        onRegionChange = { region, district ->
+                            selectedRegion = region
+                            selectedDistrict = district
+                        },
+                        onSortChange = { sort ->
+                            selectedSort = sort
+                        }
+                    )
                     Spacer(modifier = Modifier.height(15.dp))
                     MainContent(
-                        popupprogressList = popupprogressList, onShowDetail = { popup ->
+                        homepopupfilterList = homepopupfilterList, onShowDetail = { popup ->
                             selectedPopup = popup
                             setShowDetail(true)
                         },
@@ -572,11 +610,14 @@ fun LocalFilterButton(selectedRegion: String, onRegionSelected: (String) -> Unit
 }
 
 @Composable
-fun SortType() {
+fun SortType(selectedSort: String, onSortSelected: (String) -> Unit) {
     var showSheet by remember { mutableStateOf(false) }
-    var selectedSort by remember { mutableStateOf("최신순") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
+    val sortItems = listOf(
+        "최신순" to "NEWEST",
+        "조회순" to "MOST_VIEWED",
+        "마감임박순" to "CLOSING_SOON"
+    )
     Box(modifier = Modifier
         .width(80.dp)
         .clickable { showSheet = true }
@@ -587,7 +628,7 @@ fun SortType() {
     ){
         Row {
             Text(
-                text = selectedSort,
+                text = sortItems.find { it.second == selectedSort }?.first ?: "최신순",
                 color = mainGray1,
                 style = Light10
             )
@@ -629,12 +670,14 @@ fun SortType() {
                         tint = mainBlack
                     )
                 }
-                val sortItems = listOf("최신순", "인기순", "마감임박순")
-                sortItems.forEachIndexed { index, sortType ->
+                sortItems.forEach { (kor,eng) ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { selectedSort = sortType; showSheet = false }
+                            .clickable {
+                                onSortSelected(eng)
+                                showSheet = false
+                            }
                             .background(Color.White),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -649,12 +692,12 @@ fun SortType() {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    painter = painterResource(if (sortType == selectedSort) R.drawable.button_on else R.drawable.button_off),
+                                    painter = painterResource(if (selectedSort == eng) R.drawable.button_on else R.drawable.button_off),
                                     contentDescription = null,
                                     tint = Color.Unspecified
                                 )
                                 Text(
-                                    text = sortType,
+                                    text = kor,
                                     style = Regular15,
                                     color = mainBlack,
                                     modifier = Modifier
@@ -674,9 +717,14 @@ fun SortType() {
 }
 
 @Composable
-fun FilterSection(regionsViewModel: RegionsViewModel) {
-    var selectedRegion by remember { mutableStateOf("전체") }
-
+fun FilterSection(
+    regionsViewModel: RegionsViewModel,
+    selectedRegion: String,
+    selectedDistrict: String,
+    selectedSort: String,
+    onRegionChange: (String, String) -> Unit,
+    onSortChange: (String) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -685,7 +733,7 @@ fun FilterSection(regionsViewModel: RegionsViewModel) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = selectedRegion,
+            text = selectedRegion + if (selectedDistrict != "전체") " $selectedDistrict" else "",
             style = Medium17,
             color = mainBlack
         )
@@ -694,8 +742,20 @@ fun FilterSection(regionsViewModel: RegionsViewModel) {
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ){
-                LocalFilterButton(selectedRegion = selectedRegion, onRegionSelected = { selectedRegion = it }, regionsViewModel = regionsViewModel)
-                SortType()
+                LocalFilterButton(
+                    selectedRegion = selectedRegion,
+                    onRegionSelected = { regionWithDistrict ->
+                        val parts = regionWithDistrict.split(" ")
+                        val region = parts.getOrNull(0) ?: "전체"
+                        val district = parts.getOrNull(1) ?: "전체"
+                        onRegionChange(region, district)
+                    },
+                    regionsViewModel = regionsViewModel
+                )
+                SortType(
+                    selectedSort = selectedSort,
+                    onSortSelected = { onSortChange(it) }
+                )
             }
         }
     }
@@ -704,7 +764,7 @@ fun FilterSection(regionsViewModel: RegionsViewModel) {
 @Composable
 fun MainContent(
     onShowDetail: (PopupEvent) -> Unit,
-    popupprogressList: List<PopupEvent>,
+    homepopupfilterList: List<PopupEvent>,
     loginResponse: LoginResponse?,
     favoriteViewModel: FavoriteViewModel
 ) {
@@ -715,7 +775,7 @@ fun MainContent(
             .fillMaxWidth()
             .padding(start = 15.dp, end = 15.dp)
     ) {
-        popupprogressList.chunked(2).forEach { pair ->
+        homepopupfilterList.chunked(2).forEach { pair ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

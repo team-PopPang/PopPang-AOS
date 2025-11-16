@@ -85,7 +85,13 @@ fun LikeScreen(
     val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
     if (showAlarm) {
-        AlarmScreen(onClose = { setShowAlarm(false) }, loginResponse = loginResponse)
+        AlarmScreen(
+            onClose = { setShowAlarm(false) },
+            loginResponse = loginResponse,
+            showDetail = showDetail,
+            setShowDetail = setShowDetail,
+            favoriteViewModel = favoriteViewModel
+        )
     } else {
         Column(
             modifier = Modifier

@@ -151,4 +151,21 @@ object RetrofitInstance {
             .build()
             .create(RecommendPopupApi::class.java)
     }
+
+    val homePopupFilterApi : HomePopuofilterApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(USERS_BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(HomePopuofilterApi::class.java)
+    }
+
+    val alertPopupApi : AlertPopupApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(USERS_BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(AlertPopupApi::class.java)
+    }
+
 }

@@ -53,10 +53,13 @@ import com.poppang.PopPang.ui.theme.Regular12
 import com.poppang.PopPang.ui.theme.mainBlack
 import com.poppang.PopPang.ui.theme.mainOrange
 import com.poppang.PopPang.viewmodel.AlertViewModel
+import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.UserDataViewModel
 
 @Composable
 fun MeScreen(
+    showDetail: Boolean,
+    setShowDetail: (Boolean) -> Unit,
     showAlarm: Boolean = false,
     setShowAlarm: (Boolean) -> Unit,
     showProfile: Boolean = false,
@@ -64,10 +67,17 @@ fun MeScreen(
     loginResponse: LoginResponse?,
     navController: NavController,
     userDataViewModel: UserDataViewModel,
-    onUpdateLoginResponse: (LoginResponse) -> Unit
+    onUpdateLoginResponse: (LoginResponse) -> Unit,
+    favoriteViewModel: FavoriteViewModel
 ) {
     if (showAlarm) {
-        AlarmScreen(onClose = { setShowAlarm(false) }, loginResponse = loginResponse)
+        AlarmScreen(
+            onClose = { setShowAlarm(false) },
+            loginResponse = loginResponse,
+            showDetail = showDetail,
+            setShowDetail = setShowDetail,
+            favoriteViewModel = favoriteViewModel
+        )
     }
     else if (showProfile) {
         ProfileScreen(
@@ -261,6 +271,10 @@ fun MeContent(loginResponse: LoginResponse?,alertViewModel: AlertViewModel = vie
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 10.dp)
+                .clickable {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://deciduous-jam-49e.notion.site/29cdb9e736cf8046babdd84eb78040b3?pvs=74"))
+                    context.startActivity(intent)
+                }
         ) {
             Row(
                 modifier = Modifier
@@ -287,6 +301,13 @@ fun MeContent(loginResponse: LoginResponse?,alertViewModel: AlertViewModel = vie
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 10.dp)
+                .clickable {
+                    val intent = Intent(Intent.ACTION_SENDTO).apply {
+                        data = Uri.parse("mailto:poppang.app@gmail.com")
+                        putExtra(Intent.EXTRA_SUBJECT, "문의하기")
+                    }
+                    context.startActivity(intent)
+                }
         ) {
             Row(
                 modifier = Modifier
@@ -313,6 +334,10 @@ fun MeContent(loginResponse: LoginResponse?,alertViewModel: AlertViewModel = vie
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 10.dp)
+                .clickable {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://deciduous-jam-49e.notion.site/2abdb9e736cf80cdaaa0eeeb97313523?pvs=74"))
+                    context.startActivity(intent)
+                }
         ) {
             Row(
                 modifier = Modifier

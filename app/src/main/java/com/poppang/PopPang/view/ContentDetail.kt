@@ -373,7 +373,8 @@ fun ContentDetailPreview() {
         recommend = "많이 추천된 팝업 스토어입니다.",
         favoriteCount = 150.0,
         viewCount = 1200.0,
-        isFavorited = false
+        isFavorited = false,
+        isRead = false
     )
     ContentDetail(
         popup = samplePopup,
