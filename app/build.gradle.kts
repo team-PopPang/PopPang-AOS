@@ -26,6 +26,7 @@ android {
         val googleKey = localProperties.getProperty("GOOGLE_KEY") ?: ""
         val authurl = localProperties.getProperty("AUTH_BASE_URL") ?: ""
         val userurl = localProperties.getProperty("USER_BASE_URL") ?: ""
+        val usersurl = localProperties.getProperty("USERS_BASE_URL") ?: ""
         val baseurl = localProperties.getProperty("BASE_URL") ?: ""
         val urlimage = localProperties.getProperty("URL_IMAGE") ?: ""
         val authapikakao = localProperties.getProperty("AUTH_API_KAKAO") ?: ""
@@ -49,13 +50,15 @@ android {
         val fcmapi = localProperties.getProperty("FCM_API") ?: ""
         val alertapi = localProperties.getProperty("ALERT_API") ?: ""
         val regionsapi = localProperties.getProperty("REGIONS_API") ?: ""
-        val changenicknameapi = localProperties.getProperty("CHANGE_NICKNAME_API") ?: ""
+        val userapi = localProperties.getProperty("USER_API") ?: ""
         val userwithdrawapi = localProperties.getProperty("USER_WITHDRAW_API") ?: ""
+        val recommendpopupapi = localProperties.getProperty("RECOMMEND_POPUP_API") ?: ""
         buildConfigField("String", "KAKAO_KEY", "\"$kakaoKey\"")
         buildConfigField("String", "GOOGLE_KEY", "\"$googleKey\"")
         manifestPlaceholders["KAKAO_KEY"] = kakaoKey
         buildConfigField("String", "AUTH_BASE_URL", "\"$authurl\"")
         buildConfigField("String", "USER_BASE_URL", "\"$userurl\"")
+        buildConfigField("String", "USERS_BASE_URL", "\"$usersurl\"")
         buildConfigField("String", "BASE_URL", "\"$baseurl\"")
         buildConfigField("String", "AUTH_API_KAKAO", "\"$authapikakao\"")
         buildConfigField("String", "AUTH_API_GOOGLE", "\"$authapigoogle\"")
@@ -80,7 +83,8 @@ android {
         buildConfigField("String", "ALERT_API", "\"$alertapi\"")
         buildConfigField("String", "REGIONS_API", "\"$regionsapi\"")
         buildConfigField("String", "USER_WITHDRAW_API", "\"$userwithdrawapi\"")
-        buildConfigField("String", "CHANGE_NICKNAME_API", "\"$changenicknameapi\"")
+        buildConfigField("String", "USER_API", "\"$userapi\"")
+        buildConfigField("String", "RECOMMEND_POPUP_API", "\"$recommendpopupapi\"")
     }
 
     buildTypes {
