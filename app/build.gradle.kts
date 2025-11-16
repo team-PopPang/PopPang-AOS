@@ -13,10 +13,10 @@ android {
 
     defaultConfig {
         applicationId = "com.poppang.PopPang"
-        minSdk = 30
+        minSdk = 28
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -53,6 +53,10 @@ android {
         val userapi = localProperties.getProperty("USER_API") ?: ""
         val userwithdrawapi = localProperties.getProperty("USER_WITHDRAW_API") ?: ""
         val recommendpopupapi = localProperties.getProperty("RECOMMEND_POPUP_API") ?: ""
+        val homepopupapi = localProperties.getProperty("HOME_POPUP_API") ?: ""
+        val mapopupapi = localProperties.getProperty("MAP_POPUP_API") ?: ""
+        val alertpopupapi = localProperties.getProperty("ALERT_POPUP_API") ?: ""
+        val alertreadapi = localProperties.getProperty("ALERT_READ_API") ?: ""
         buildConfigField("String", "KAKAO_KEY", "\"$kakaoKey\"")
         buildConfigField("String", "GOOGLE_KEY", "\"$googleKey\"")
         manifestPlaceholders["KAKAO_KEY"] = kakaoKey
@@ -85,6 +89,10 @@ android {
         buildConfigField("String", "USER_WITHDRAW_API", "\"$userwithdrawapi\"")
         buildConfigField("String", "USER_API", "\"$userapi\"")
         buildConfigField("String", "RECOMMEND_POPUP_API", "\"$recommendpopupapi\"")
+        buildConfigField("String", "HOME_POPUP_API", "\"$homepopupapi\"")
+        buildConfigField("String", "MAP_POPUP_API", "\"$mapopupapi\"")
+        buildConfigField("String", "ALERT_POPUP_API", "\"$alertpopupapi\"")
+        buildConfigField("String", "ALERT_READ_API", "\"$alertreadapi\"")
     }
 
     buildTypes {
