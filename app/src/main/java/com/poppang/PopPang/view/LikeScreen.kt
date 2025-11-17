@@ -40,7 +40,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -78,7 +77,8 @@ fun LikeScreen(
     setShowAlarm: (Boolean) -> Unit,
     loginResponse: LoginResponse?,
     favoriteViewModel : FavoriteViewModel,
-    viewCountViewModel: ViewCountViewModel = viewModel()
+    viewCountViewModel: ViewCountViewModel = viewModel(),
+    onNavigateToHome: () -> Unit = {}
 ) {
     val selectedIndex = remember { mutableStateOf(0) }
     val selectedDate = remember { mutableStateOf<LocalDate?>(LocalDate.now()) }
@@ -103,7 +103,7 @@ fun LikeScreen(
             Spacer(modifier = Modifier.height(20.dp))
             when (selectedIndex.value) {
                 0 -> if (favoritePopupUuids.isEmpty()) {
-                    LikeActivityTab()
+                    LikeActivityTab(onNavigateToHome = onNavigateToHome)
                 } else {
                     LikeListItem(
                         loginResponse = loginResponse,
@@ -248,7 +248,7 @@ fun LikeItem( selectedIndex: MutableState<Int>) {
 }
 
 @Composable
-fun LikeActivityTab() {
+fun LikeActivityTab(onNavigateToHome: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize(),
@@ -265,7 +265,7 @@ fun LikeActivityTab() {
                     .padding(bottom = 10.dp)
             )
             CustomButton4(
-                onClick = { /* TODO: Navigate to popup store list */ },
+                onClick = { onNavigateToHome() },
                 text = "팝업스토어 구경하기",
                 modifier = Modifier
                     .padding(start = 49.dp, end = 49.dp, top = 8.dp, bottom = 8.dp)
@@ -715,10 +715,4 @@ fun LikeCalendarItem(
             }
         }
     }
-}
-
-@Composable
-@Preview
-fun LikeScreenPreview() {
-    LikeActivityTab()
 }

@@ -64,16 +64,20 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PopPangAOSTheme {
-                val controller = window.insetsController
                 var hideSystemBars by remember { mutableStateOf(true) }
                 LaunchedEffect(hideSystemBars) {
-                    if (hideSystemBars) {
-                        setDecorFitsSystemWindows(window, false)
-                        controller?.hide(statusBars() or navigationBars())
-                        controller?.systemBarsBehavior = BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        val controller = window.insetsController
+                        if (hideSystemBars) {
+                            setDecorFitsSystemWindows(window, false)
+                            controller?.hide(statusBars() or navigationBars())
+                            controller?.systemBarsBehavior = BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                        } else {
+                            setDecorFitsSystemWindows(window, true)
+                            controller?.show(statusBars() or navigationBars())
+                        }
                     } else {
-                        setDecorFitsSystemWindows(window, true)
-                        controller?.show(statusBars() or navigationBars())
+                        setDecorFitsSystemWindows(window, !hideSystemBars)
                     }
                 }
                 Navigation(

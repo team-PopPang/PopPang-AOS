@@ -177,7 +177,8 @@ fun MainScreen(
                     showAlarm = showAlarm,
                     setShowAlarm = { showAlarm = it },
                     loginResponse = loginResponse,
-                    favoriteViewModel = favoriteViewModel
+                    favoriteViewModel = favoriteViewModel,
+                    onNavigateToHome = { selectedIndex = 0 }
                 )
                 is BottomNavItem.My -> MeScreen(
                     showDetail = showDetail,
@@ -190,7 +191,7 @@ fun MainScreen(
                     navController = navController,
                     userDataViewModel = userDataViewModel,
                     onUpdateLoginResponse = onUpdateLoginResponse,
-                    favoriteViewModel = favoriteViewModel
+                    favoriteViewModel = favoriteViewModel,
                 )
             }
         }

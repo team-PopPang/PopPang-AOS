@@ -299,7 +299,7 @@ fun BannerCarousel(modifier: Modifier = Modifier, recommendpopupList: List<Popup
                     Row {
                         Icon(
                             painter = painterResource(id = R.drawable.location_outlined),
-                            contentDescription = "Location ₩Icon",
+                            contentDescription = "Location Icon",
                             modifier = Modifier.size(10.dp),
                             tint = Color.Unspecified
                         )
@@ -456,7 +456,7 @@ fun LocalFilterButton(selectedRegion: String, onRegionSelected: (String) -> Unit
 
     Box(
         modifier = Modifier
-            .width(80.dp)
+            .width(60.dp)
             .clickable { showSheet = true }
             .background(Color.White, RoundedCornerShape(20.dp))
             .border(0.dp, mainGray1, RoundedCornerShape(20.dp))
@@ -739,7 +739,7 @@ fun FilterSection(
         )
         Box{
             Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ){
                 LocalFilterButton(

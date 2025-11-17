@@ -292,6 +292,7 @@ fun CustomCalendar(popupList: List<PopupEvent>,
                                                     .align(Alignment.Center)
                                             )
                                         }
+                                        Spacer(modifier = Modifier.height(4.dp))
                                         if (popupCount > 0) {
                                             Text(
                                                 text = "+${popupCount}건",
