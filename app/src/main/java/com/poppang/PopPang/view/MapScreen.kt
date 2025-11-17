@@ -29,7 +29,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults.buttonColors
@@ -134,12 +133,26 @@ fun MapScreen(
 
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
-        sheetDragHandle = { BottomSheetDefaults.DragHandle() },
         sheetContainerColor = Color.White,
         sheetShadowElevation = 8.dp,
         sheetTonalElevation = 8.dp,
         sheetSwipeEnabled = true,
         sheetPeekHeight = (LocalConfiguration.current.screenHeightDp.dp / 3),
+        sheetDragHandle = {
+            Column {
+                Spacer(modifier = Modifier.height(20.dp))
+                Box(
+                    modifier = Modifier
+                        .width(40.dp)
+                        .height(4.dp)
+                        .background(
+                            color = mainBlack,
+                            shape = RoundedCornerShape(2.dp)
+                        )
+                        .align(Alignment.CenterHorizontally)
+                )
+            }
+        },
         sheetContent = {
             val listToShow = if (isSearched.value && searchedPopups.isNotEmpty()) searchedPopups else popupList
             MapSheetContent(
@@ -337,7 +350,7 @@ fun MapSheetContent(
             .heightIn(max = screenHeight * 0.68f)
             .padding(horizontal = 24.dp)
     ) {
-        Spacer(modifier = Modifier.height(15.dp))
+        Spacer(modifier = Modifier.height(10.dp))
         LazyColumn {
             items(popupList.size) { index ->
                 val popup = popupList[index]
@@ -536,7 +549,6 @@ fun MapSearchBar(mapViewModel: MapViewModel,isSearched: MutableState<Boolean>) {
         )
     }
 }
-
 
 
 
