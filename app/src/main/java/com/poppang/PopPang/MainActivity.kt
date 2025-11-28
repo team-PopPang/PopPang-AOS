@@ -1,7 +1,12 @@
 package com.poppang.PopPang
 
 import android.Manifest
+import android.app.AlertDialog
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowInsets.Type.navigationBars
@@ -19,6 +24,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat.setDecorFitsSystemWindows
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.firebase.messaging.FirebaseMessaging
 import com.kakao.sdk.common.KakaoSdk
 import com.poppang.PopPang.navigation.Navigation
@@ -40,10 +48,54 @@ class MainActivity : ComponentActivity() {
     private val recommendPopupViewModel: RecommendPopupViewModel by viewModels()
 
     private val popupViewModel: PopupViewModel by viewModels()
+    private var deepLinkPopupUuid: String? = null
+    private fun isNetworkAvailable(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         KakaoSdk.init(this, BuildConfig.KAKAO_KEY)
+        val appUpdateManager = AppUpdateManagerFactory.create(this)
+        val appUpdateInfoTask = appUpdateManager.appUpdateInfo
+        val REQUEST_UPDATE = 100
+        deepLinkPopupUuid = intent?.data?.getQueryParameter("popupUuid")
+        val listener = object : com.google.android.play.core.install.InstallStateUpdatedListener {
+            override fun onStateUpdate(state: com.google.android.play.core.install.InstallState) {
+                if (state.installStatus() == com.google.android.play.core.install.model.InstallStatus.DOWNLOADED) {
+                    appUpdateManager.completeUpdate()
+                    appUpdateManager.unregisterListener(this)
+                }
+            }
+        }
+
+        if (!isNetworkAvailable(this)) {
+            AlertDialog.Builder(this)
+                .setTitle("네트워크 오류")
+                .setMessage("인터넷 연결이 필요합니다.\n앱을 종료합니다.")
+                .setCancelable(false)
+                .setPositiveButton("확인") { _, _ ->
+                    finish()
+                }
+                .show()
+            return
+        }
+        appUpdateInfoTask.addOnSuccessListener { appUpdateInfo ->
+            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+                && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
+            ) {
+                appUpdateManager.registerListener(listener)
+                appUpdateManager.startUpdateFlowForResult(
+                    appUpdateInfo,
+                    AppUpdateType.FLEXIBLE,
+                    this,
+                    REQUEST_UPDATE
+                )
+            }
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val permission = Manifest.permission.POST_NOTIFICATIONS
             if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
@@ -89,8 +141,29 @@ class MainActivity : ComponentActivity() {
                     popupViewModel = popupViewModel,
                     recommendPopupViewModel = recommendPopupViewModel,
                     hideSystemBars = { hide -> hideSystemBars = hide },
+                    deepLinkPopupUuid = deepLinkPopupUuid
                 )
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        deepLinkPopupUuid = intent.data?.getQueryParameter("popupUuid")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!isNetworkAvailable(this)) {
+            AlertDialog.Builder(this)
+                .setTitle("네트워크 오류")
+                .setMessage("인터넷 연결이 필요합니다.\n앱을 종료합니다.")
+                .setCancelable(false)
+                .setPositiveButton("확인") { _, _ ->
+                    finish()
+                }
+                .show()
         }
     }
 }

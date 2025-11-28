@@ -1,9 +1,11 @@
 package com.poppang.PopPang.view
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement.End
 import androidx.compose.foundation.layout.Arrangement.SpaceBetween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +20,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -38,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign.Companion.Center
 import androidx.compose.ui.text.style.TextOverflow
@@ -80,10 +85,11 @@ fun AlarmScreen(onClose: () -> Unit,
                 loginResponse: LoginResponse?,
                 showDetail: Boolean = false,
                 setShowDetail: (Boolean) -> Unit,
-                favoriteViewModel: FavoriteViewModel
+                favoriteViewModel: FavoriteViewModel,
 ){
     var selectedIndex = remember { mutableStateOf(0) }
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    var editMode by remember { mutableStateOf(false) }
     val userUuid = loginResponse?.userUuid ?: ""
     val alertpopupList by alertViewModel.alertPopupList.collectAsState()
     BackHandler { onClose() }
@@ -97,7 +103,11 @@ fun AlarmScreen(onClose: () -> Unit,
             .background(Color.White)
     ) {
         Column {
-            AlarmTopBar(onClose = onClose)
+            AlarmTopBar(
+                onClose = onClose,
+                editMode = editMode,
+                onEditToggle = { editMode = !editMode }
+            )
             AlarmItem(selectedIndex = selectedIndex)
             when (selectedIndex.value) {
                 0 -> ActivityTab(
@@ -105,11 +115,12 @@ fun AlarmScreen(onClose: () -> Unit,
                     alertpopupList = alertpopupList,
                     refreshTrigger = showDetail, loginResponse = loginResponse,
                     favoriteViewModel = favoriteViewModel,
+                    editMode = editMode,
                     onShowDetail = { popup ->
                     selectedPopup = popup
                     setShowDetail(true)
                 })
-                1 -> keywordTab(loginResponse = loginResponse, searchviewModel = SearchviewModel, alarmkeywordviewModel = AlarmKeywordviewModel)
+                1 -> keywordTab(loginResponse = loginResponse, searchviewModel = SearchviewModel, alarmkeywordviewModel = AlarmKeywordviewModel,editMode = editMode)
             }
         }
         if (showDetail && selectedPopup != null) {
@@ -125,14 +136,20 @@ fun AlarmScreen(onClose: () -> Unit,
 }
 
 @Composable
-fun AlarmTopBar(onClose: () -> Unit) {
+fun AlarmTopBar(
+    onClose: () -> Unit,
+    editMode: Boolean,
+    onEditToggle: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 15.dp)
     ) {
         Row(
-            verticalAlignment = CenterVertically
+            verticalAlignment = CenterVertically,
+            horizontalArrangement = SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
         ) {
             Image(
                 painter = painterResource(id = R.drawable.back_icon),
@@ -146,10 +163,17 @@ fun AlarmTopBar(onClose: () -> Unit) {
                 text = "알림",
                 style = Medium18,
                 color = Color.Black,
+                modifier = Modifier,
+                textAlign = Center
+            )
+            Text(
+                text = if(editMode) "완료" else "편집",
+                style = Regular12,
+                color = mainBlack,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(end = 31.dp)
-                    .align(CenterVertically),
+                    .padding(end = 24.dp)
+                    .align(CenterVertically)
+                    .clickable { onEditToggle() },
                 textAlign = Center
             )
         }
@@ -158,7 +182,6 @@ fun AlarmTopBar(onClose: () -> Unit) {
 
 @Composable
 fun AlarmItem( selectedIndex: MutableState<Int>) {
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -219,7 +242,8 @@ fun ActivityTab(
     viewCountViewModel: ViewCountViewModel = viewModel(),
     refreshTrigger: Any? = null,
     loginResponse: LoginResponse? = null,
-    onShowDetail: (PopupEvent) -> Unit
+    editMode: Boolean = false,
+    onShowDetail: (PopupEvent) -> Unit,
 ) {
     val userUuid = loginResponse?.userUuid.orEmpty()
     val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
@@ -229,134 +253,203 @@ fun ActivityTab(
             .background(Color.White)
             .padding(start = 24.dp, end = 24.dp, bottom = 9.dp)
     ) {
-        LazyColumn {
-            items(alertpopupList) { popup ->
-                val isLiked = favoritePopupUuids.contains(popup.popupUuid)
-                var favoriteCount by remember { mutableStateOf(0) }
-                var viewCount by remember { mutableStateOf(0) }
-                LaunchedEffect(popup.popupUuid, refreshTrigger) {
-                    favoriteViewModel.getFavoriteCount(popup.popupUuid) { count ->
-                        favoriteCount = count.toInt()
-                    }
-                    viewCountViewModel.getTotalViewCount(popup.popupUuid) { count ->
-                        viewCount = count.toInt()
-                    }
+        Column() {
+            if( alertpopupList.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "알림 내역이 없습니다.",
+                        style = Medium15,
+                        color = mainGray2
+                    )
                 }
+            }
+            if (editMode && alertpopupList.isNotEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(163.dp)
-                        .padding(vertical = 12.dp)
-                        .clickable {
-                            alertViewModel.updateAlertReadStatus(userUuid, popup.popupUuid)
-                            onShowDetail(popup) }
+                        .padding(vertical = 10.dp),
+                    contentAlignment = Alignment.CenterEnd
                 ) {
-                    Row {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(popup.fullImageUrlList.getOrNull(0))
-                                .diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                                .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                                .build(),
-                            contentDescription = popup.name,
-                            modifier = Modifier
-                                .height(133.dp)
-                                .width(106.dp)
-                                .align(CenterVertically),
-                            contentScale = ContentScale.Crop
-                        )
-                        Spacer(modifier = Modifier.width(20.dp))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(vertical = 10.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxHeight(),
-                                verticalArrangement = SpaceBetween
-                            ) {
-                                Column {
-                                    Text(
-                                        text = popup.roadAddress.split(" ").take(2).joinToString(" "),
-                                        style = Regular12,
-                                        color = mainBlack
-                                    )
-                                    Spacer(modifier = Modifier.height(3.dp))
-                                    Text(
-                                        text = popup.name,
-                                        style = Bold15,
-                                        color = mainBlack,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Spacer(modifier = Modifier.height(3.dp))
-                                    Text(
-                                        text = popup.startDateFormatted + " - " + popup.endDateFormatted,
-                                        style = Regular12,
-                                        color = mainGray1
+                    Text(
+                        text = "전체삭제",
+                        style = Regular12,
+                        color = mainBlack,
+                        modifier = Modifier
+                            .clickable {
+                                alertpopupList.forEach { popup ->
+                                    alertViewModel.deleteAlertPopup(
+                                        userUuid,
+                                        popup.popupUuid
                                     )
                                 }
-                                Row(
-                                    verticalAlignment = CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 5.dp),
+                            }
+                    )
+                }
+            }
+            LazyColumn {
+                items(alertpopupList) { popup ->
+                    val isLiked = favoritePopupUuids.contains(popup.popupUuid)
+                    var favoriteCount by remember { mutableStateOf(0) }
+                    var viewCount by remember { mutableStateOf(0) }
+                    LaunchedEffect(popup.popupUuid, refreshTrigger) {
+                        favoriteViewModel.getFavoriteCount(userUuid, popup.popupUuid) { count ->
+                            favoriteCount = count.toInt()
+                        }
+                        viewCountViewModel.getTotalViewCount(userUuid, popup.popupUuid) { count ->
+                            viewCount = count.toInt()
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(163.dp)
+                            .padding(vertical = 12.dp)
+                            .clickable(enabled = !editMode) { // 편집 모드일 때 상세 진입 막기
+                                alertViewModel.updateAlertReadStatus(userUuid, popup.popupUuid)
+                                onShowDetail(popup)
+                            }
+                    ) {
+                        if (editMode) {
+                            IconButton(
+                                onClick = {
+                                    alertViewModel.deleteAlertPopup(
+                                        userUuid,
+                                        popup.popupUuid
+                                    )
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .size(10.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.close_icon), // x 아이콘 리소스
+                                    contentDescription = "삭제",
+                                    tint = mainBlack,
+                                )
+                            }
+                        }
+                        Row {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(popup.fullImageUrlList.getOrNull(0))
+                                    .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                    .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                    .build(),
+                                contentDescription = popup.name,
+                                modifier = Modifier
+                                    .height(133.dp)
+                                    .width(106.dp)
+                                    .align(CenterVertically),
+                                contentScale = ContentScale.Crop
+                            )
+                            Spacer(modifier = Modifier.width(20.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(vertical = 10.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxHeight(),
+                                    verticalArrangement = SpaceBetween
                                 ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.eye_icon),
-                                        contentDescription = "조회수 아이콘",
-                                        tint = mainGray1,
-                                        modifier = Modifier.size(12.dp)
-                                    )
-                                    Text(
-                                        text = viewCount.toString(),
-                                        style = Regular12,
-                                        color = mainGray1,
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    IconButton(
-                                        onClick = {
-                                            val newLikeStatus = !isLiked
-                                            if (newLikeStatus) {
-                                                favoriteViewModel.addFavorite(userUuid, popup.popupUuid)
-                                            } else {
-                                                favoriteViewModel.deleteFavorite(userUuid, popup.popupUuid)
-                                            }
-                                            favoriteViewModel.getFavoriteCount(popup.popupUuid) { count ->
-                                                favoriteCount = count.toInt()
-                                            }
-                                        },
-                                        modifier = Modifier.size(12.dp)
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.heart_gray_icon),
-                                            contentDescription = "Like Icon",
-                                            tint = if (isLiked) Color.Red else Color.Unspecified
+                                    Column {
+                                        Text(
+                                            text = popup.roadAddress.split(" ").take(2)
+                                                .joinToString(" "),
+                                            style = Regular12,
+                                            color = mainBlack
+                                        )
+                                        Spacer(modifier = Modifier.height(3.dp))
+                                        Text(
+                                            text = popup.name,
+                                            style = Bold15,
+                                            color = mainBlack,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Spacer(modifier = Modifier.height(3.dp))
+                                        Text(
+                                            text = popup.startDateFormatted + " - " + popup.endDateFormatted,
+                                            style = Regular12,
+                                            color = mainGray1
                                         )
                                     }
-                                    Text(
-                                        text = favoriteCount.toString(),
-                                        style = Regular12,
-                                        color = mainGray1,
-                                    )
+                                    Row(
+                                        verticalAlignment = CenterVertically,
+                                        horizontalArrangement = End,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 5.dp),
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.eye_icon),
+                                            contentDescription = "조회수 아이콘",
+                                            tint = mainGray1,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                        Text(
+                                            text = viewCount.toString(),
+                                            style = Regular12,
+                                            color = mainGray1,
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        IconButton(
+                                            onClick = {
+                                                val newLikeStatus = !isLiked
+                                                if (newLikeStatus) {
+                                                    favoriteViewModel.addFavorite(
+                                                        userUuid,
+                                                        popup.popupUuid
+                                                    )
+                                                } else {
+                                                    favoriteViewModel.deleteFavorite(
+                                                        userUuid,
+                                                        popup.popupUuid
+                                                    )
+                                                }
+                                                favoriteViewModel.getFavoriteCount(
+                                                    userUuid,
+                                                    popup.popupUuid
+                                                ) { count ->
+                                                    favoriteCount = count.toInt()
+                                                }
+                                            },
+                                            modifier = Modifier.size(12.dp)
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(id = R.drawable.heart_gray_icon),
+                                                contentDescription = "Like Icon",
+                                                tint = if (isLiked) Color.Red else Color.Unspecified
+                                            )
+                                        }
+                                        Text(
+                                            text = favoriteCount.toString(),
+                                            style = Regular12,
+                                            color = mainGray1,
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
+                    Box(
+                        modifier = Modifier
+                            .height(0.5.dp)
+                            .fillMaxWidth()
+                            .background(mainGray5)
+                    )
                 }
-                Box(
-                    modifier = Modifier
-                        .height(0.5.dp)
-                        .fillMaxWidth()
-                        .background(mainGray5)
-                )
             }
         }
     }
 }
 
 @Composable
-fun keywordTab(loginResponse: LoginResponse?, searchviewModel: SearchViewModel, alarmkeywordviewModel: AlarmKeywordViewModel) {
+fun keywordTab(loginResponse: LoginResponse?, searchviewModel: SearchViewModel, alarmkeywordviewModel: AlarmKeywordViewModel, editMode: Boolean) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -366,6 +459,7 @@ fun keywordTab(loginResponse: LoginResponse?, searchviewModel: SearchViewModel, 
             HomeKeywordScreen(
                 loginResponse = loginResponse,
                 viewModel = alarmkeywordviewModel,
+                editMode = editMode
             )
             Spacer(modifier = Modifier.height(30.dp))
             RecentSearchContent(
@@ -378,9 +472,11 @@ fun keywordTab(loginResponse: LoginResponse?, searchviewModel: SearchViewModel, 
 }
 
 @Composable
-fun HomeKeywordScreen(loginResponse: LoginResponse?, viewModel: AlarmKeywordViewModel) {
+fun HomeKeywordScreen(loginResponse: LoginResponse?, viewModel: AlarmKeywordViewModel, editMode: Boolean) {
     val keyword = remember { mutableStateOf(TextFieldValue("")) }
     val keywords by viewModel.keywords.collectAsState()
+    val context = LocalContext.current
+
     Box(
         modifier = Modifier
             .background(Color(0xFFFFFFFF)),
@@ -394,12 +490,31 @@ fun HomeKeywordScreen(loginResponse: LoginResponse?, viewModel: AlarmKeywordView
             ) {
                 TextField(
                     value = keyword.value,
-                    onValueChange = { keyword.value = it },
+                    onValueChange = {
+                        val filtered = it.text.replace("\n", "")
+                        keyword.value = TextFieldValue(filtered)
+                    },
                     placeholder = { Text("알림받을 키워드를 입력해주세요.", style = Medium12, color = mainGray2) },
                     modifier = Modifier
                         .weight(1f)
                         .padding(horizontal = 24.dp),
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            if (keyword.value.text.isNotEmpty()) {
+                                if (keywords.size >= 5) {
+                                    Toast.makeText(context, "키워드는 최대 5개까지 저장할 수 있습니다.", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    viewModel.insertKeyword(
+                                        userUuid = loginResponse?.userUuid ?: "",
+                                        newAlertKeyword = keyword.value.text
+                                    )
+                                    keyword.value = TextFieldValue("")
+                                }
+                            }
+                        }
+                    ),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
@@ -418,11 +533,15 @@ fun HomeKeywordScreen(loginResponse: LoginResponse?, viewModel: AlarmKeywordView
                 IconButton(
                     onClick = {
                         if (keyword.value.text.isNotEmpty()) {
-                            viewModel.insertKeyword(
-                                userUuid = loginResponse?.userUuid ?: "",
-                                newAlertKeyword = keyword.value.text
-                            )
-                            keyword.value = TextFieldValue("")
+                            if (keywords.size >= 5) {
+                                Toast.makeText(context, "키워드는 최대 5개까지 저장할 수 있습니다.", Toast.LENGTH_SHORT).show()
+                            } else {
+                                viewModel.insertKeyword(
+                                    userUuid = loginResponse?.userUuid ?: "",
+                                    newAlertKeyword = keyword.value.text
+                                )
+                                keyword.value = TextFieldValue("")
+                            }
                         }
                     },
                     modifier = Modifier
@@ -443,7 +562,8 @@ fun HomeKeywordScreen(loginResponse: LoginResponse?, viewModel: AlarmKeywordView
                         userUuid = loginResponse?.userUuid ?: "",
                         deleteAlertKeyword = item
                     )
-                }
+                },
+                editMode = editMode
             )
         }
     }
@@ -452,7 +572,8 @@ fun HomeKeywordScreen(loginResponse: LoginResponse?, viewModel: AlarmKeywordView
 @Composable
 fun HomeKeywordList(
     keywords: List<String>,
-    onRemove: (String) -> Unit
+    onRemove: (String) -> Unit,
+    editMode: Boolean = false
 ) {
     Column(modifier = Modifier.padding(horizontal = 24.dp)) {
         keywords.forEach { item ->
@@ -466,14 +587,22 @@ fun HomeKeywordList(
                     text = item,
                     style = Medium15,
                     color = Color.Black,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = "✕",
-                    color = mainBlack,
                     modifier = Modifier
-                        .clickable { onRemove(item) }
+                        .weight(1f)
+                        .padding(top = 7.dp)
                 )
+                if (editMode) {
+                    IconButton(
+                        onClick = { onRemove(item) },
+                        modifier = Modifier.size(24.dp)
+                    ){
+                        Icon(
+                            painter = painterResource(id = R.drawable.close_icon),
+                            contentDescription = "키워드 삭제",
+                            tint = mainBlack,
+                        )
+                    }
+                }
             }
             Box(
                 modifier = Modifier

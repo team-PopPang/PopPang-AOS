@@ -1,5 +1,6 @@
 package com.poppang.PopPang.view
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -32,6 +34,8 @@ import com.poppang.PopPang.viewmodel.AddKeywordViewModel
 @Composable
 fun KeywordScreen(keywordViewModel: AddKeywordViewModel) {
     val keyword = remember { mutableStateOf(TextFieldValue("")) }
+    val context = LocalContext.current
+
     Box(
         modifier = Modifier
             .background(Color(0xFFFFFFFF)),
@@ -59,7 +63,10 @@ fun KeywordScreen(keywordViewModel: AddKeywordViewModel) {
             ) {
                 TextField(
                     value = keyword.value,
-                    onValueChange = { keyword.value = it },
+                    onValueChange = {
+                        val filtered = it.text.replace("\n", "")
+                        keyword.value = TextFieldValue(filtered)
+                    },
                     placeholder = { Text("ex) 화장품, 애니메이션", style = Medium15, color = mainGray2) },
                     modifier = Modifier
                         .weight(9f)
@@ -82,8 +89,12 @@ fun KeywordScreen(keywordViewModel: AddKeywordViewModel) {
                 )
                 CustomButton2(
                     onClick = {
-                        keywordViewModel.addKeyword(keyword.value.text)
-                        keyword.value = TextFieldValue("")
+                        if (keywordViewModel.keywordList.size >= 5) {
+                            Toast.makeText(context, "키워드는 최대 5개까지 저장할 수 있습니다.", Toast.LENGTH_SHORT).show()
+                        } else {
+                            keywordViewModel.addKeyword(keyword.value.text)
+                            keyword.value = TextFieldValue("")
+                        }
                     },
                     text = "등록",
                     modifier = Modifier

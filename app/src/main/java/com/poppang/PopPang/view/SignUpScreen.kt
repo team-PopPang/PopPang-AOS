@@ -60,8 +60,8 @@ fun SignUpScreen(
             )
             when (currentPage.value) {
                 0 -> NicknameScreen(viewModel = nicknameViewModel)
-                1 -> KeywordScreen(keywordViewModel = keywordViewModel)
-                2 -> CategorySelectionScreen(categoryViewModel = categoryViewModel)
+                1 -> CategorySelectionScreen(categoryViewModel = categoryViewModel)
+                2 -> KeywordScreen(keywordViewModel = keywordViewModel)
             }
         }
         CustomButton(

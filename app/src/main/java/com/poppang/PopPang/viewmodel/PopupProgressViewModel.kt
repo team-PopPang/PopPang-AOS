@@ -13,19 +13,19 @@ class PopupProgressViewModel: ViewModel() {
     private var isLoaded = false
     val popupprogressList: StateFlow<List<PopupEvent>> = _popupList
 
-    fun fetchPopupProgressEvents() {
+    fun fetchPopupProgressEvents(userUuid: String) {
         viewModelScope.launch {
             try {
                 val response =
-                    RetrofitInstance.popupProgressApi.getPopupProgressEvent("all") // API에 맞게 수정
+                    RetrofitInstance.popupProgressApi.getPopupProgressEvent(userUuid,"all") // API에 맞게 수정
                 _popupList.value = response
             } catch (e: Exception) {
             }
         }
     }
-    fun fetchPopupProgressEventsOnce() {
+    fun fetchPopupProgressEventsOnce(userUuid: String) {
         if (isLoaded) return
         isLoaded = true
-        fetchPopupProgressEvents()
+        fetchPopupProgressEvents(userUuid = userUuid)
     }
 }

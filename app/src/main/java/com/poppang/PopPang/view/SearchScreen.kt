@@ -74,6 +74,7 @@ fun SearchScreen(onClose: () -> Unit,
                  showDetail: Boolean = false,
                  setShowDetail: (Boolean) -> Unit,
 ){
+    val userUuid = loginResponse?.userUuid ?: ""
     val query = remember { mutableStateOf("") }
     val isSearched = remember { mutableStateOf(false) }
     val popupList = viewModel.popupList.value
@@ -150,7 +151,7 @@ fun SearchScreen(onClose: () -> Unit,
                         ),
                         trailingIcon = {
                             IconButton(onClick = {
-                                viewModel.search(query.value)
+                                viewModel.search(userUuid,query.value)
                                 viewModel.addRecentQuery(query.value)
                                 isSearched.value = true
                                 query.value = ""
@@ -171,7 +172,7 @@ fun SearchScreen(onClose: () -> Unit,
                         ),
                         keyboardActions = KeyboardActions(
                             onSearch = {
-                                viewModel.search(query.value)
+                                viewModel.search(userUuid,query.value)
                                 viewModel.addRecentQuery(query.value)
                                 isSearched.value = true
                                 query.value = ""
@@ -232,7 +233,7 @@ fun RecentSearchContent(recentQueries: List<String>, loginResponse: LoginRespons
                 color = mainOrange
             )
             Text(
-                text = "님의 최근 본 검색어예요.",
+                text = if(recentQueries.isEmpty()) "님의 최근 본 검색어가 없습니다." else "님 최근 본 검색어에요.",
                 style = Medium12,
                 color = mainBlack
             )

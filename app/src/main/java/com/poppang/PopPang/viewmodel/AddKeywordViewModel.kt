@@ -9,7 +9,7 @@ class AddKeywordViewModel : ViewModel() {
 
     fun addKeyword(keyword: String) {
         val text = keyword.trim()
-        if (text.isNotEmpty() && !keywordList.contains(text) && keywordList.size < 3) {
+        if (text.isNotEmpty() && !keywordList.contains(text) && keywordList.size < 5) {
             keywordList.add(text)
        }
     }

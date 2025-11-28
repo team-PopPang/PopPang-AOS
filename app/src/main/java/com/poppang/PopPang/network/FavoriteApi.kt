@@ -16,10 +16,16 @@ interface FavoriteApi {
 
     @HTTP(method = "DELETE", path = BuildConfig.FAVORITE_API, hasBody = true)
     suspend fun deleteFavorite(@Body request: FavoriteRequest)
+}
 
-    @GET(BuildConfig.FAVORITE_USER_CHECK_API)
+interface FavoriteCountApi {
+
+    @GET(BuildConfig.POPUP_API)
     suspend fun getFavoriteUserCheck(@Path("userUuid") userUuid: String) : List<PopupEvent>
 
-    @GET(BuildConfig.FAVORITE_CHECK_API)
-    suspend fun getFavoriteCheck(@Path("popupUuid") popupUuid: String) : FavoriteCountResponse
+    @GET(BuildConfig.POPUP_SELECT_API)
+    suspend fun getFavoriteCheck(
+        @Path("userUuid") userUuid: String,
+        @Path("popupUuid") popupUuid: String
+    ): FavoriteCountResponse
 }

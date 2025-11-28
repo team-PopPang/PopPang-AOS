@@ -22,10 +22,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val body = message.notification?.body ?: message.data["body"] ?: ""
         val push = PushMessage(title = title, body = body, timestampMillis = System.currentTimeMillis())
 
-        // 화면 갱신용 저장소에 추가
         AlarmRepository.add(push)
 
-        // (옵션) 시스템 알림 표시
         showSystemNotification(push)
     }
 

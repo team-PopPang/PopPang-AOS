@@ -1,23 +1,23 @@
 package com.poppang.PopPang.view
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -29,30 +29,30 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.BottomCenter
 import androidx.compose.ui.Alignment.Companion.Center
-import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
+import androidx.compose.ui.Alignment.Companion.TopCenter
+import androidx.compose.ui.Alignment.Companion.TopEnd
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.poppang.PopPang.ui.theme.ExtraBold18
-import com.poppang.PopPang.ui.theme.Medium15
+import com.poppang.PopPang.R
 
 
 @Composable
 fun OnboardingScreen(
     onStartClick: () -> Unit = {}
 ) {
-    val titles = listOf("알림", "캘린더", "지도", "시작하기")
-    val descriptions = listOf(
-        "알림 설정을 할 수 있습니다.",
-        "캘린더를 통해서 날짜를 확인할수 있습니다.",
-        "지도를 통해 위치를 확인할 수 있습니다.",
-        "이제 팝팡을 시작해볼까요?",
+    val images = listOf(
+        R.drawable.onbording_1,
+        R.drawable.onbording_2,
+        R.drawable.onbording_3,
+
     )
-    val buttonLabels = listOf("다음", "다음", "다음", "시작하기  →")
+    val buttonLabels = listOf("다음", "다음", "시작하기  →")
 
     var page by remember { mutableStateOf(0) }
 
@@ -61,35 +61,36 @@ fun OnboardingScreen(
             .fillMaxSize()
             .background(Color(0xFFFFFFFF)),
     ) {
-        Column(
+        TextButton(
+            onClick = { onStartClick() },
             modifier = Modifier
-                .align(Center)
-                .fillMaxWidth(),
-            horizontalAlignment = CenterHorizontally
+                .align(TopEnd)
+                .padding(
+                    top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
+                    end = 16.dp
+                )
         ) {
-            Text(
-                text = titles[page],
-                style = ExtraBold18,
-                color = Color.Black
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = descriptions[page],
-                style = Medium15,
-                color = Color.Black
-            )
+            Text(text = "건너뛰기", color = Color.Black)
         }
+        Image(
+            painter = painterResource(id = images[page]),
+            contentDescription = null,
+            modifier = Modifier
+                .align(TopCenter)
+                .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
+
+        )
         ImageIndicator(
             modifier = Modifier
                 .align(BottomCenter)
                 .navigationBarsPadding()
                 .padding(bottom = 50.dp),
             currentPage = { page },
-            totalPages = { titles.size }
+            totalPages = { images.size }
         )
         CustomButton(
             onClick = {
-                if (page < 3) {
+                if (page < 2) {
                     page++
                 } else {
                     onStartClick()
@@ -115,7 +116,7 @@ fun PageDot(
             .size(size)
             .clip(CircleShape)
             .background(
-                color = if (isSelected) Color.White
+                color = if (isSelected) Color.Black
                 else Color.Black.copy(0.3f)
             )
     )

@@ -1,5 +1,6 @@
 package com.poppang.PopPang.view
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,8 +23,10 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
@@ -35,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,6 +80,7 @@ import com.poppang.PopPang.ui.theme.mainOrange
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.HomePopupfilterViewModel
 import com.poppang.PopPang.viewmodel.RegionsViewModel
+import kotlinx.coroutines.launch
 import java.time.LocalDate.now
 import java.time.LocalDate.parse
 import java.time.format.DateTimeFormatter.ofPattern
@@ -92,16 +97,22 @@ fun HomeScreen(
     popupprogressList: List<PopupEvent>,
     popupcomingList: List<PopupEvent>,
     recommendpopupList: List<PopupEvent>,
+    popupList: List<PopupEvent>,
     loginResponse: LoginResponse?,
     favoriteViewModel: FavoriteViewModel,
     regionsViewModel: RegionsViewModel,
-    homePopupfilterViewModel: HomePopupfilterViewModel = viewModel()
+    homePopupfilterViewModel: HomePopupfilterViewModel = viewModel(),
+    deepLinkPopupUuid: String? = null
 ) {
     var selectedRegion by remember { mutableStateOf("전체") }
     var selectedDistrict by remember { mutableStateOf("전체") }
     var selectedSort by remember { mutableStateOf("NEWEST") }
     val homepopupfilterList by homePopupfilterViewModel.homePopupfilterList.collectAsState()
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+    var showScrollToTop by remember { mutableStateOf(false) }
+
 
     LaunchedEffect(selectedRegion, selectedDistrict, selectedSort, loginResponse?.userUuid) {
         homePopupfilterViewModel.fetchhomepopupfilter(
@@ -110,6 +121,23 @@ fun HomeScreen(
             district = selectedDistrict,
             homeSortStandard = selectedSort
         )
+    }
+
+    LaunchedEffect(scrollState.value) {
+        showScrollToTop = scrollState.value > 300 // 300dp 정도 내려가면 표시
+    }
+
+    LaunchedEffect(popupList) {
+        if (deepLinkPopupUuid.isNullOrBlank()) return@LaunchedEffect
+        if (selectedPopup != null) return@LaunchedEffect  // 이미 열려 있으면 무시
+
+        Log.d("DeepLink", "Searching for popupUuid: $deepLinkPopupUuid")
+        val target = popupList.firstOrNull { it.popupUuid == deepLinkPopupUuid }
+        if (target != null) {
+            selectedPopup = target
+            setShowDetail(true)
+            Log.d("DeepLink", "Found and showing popup: ${target.name}")
+        }
     }
 
     if (showSearch) {
@@ -135,7 +163,7 @@ fun HomeScreen(
                 .background(Color.White)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize().verticalScroll(scrollState)
             ) {
                 TopSearchBar(
                     modifier = Modifier,
@@ -145,8 +173,23 @@ fun HomeScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
                 ) {
+                    Row() {
+                        loginResponse?.nickname?.let {
+                            Text(
+                                text= it,
+                                style = Bold17,
+                                color = mainOrange,
+                                modifier = Modifier
+                                    .padding(start = 15.dp)
+                            )
+                            Text(
+                                text= "님을 위한 팝업",
+                                style = Bold17,
+                                color = mainBlack,
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(15.dp))
                     BannerCarousel(recommendpopupList = recommendpopupList, onShowDetail = { popup ->
                         selectedPopup = popup
@@ -182,6 +225,30 @@ fun HomeScreen(
                     )
                 }
             }
+            if (showScrollToTop) {
+                FloatingActionButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            scrollState.animateScrollTo(0)
+                        }
+                    },
+                    containerColor = Color.White,
+                    shape =CircleShape,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(10.dp)
+                        .size(40.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.back_icon),
+                        contentDescription = "맨 위로",
+                        modifier = Modifier
+                            .size(14.dp)
+                            .rotate(90f),
+                        tint = Color.Unspecified
+                    )
+                }
+            }
         }
         if (showDetail && selectedPopup != null) {
             ContentDetail(
@@ -191,6 +258,7 @@ fun HomeScreen(
                 favoriteViewModel = favoriteViewModel
             )
         }
+
     }
 }
 

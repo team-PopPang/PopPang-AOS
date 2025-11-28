@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.poppang.PopPang.model.AlertStatusResponse
+import com.poppang.PopPang.model.DeleteAlertPopupRequest
 import com.poppang.PopPang.model.PopupEvent
 import com.poppang.PopPang.network.RetrofitInstance
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,6 +58,23 @@ class AlertViewModel: ViewModel() {
                 Log.e("AlertViewModel", "Alert read status updated successfully for popupUuid: $popupUuid")
             } catch (e: Exception) {
                 Log.e("AlertViewModel", "Error updating alert read status: ${e.message}")
+            }
+        }
+    }
+
+    fun deleteAlertPopup(userUuid: String, popupUuid: String) {
+        viewModelScope.launch {
+            try {
+                Log.e( "AlertViewModel", "Attempting to delete alert popup with popupUuid: $popupUuid")
+
+                RetrofitInstance.alertPopupApi.deleteAlertPopup(
+                    userUuid = userUuid,
+                    request = DeleteAlertPopupRequest(popupUuid)
+                )
+                Log.e("AlertViewModel", "Alert popup deleted successfully for popupUuid: $popupUuid")
+                _popupList.value = _popupList.value.filterNot { it.popupUuid == popupUuid }
+            } catch (e: Exception) {
+                Log.e("AlertViewModel", "Error deleting alert popup: ${e.message}")
             }
         }
     }

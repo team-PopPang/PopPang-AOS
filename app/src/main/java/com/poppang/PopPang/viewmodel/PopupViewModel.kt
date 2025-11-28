@@ -13,18 +13,18 @@ class PopupViewModel: ViewModel() {
     private var isLoaded = false
     val popupList: StateFlow<List<PopupEvent>> = _popupList
 
-    fun fetchPopupEvents() {
+    fun fetchPopupEvents(userUuid: String) {
         viewModelScope.launch {
             try {
                 val response =
-                    RetrofitInstance.popupApi.getPopupEvent("all")
+                    RetrofitInstance.popupApi.getPopupEvent(userUuid,"all")
                 _popupList.value = response
             } catch (e: Exception) {
             }
         }
     }
-    fun fetchPopupEventsOnce() {
+    fun fetchPopupEventsOnce(userUuid: String) {
         if (isLoaded) return
         isLoaded = true
-        fetchPopupEvents()
+        fetchPopupEvents(userUuid = userUuid)
     }}

@@ -1,5 +1,9 @@
 package com.poppang.PopPang.view
 
+import android.app.Activity
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,11 +22,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -31,6 +37,8 @@ import com.poppang.PopPang.model.BottomNavItem
 import com.poppang.PopPang.model.LoginResponse
 import com.poppang.PopPang.model.NavIcon
 import com.poppang.PopPang.ui.theme.Light10
+import com.poppang.PopPang.ui.theme.Medium10
+import com.poppang.PopPang.ui.theme.mainBlack
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.FcmTokenViewModel
 import com.poppang.PopPang.viewmodel.PopupComingViewModel
@@ -52,13 +60,16 @@ fun MainScreen(
     regionsViewModel: RegionsViewModel = viewModel(),
     navController: NavController,
     userDataViewModel: UserDataViewModel,
-    onUpdateLoginResponse: (LoginResponse) -> Unit
+    onUpdateLoginResponse: (LoginResponse) -> Unit,
+    deepLinkPopupUuid: String? = null
 ) {
     var selectedIndex by rememberSaveable { mutableStateOf(0) }
     var showDetail by rememberSaveable { mutableStateOf(false) }
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var showAlarm by rememberSaveable { mutableStateOf(false) }
     var showProfile by rememberSaveable { mutableStateOf(false) }
+    var lastBackPressedTime by remember { mutableStateOf(0L) }
+    val context = LocalContext.current
     val items = BottomNavItem.items
     val userUuid = loginResponse?.userUuid.orEmpty()
     val loginfcmToken = loginResponse?.fcmToken
@@ -68,25 +79,39 @@ fun MainScreen(
     val popupList by popupViewModel.popupList.collectAsState()
     val hideBottomNav = showDetail || showSearch || showAlarm || showProfile
 
+    BackHandler {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastBackPressedTime < 2000) {
+            (context as? Activity)?.finish()
+        } else {
+            lastBackPressedTime = currentTime
+            Toast.makeText(context, "한 번 더 누르면 종료됩니다.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     LaunchedEffect(Unit) {
-        popupprogressViewModel.fetchPopupProgressEventsOnce()
-        popupcomingViewModel.fetchPopupComingEventsOnce()
-        popupViewModel.fetchPopupEventsOnce()
         regionsViewModel.getRegions()
     }
     LaunchedEffect(userUuid) {
         if (userUuid.isNotEmpty()) {
+            popupprogressViewModel.fetchPopupProgressEventsOnce(userUuid)
+            popupcomingViewModel.fetchPopupComingEventsOnce(userUuid)
+            popupViewModel.fetchPopupEventsOnce(userUuid)
             favoriteViewModel.getFavoriteUserCheck(userUuid)
             recommendPopupViewModel.fetchrecommendpopupEventsOnce(userUuid)
         }
     }
     LaunchedEffect(userUuid, fcmToken) {
+        Log.d("MainScreen", "User UUID: $userUuid")
+        Log.d("MainScreen", "loginfcmToken: $loginfcmToken, fcmToken: $fcmToken")
         if (loginfcmToken != fcmToken) {
             if (userUuid.isNotEmpty() && !fcmToken.isNullOrBlank()) {
                fcmTokenViewModel.sendFcmToken(userUuid, fcmToken)
+                Log.d("MainScreen", "FCM token updated successfully")
             }
         }
     }
+
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
@@ -95,7 +120,7 @@ fun MainScreen(
                     modifier = Modifier
                         .fillMaxWidth(),
                     color = Color.White,
-                    shadowElevation = 8.dp
+                    shadowElevation = 20.dp
                 ) {
                     NavigationBar(
                         containerColor = Color.White,
@@ -118,9 +143,9 @@ fun MainScreen(
                                         )
                                     }
                                 },
-                                label = { Text(item.label, style = Light10) },
+                                label = { Text(item.label, style = if(isSelected)Medium10 else Light10 ,color= if (isSelected)Color(0xFF2B060D) else mainBlack) },
                                 colors = colors(
-                                    indicatorColor = Color.Transparent
+                                    indicatorColor = Color.Transparent,
                                 )
                             )
                         }
@@ -146,9 +171,11 @@ fun MainScreen(
                     popupprogressList = popupprogressList,
                     popupcomingList = popupcomingList,
                     recommendpopupList = recommendpopupList,
+                    popupList = popupList,
                     loginResponse = loginResponse,
                     favoriteViewModel = favoriteViewModel,
-                    regionsViewModel = regionsViewModel
+                    regionsViewModel = regionsViewModel,
+                    deepLinkPopupUuid = deepLinkPopupUuid
                 )
                 is BottomNavItem.Calendar -> CalendarScreen(
                     popupList = popupList,
@@ -161,11 +188,9 @@ fun MainScreen(
                     regionsViewModel = regionsViewModel
                 )
                 is BottomNavItem.Map -> MapScreen(
-                    popupList = popupList,
+                    popupprogressList = popupprogressList,
                     showDetail = showDetail,
                     setShowDetail = { showDetail = it },
-                    showAlarm = showAlarm,
-                    setShowAlarm = { showAlarm = it },
                     loginResponse = loginResponse,
                     favoriteViewModel = favoriteViewModel,
                     regionsViewModel = regionsViewModel

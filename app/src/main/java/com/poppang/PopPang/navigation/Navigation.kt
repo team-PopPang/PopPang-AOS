@@ -45,7 +45,8 @@ fun Navigation(
     recommendPopupViewModel: RecommendPopupViewModel,
     hideSystemBars: (Boolean) -> Unit,
     userDataViewModel: UserDataViewModel = viewModel(),
-    autoLoginViewModel: AutoLoginViewModel = viewModel()
+    autoLoginViewModel: AutoLoginViewModel = viewModel(),
+    deepLinkPopupUuid: String? = null
 ) {
     val navController = rememberNavController()
     var loginResponse by remember { mutableStateOf<LoginResponse?>(null) }
@@ -86,9 +87,8 @@ fun Navigation(
                     }
                 }
 
-                LaunchedEffect(Unit) {
+                LaunchedEffect(autoLoginResult) {
                     delay(1000)
-                    hasWaited = true
                     if (navigated) return@LaunchedEffect
                     if (userUuid.isNullOrBlank()) {
                         hideSystemBars(false)
@@ -97,10 +97,9 @@ fun Navigation(
                         }
                         navigated = true
                     } else if (autoLoginResult != null) {
-                        val res = autoLoginResult
-                        loginResponse = res
+                        loginResponse = autoLoginResult
                         hideSystemBars(false)
-                        if (!res?.nickname.isNullOrEmpty()) {
+                        if (!autoLoginResult?.nickname.isNullOrEmpty()) {
                             navController.navigate("main") {
                                 popUpTo("splash") { inclusive = true }
                             }
@@ -110,24 +109,18 @@ fun Navigation(
                             }
                         }
                         navigated = true
+                    } else {
+                        delay(2000)
+                        if (!navigated) {
+                            hideSystemBars(false)
+                            navController.navigate("login") {
+                                popUpTo("splash") { inclusive = true }
+                            }
+                            navigated = true
+                        }
                     }
                 }
 
-                LaunchedEffect(autoLoginResult, hasWaited) {
-                    if (!hasWaited || navigated) return@LaunchedEffect
-                    val res = autoLoginResult ?: return@LaunchedEffect
-                    hideSystemBars(false)
-                    if (!res.nickname.isNullOrEmpty()) {
-                        navController.navigate("main") {
-                            popUpTo("splash") { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate("signup") {
-                            popUpTo("splash") { inclusive = true }
-                        }
-                    }
-                    navigated = true
-                }
             }
             composable("onboarding") {
                 OnboardingScreen(
@@ -184,7 +177,8 @@ fun Navigation(
                     userDataViewModel = userDataViewModel,
                     onUpdateLoginResponse = { updated ->
                         loginResponse = updated
-                    }
+                    },
+                    deepLinkPopupUuid = deepLinkPopupUuid
                 )
             }
         }

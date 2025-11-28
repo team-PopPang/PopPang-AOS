@@ -43,7 +43,7 @@ object RetrofitInstance {
 
     val popupProgressApi: PopupProgressApi by lazy {
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(USERS_BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(PopupProgressApi::class.java)
@@ -51,7 +51,7 @@ object RetrofitInstance {
 
     val popupComingApi: PopupComingApi by lazy {
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(USERS_BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(PopupComingApi::class.java)
@@ -59,14 +59,14 @@ object RetrofitInstance {
 
     val popupApi: PopupApi by lazy {
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(USERS_BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(PopupApi::class.java)
     }
     val searchApi: SearchApi by lazy {
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(USERS_BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(SearchApi::class.java)
@@ -88,12 +88,28 @@ object RetrofitInstance {
             .create(FavoriteApi::class.java)
     }
 
+    val favoriteCountApi: FavoriteCountApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(USERS_BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(FavoriteCountApi::class.java)
+    }
+
     val viewCountApi: ViewCountApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(USERS_BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(ViewCountApi::class.java)
+    }
+
+    val viewCountIncrementApi : ViewCountIncrementApi by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(ViewCountApi::class.java)
+            .create(ViewCountIncrementApi::class.java)
     }
 
     val fcmTokenApi: FcmTokenApi by lazy {
@@ -152,12 +168,12 @@ object RetrofitInstance {
             .create(RecommendPopupApi::class.java)
     }
 
-    val homePopupFilterApi : HomePopuofilterApi by lazy {
+    val homePopupFilterApi : HomePopupfilterApi by lazy {
         Retrofit.Builder()
             .baseUrl(USERS_BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(HomePopuofilterApi::class.java)
+            .create(HomePopupfilterApi::class.java)
     }
 
     val alertPopupApi : AlertPopupApi by lazy {
@@ -168,4 +184,11 @@ object RetrofitInstance {
             .create(AlertPopupApi::class.java)
     }
 
+    val mapPopupFilterApi : MapPopupfilterApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(USERS_BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(MapPopupfilterApi::class.java)
+    }
 }

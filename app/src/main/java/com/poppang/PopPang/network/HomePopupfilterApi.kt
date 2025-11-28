@@ -6,7 +6,7 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
 
-interface HomePopuofilterApi {
+interface HomePopupfilterApi {
     @GET(BuildConfig.HOME_POPUP_API)
     suspend fun getHomePopupfilter(
         @Path("userUuid") userUuid: String,
@@ -14,5 +14,4 @@ interface HomePopuofilterApi {
         @Query("district") district: String,
         @Query("homeSortStandard") homeSortStandard: String
     ): List<PopupEvent>
-
 }

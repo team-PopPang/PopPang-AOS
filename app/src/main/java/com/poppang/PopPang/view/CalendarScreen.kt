@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -26,10 +28,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -58,6 +62,7 @@ import com.poppang.PopPang.ui.theme.mainOrange
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.RegionsViewModel
 import com.poppang.PopPang.viewmodel.ViewCountViewModel
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale.KOREAN
@@ -77,8 +82,13 @@ fun CalendarScreen(
 ) {
     val selectedDate = remember { mutableStateOf<LocalDate?>(LocalDate.now()) }
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    var showScrollToTop by remember { mutableStateOf(false) }
 
-
+    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+        showScrollToTop = listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 300
+    }
     if (showAlarm) {
         AlarmScreen(
             onClose = { setShowAlarm(false) },
@@ -88,36 +98,65 @@ fun CalendarScreen(
             favoriteViewModel = favoriteViewModel
         )
     } else {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
         ) {
-            CalendarTopBar(onAlarmClick = { setShowAlarm(true) })
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
+            Column(
+                modifier = Modifier.fillMaxSize()
             ) {
-                item {
-                    Column {
-                        CustomCalendar(
-                            popupList = popupList,
-                            selectedDate = selectedDate.value,
-                            onDateSelected = { selectedDate.value = it }
-                        )
-                        CalendarContent(
-                            popupList = popupList,
-                            selectedDate = selectedDate.value,
-                            onShowDetail = { popup ->
-                                selectedPopup = popup
-                                setShowDetail(true)
-                            },
-                            favoriteViewModel = favoriteViewModel,
-                            viewCountViewModel = viewCountViewModel,
-                            refreshTrigger = showDetail,
-                            loginResponse = loginResponse
-                        )
+                CalendarTopBar(onAlarmClick = { setShowAlarm(true) })
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    state = listState
+                ) {
+                    item {
+                        Column {
+                            CustomCalendar(
+                                popupList = popupList,
+                                selectedDate = selectedDate.value,
+                                onDateSelected = { selectedDate.value = it }
+                            )
+                            CalendarContent(
+                                popupList = popupList,
+                                selectedDate = selectedDate.value,
+                                onShowDetail = { popup ->
+                                    selectedPopup = popup
+                                    setShowDetail(true)
+                                },
+                                favoriteViewModel = favoriteViewModel,
+                                viewCountViewModel = viewCountViewModel,
+                                refreshTrigger = showDetail,
+                                loginResponse = loginResponse
+                            )
+                        }
                     }
+                }
+            }
+            if (showScrollToTop) {
+                FloatingActionButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            listState.animateScrollToItem(0)
+                        }
+                    },
+                    containerColor = Color.White,
+                    shape =CircleShape,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(10.dp)
+                        .size(40.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.back_icon),
+                        contentDescription = "맨 위로",
+                        modifier = Modifier
+                            .size(14.dp)
+                            .rotate(90f),
+                        tint = Color.Unspecified
+                    )
                 }
             }
         }
@@ -394,10 +433,10 @@ fun CalendarContent(
                         var favoriteCount by remember { mutableStateOf(0) }
                         var viewCount by remember { mutableStateOf(0) }
                         LaunchedEffect(popup.popupUuid, refreshTrigger) {
-                            favoriteViewModel.getFavoriteCount(popup.popupUuid) { count ->
+                            favoriteViewModel.getFavoriteCount(userUuid,popup.popupUuid) { count ->
                                 favoriteCount = count.toInt()
                             }
-                            viewCountViewModel.getTotalViewCount(popup.popupUuid) { count ->
+                            viewCountViewModel.getTotalViewCount(userUuid,popup.popupUuid) { count ->
                                 viewCount = count.toInt()
                             }
                         }
@@ -492,7 +531,7 @@ fun CalendarContent(
                                                                 popup.popupUuid
                                                             )
                                                         }
-                                                        favoriteViewModel.getFavoriteCount(popup.popupUuid) { count ->
+                                                        favoriteViewModel.getFavoriteCount(userUuid,popup.popupUuid) { count ->
                                                             favoriteCount = count.toInt()
                                                         }
                                                     },

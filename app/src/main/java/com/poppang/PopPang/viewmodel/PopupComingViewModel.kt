@@ -14,10 +14,10 @@ class PopupComingViewModel: ViewModel() {
     private var isLoaded = false
     val popupcomingList: StateFlow<List<PopupEvent>> = _popupList
 
-    fun fetchPopupComingEvents() {
+    fun fetchPopupComingEvents(userUuid: String) {
         viewModelScope.launch {
             try {
-                val response = RetrofitInstance.popupComingApi.getPopupComingEvent("all") // API에 맞게 수정
+                val response = RetrofitInstance.popupComingApi.getPopupComingEvent(userUuid,"all") // API에 맞게 수정
                 _popupList.value = response
             } catch (e: Exception) {
                 // 에러 처리
@@ -26,9 +26,9 @@ class PopupComingViewModel: ViewModel() {
         }
     }
 
-    fun fetchPopupComingEventsOnce() {
+    fun fetchPopupComingEventsOnce(userUuid: String) {
         if (isLoaded) return
         isLoaded = true
-        fetchPopupComingEvents()
+        fetchPopupComingEvents(userUuid = userUuid)
     }
 }

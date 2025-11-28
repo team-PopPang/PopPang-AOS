@@ -15,8 +15,8 @@ android {
         applicationId = "com.poppang.PopPang"
         minSdk = 28
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.0.2"
+        versionCode = 13
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -39,14 +39,12 @@ android {
         val popupprogressapi = localProperties.getProperty("POPUP_PROGRESS_API") ?: ""
         val popupcomingapi = localProperties.getProperty("POPUP_COMING_API") ?: ""
         val popupapi = localProperties.getProperty("POPUP_API") ?: ""
+        val popupselectapi = localProperties.getProperty("POPUP_SELECT_API") ?: ""
         val searchapi = localProperties.getProperty("SEARCH_API") ?: ""
         val keywordapi = localProperties.getProperty("KEYWORD_API") ?: ""
         val navermapkey = localProperties.getProperty("NAVER_MAP_KEY") ?: ""
         val favoriteapi = localProperties.getProperty("FAVORITE_API") ?: ""
-        val favoriteusercheckapi = localProperties.getProperty("FAVORITE_USER_CHECK_API") ?: ""
-        val favoritecheckapi = localProperties.getProperty("FAVORITE_CHECK_API") ?: ""
         val viewcountapi = localProperties.getProperty("VIEW_COUNT_API") ?: ""
-        val viewcounttotalapi = localProperties.getProperty("VIEW_COUNT_TOTAL_API") ?: ""
         val fcmapi = localProperties.getProperty("FCM_API") ?: ""
         val alertapi = localProperties.getProperty("ALERT_API") ?: ""
         val regionsapi = localProperties.getProperty("REGIONS_API") ?: ""
@@ -57,6 +55,7 @@ android {
         val mapopupapi = localProperties.getProperty("MAP_POPUP_API") ?: ""
         val alertpopupapi = localProperties.getProperty("ALERT_POPUP_API") ?: ""
         val alertreadapi = localProperties.getProperty("ALERT_READ_API") ?: ""
+        val alertdeleteapi = localProperties.getProperty("ALERT_DELETE_API") ?: ""
         buildConfigField("String", "KAKAO_KEY", "\"$kakaoKey\"")
         buildConfigField("String", "GOOGLE_KEY", "\"$googleKey\"")
         manifestPlaceholders["KAKAO_KEY"] = kakaoKey
@@ -75,14 +74,12 @@ android {
         buildConfigField("String", "URL_IMAGE", "\"$urlimage\"")
         buildConfigField("String", "POPUP_COMING_API", "\"$popupcomingapi\"")
         buildConfigField("String", "POPUP_API", "\"$popupapi\"")
+        buildConfigField("String", "POPUP_SELECT_API", "\"$popupselectapi\"")
         buildConfigField("String", "SEARCH_API", "\"$searchapi\"")
         buildConfigField("String", "KEYWORD_API", "\"$keywordapi\"")
         manifestPlaceholders["NAVER_MAP_KEY"] = navermapkey
         buildConfigField("String", "FAVORITE_API", "\"$favoriteapi\"")
-        buildConfigField("String", "FAVORITE_USER_CHECK_API", "\"$favoriteusercheckapi\"")
-        buildConfigField("String", "FAVORITE_CHECK_API", "\"$favoritecheckapi\"")
         buildConfigField("String", "VIEW_COUNT_API", "\"$viewcountapi\"")
-        buildConfigField("String", "VIEW_COUNT_TOTAL_API", "\"$viewcounttotalapi\"")
         buildConfigField("String", "FCM_API", "\"$fcmapi\"")
         buildConfigField("String", "ALERT_API", "\"$alertapi\"")
         buildConfigField("String", "REGIONS_API", "\"$regionsapi\"")
@@ -93,6 +90,7 @@ android {
         buildConfigField("String", "MAP_POPUP_API", "\"$mapopupapi\"")
         buildConfigField("String", "ALERT_POPUP_API", "\"$alertpopupapi\"")
         buildConfigField("String", "ALERT_READ_API", "\"$alertreadapi\"")
+        buildConfigField("String", "ALERT_DELETE_API", "\"$alertdeleteapi\"")
     }
 
     buildTypes {
@@ -143,6 +141,9 @@ dependencies {
     implementation (libs.play.services.location)
     implementation (libs.naver.map.location)
     implementation(libs.firebase.messaging)
+    implementation("com.google.android.play:app-update-ktx:2.1.0")
+    implementation("com.kakao.sdk:v2-user:2.21.3")
+    implementation("com.kakao.sdk:v2-share:2.21.3")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

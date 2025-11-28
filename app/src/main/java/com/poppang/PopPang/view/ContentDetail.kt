@@ -3,6 +3,7 @@ package com.poppang.PopPang.view
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -42,17 +42,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale.Companion.Crop
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.kakao.sdk.share.ShareClient
+import com.kakao.sdk.share.WebSharerClient
+import com.kakao.sdk.template.model.Content
+import com.kakao.sdk.template.model.FeedTemplate
+import com.kakao.sdk.template.model.Link
+import com.kakao.sdk.template.model.TextTemplate
 import com.poppang.PopPang.R
 import com.poppang.PopPang.model.LoginResponse
 import com.poppang.PopPang.model.PopupEvent
 import com.poppang.PopPang.ui.theme.Bold20
+import com.poppang.PopPang.ui.theme.Medium12
 import com.poppang.PopPang.ui.theme.Medium15
 import com.poppang.PopPang.ui.theme.Regular12
 import com.poppang.PopPang.ui.theme.Regular15
@@ -61,7 +67,6 @@ import com.poppang.PopPang.ui.theme.mainBlack
 import com.poppang.PopPang.ui.theme.mainGray1
 import com.poppang.PopPang.ui.theme.mainGray5
 import com.poppang.PopPang.ui.theme.mainOrange
-import com.poppang.PopPang.ui.theme.mainRed
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.ViewCountViewModel
 
@@ -84,14 +89,16 @@ fun ContentDetail(
     favoriteViewModel: FavoriteViewModel,
     viewCountViewModel: ViewCountViewModel = viewModel()
 ) {
-
     val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
     val userUuid = loginResponse?.userUuid.orEmpty()
-    val isLiked = favoritePopupUuids.contains(popup.popupUuid)
     val imageList = popup.fullImageUrlList
     val pagerState = rememberPagerState { imageList.size }
     var favoriteCount by remember { mutableStateOf(popup.favoriteCount.toInt()) }
+    val isLikedFromServer = favoritePopupUuids.contains(popup.popupUuid)
+    var localIsLiked by remember { mutableStateOf(isLikedFromServer) }
     var viewCount by remember { mutableStateOf(popup.viewCount.toInt()) }
+    val context = LocalContext.current
+
     LaunchedEffect(Unit) {
         viewCountViewModel.incrementViewCount(popup.popupUuid)
     }
@@ -99,12 +106,15 @@ fun ContentDetail(
         onClose()
     }
     LaunchedEffect(popup.popupUuid) {
-        favoriteViewModel.getFavoriteCount(popup.popupUuid) { count ->
+        favoriteViewModel.getFavoriteCount(userUuid,popup.popupUuid) { count ->
             favoriteCount = count.toInt()
         }
-        viewCountViewModel.getTotalViewCount(popup.popupUuid) { count ->
+        viewCountViewModel.getTotalViewCount(userUuid,popup.popupUuid) { count ->
             viewCount = count.toInt()
         }
+    }
+    LaunchedEffect(isLikedFromServer) {
+        localIsLiked = isLikedFromServer
     }
     Scaffold(
         contentWindowInsets = WindowInsets(0),
@@ -121,24 +131,85 @@ fun ContentDetail(
                     modifier = Modifier
                         .padding(horizontal = 24.dp)
                 ) {
-                    CustomButton3(onClick = {}, text = "친구에게 공유하기", modifier = Modifier.weight(1f))
                     CustomButton4(
                         onClick = {
-                        if(userUuid.isNotEmpty()) {
-                            if (isLiked) {
-                                favoriteViewModel.deleteFavorite(userUuid, popup.popupUuid)
+                            val firstImageUrl = popup.fullImageUrlList.firstOrNull()
+                            val defaultTemplate = if (firstImageUrl != null) {
+                                FeedTemplate(
+                                    content = Content(
+                                        title = popup.name,
+                                        description = popup.captionSummary,
+                                        imageUrl = popup.fullImageUrlList.firstOrNull(),
+                                        link = Link(
+                                            webUrl = "https://poppang.co.kr/store/detail?popupUuid=${popup.popupUuid}",
+                                            mobileWebUrl = "https://poppang.co.kr/store/detail?popupUuid=${popup.popupUuid}",
+                                            androidExecutionParams = mapOf("popupUuid" to popup.popupUuid),
+                                            iosExecutionParams = mapOf("popupUuid" to popup.popupUuid)
+                                        )
+                                    ),
+                                )
                             } else {
-                                favoriteViewModel.addFavorite(userUuid, popup.popupUuid)
+                                TextTemplate(
+                                    text = popup.captionSummary,
+                                    link = Link(
+                                        webUrl = "https://poppang.co.kr/store/detail?popupUuid=${popup.popupUuid}",
+                                        mobileWebUrl = "https://poppang.co.kr/store/detail?popupUuid=${popup.popupUuid}",
+                                        androidExecutionParams = mapOf("popupUuid" to popup.popupUuid),
+                                        iosExecutionParams = mapOf("popupUuid" to popup.popupUuid)
+                                    ),
+                                    buttonTitle = "앱에서 보기"
+                                )
                             }
-                            favoriteViewModel.getFavoriteCount(popup.popupUuid) { count ->
-                                favoriteCount = count.toInt()
+                            if (ShareClient.instance.isKakaoTalkSharingAvailable(context)) {
+                                ShareClient.instance.shareDefault(context, defaultTemplate) { sharingResult, error ->
+                                    if (error != null) {
+                                        Log.e("ContentDetail", "카카오톡 공유 실패", error)
+                                    } else if (sharingResult != null) {
+                                        context.startActivity(sharingResult.intent)
+                                        Log.e("ContentDetail", "카카오톡 공유 성공")
+                                    }
+                                }
+                            } else {
+                                val sharingUrl = WebSharerClient.instance.makeDefaultUrl(defaultTemplate)
+                                val intent = Intent(Intent.ACTION_VIEW, sharingUrl)
+                                context.startActivity(intent)
+                                Log.e("ContentDetail", "카카오톡 설치 안됨, 웹으로 공유 $sharingUrl")
                             }
-                        } },
-                        text = if (isLiked) "찜 취소하기" else "찜하기",
-                        modifier = Modifier
-                            .weight(1f)
-                            .background(if (isLiked) Color(0xFF999999) else mainOrange, shape = RoundedCornerShape(5.dp)),
+                        },
+                        text = "친구에게 공유하기",
+                        modifier = Modifier.weight(1f)
+                            .background(mainOrange, shape = RoundedCornerShape(5.dp))
                     )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(0.1f)){
+                        IconButton(
+                            onClick = {
+                                val newLikeStatus = !localIsLiked
+                                localIsLiked = newLikeStatus // 즉시 UI 반영
+                                if (newLikeStatus) {
+                                    favoriteViewModel.addFavorite(userUuid, popup.popupUuid)
+                                    favoriteCount += 1
+                                } else {
+                                    favoriteViewModel.deleteFavorite(userUuid, popup.popupUuid)
+                                    favoriteCount = (favoriteCount - 1).coerceAtLeast(0)
+                                }
+                            },
+                            modifier = Modifier.size(25.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = if (localIsLiked) R.drawable.heart_gray_icon else R.drawable.heart_white_icon),
+                                contentDescription = "좋아요 아이콘",
+                                tint = if (localIsLiked) Color.Red else Color.Unspecified,
+
+                            )
+                        }
+                        Text(
+                            text = favoriteCount.toString(),
+                            style = Medium12,
+                            color = mainOrange,
+                        )
+                    }
                 }
             }
         }
@@ -156,7 +227,7 @@ fun ContentDetail(
                     onClick = { onClose() },
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.back_icon),
+                        painter = painterResource(id = R.drawable.drop_back_icon),
                         contentDescription = "뒤로가기",
                         tint = Color.Black
                     )
@@ -180,7 +251,7 @@ fun ContentDetail(
                     state = pagerState,
                 ) { page ->
                     AsyncImage(
-                        model =ImageRequest.Builder(LocalContext.current)
+                        model = ImageRequest.Builder(LocalContext.current)
                             .data(imageList[page])
                             .diskCachePolicy(coil.request.CachePolicy.ENABLED)
                             .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
@@ -199,6 +270,30 @@ fun ContentDetail(
                     currentPage = { pagerState.currentPage },
                     totalPages = { imageList.size }
                 )
+                Box(
+                    modifier = Modifier
+                        .padding(start = 20.dp, bottom = 20.dp)
+                        .background(Color(0x50FFFFFF), shape = RoundedCornerShape(12.dp))
+                        .align(Alignment.BottomStart)
+
+                ) {
+                    Row(
+                        verticalAlignment = CenterVertically,
+                        modifier = Modifier
+                            .padding(horizontal = 24.dp, vertical = 6.dp)
+                    ){
+                        Text(
+                            text = viewCount.toString(),
+                            style = Regular9,
+                            color = mainBlack,
+                        )
+                        Text(
+                            text = "명이 봤어요",
+                            style = Regular9,
+                            color = mainBlack,
+                        )
+                    }
+                }
             }
             Text(
                 text = popup.name,
@@ -214,39 +309,6 @@ fun ContentDetail(
                     .fillMaxWidth()
                     .padding(start = 24.dp, end = 24.dp,)
             ) {
-                   Box(
-                       modifier = Modifier
-                           .fillMaxWidth(),
-                       contentAlignment = Alignment.BottomEnd
-                   ) {
-                       Row(
-                           verticalAlignment = CenterVertically
-                       ) {
-                           Icon(
-                               painter = painterResource(id = R.drawable.eye_icon),
-                               contentDescription = "조회수 아이콘",
-                               tint = mainGray1,
-                               modifier = Modifier.size(13.dp)
-                           )
-                           Text(
-                               text = viewCount.toString(),
-                               style = Regular9,
-                               color = mainGray1,
-                           )
-                           Spacer(modifier = Modifier.width(5.dp))
-                           Icon(
-                               painter = painterResource(id = R.drawable.heart_gray_icon),
-                               contentDescription = "좋아요 아이콘",
-                               tint = mainRed,
-                               modifier = Modifier.size(13.dp)
-                           )
-                           Text(
-                               text = favoriteCount.toString(),
-                               style = Regular9,
-                               color = mainGray1,
-                           )
-                       }
-                   }
                 Spacer(modifier = Modifier.height(10.dp))
                 Box(
                     modifier = Modifier
@@ -344,43 +406,4 @@ fun ContentDetail(
             }
         }
     }
-}
-
-@Composable
-@Preview
-fun ContentDetailPreview() {
-    val samplePopup = PopupEvent(
-        popupUuid = "sample-uuid",
-        name = "팝업 스토어 이벤트",
-        startDate = "2024-06-01",
-        endDate = "2024-06-30",
-        openTime = "10:00",
-        closeTime = "20:00",
-        address = "서울특별시 강남구 테헤란로 123",
-        roadAddress = "서울특별시 강남구 테헤란로 123",
-        region = "강남구",
-        latitude = 37.501234,
-        longitude = 127.039567,
-        instaPostId = "sampleInstaId",
-        instaPostUrl = "https://www.instagram.com/p/sampleInstaId/",
-        captionSummary = "이번 여름, 특별한 팝업 스토어에서 만나보세요! 다양한 혜택과 이벤트가 가득합니다.",
-        imageUrlList = listOf(
-            "https://via.placeholder.com/600x400.png?text=Image+1",
-            "https://via.placeholder.com/600x400.png?text=Image+2",
-            "https://via.placeholder.com/600x400.png?text=Image+3"
-        ),
-        mediaType = "image",
-        recommend = "많이 추천된 팝업 스토어입니다.",
-        favoriteCount = 150.0,
-        viewCount = 1200.0,
-        isFavorited = false,
-        isRead = false
-    )
-    ContentDetail(
-        popup = samplePopup,
-        onClose = {},
-        loginResponse = null,
-        favoriteViewModel = viewModel(),
-        viewCountViewModel = viewModel { ViewCountViewModel() }
-    )
 }

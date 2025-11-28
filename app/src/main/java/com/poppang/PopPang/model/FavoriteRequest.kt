@@ -6,5 +6,5 @@ data class FavoriteRequest(
 )
 
 data class FavoriteCountResponse(
-    val count: Double
+    val favoriteCount: Double
 )

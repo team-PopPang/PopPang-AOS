@@ -1,5 +1,6 @@
 package com.poppang.PopPang.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.poppang.PopPang.model.FavoriteRequest
@@ -41,8 +42,10 @@ class FavoriteViewModel: ViewModel() {
     fun getFavoriteUserCheck(userUuid: String) {
         viewModelScope.launch {
             try {
-                val response = RetrofitInstance.favoriteApi.getFavoriteUserCheck(userUuid)
-                val popupUuids = response.map { it.popupUuid }
+                val response = RetrofitInstance.favoriteCountApi.getFavoriteUserCheck(userUuid)
+                val popupUuids = response
+                    .filter { it.isFavorited == true }
+                    .map { it.popupUuid }
                 _favoritePopupUuids.value = popupUuids
             } catch (e: Exception) {
                  _favoritePopupUuids.value = emptyList()
@@ -52,15 +55,17 @@ class FavoriteViewModel: ViewModel() {
 
 
 
-    fun getFavoriteCount(popupUuid: String, onResult: (Double) -> Unit) {
+    fun getFavoriteCount(userUuid: String,popupUuid: String, onResult: (Double) -> Unit) {
         viewModelScope.launch {
             try {
                 delay(300)
-                val response = RetrofitInstance.favoriteApi.getFavoriteCheck(popupUuid)
-                val count = response.count ?: 0.0
+                val response = RetrofitInstance.favoriteCountApi.getFavoriteCheck(userUuid, popupUuid)
+                val count = response.favoriteCount ?: 0.0
                 onResult(count)
+                Log.e("FavoriteViewModel", "Favorite count: $count" )
             } catch (e: Exception) {
                 onResult(0.0)
+                Log.e("FavoriteViewModel", "Error fetching favorite count", e)
             }
         }
     }

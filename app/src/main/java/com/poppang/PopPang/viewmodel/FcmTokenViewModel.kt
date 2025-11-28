@@ -1,5 +1,6 @@
 package com.poppang.PopPang.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.poppang.PopPang.model.FcmTokenRequest
@@ -27,8 +28,10 @@ class FcmTokenViewModel : ViewModel() {
                     body = FcmTokenRequest(fcmToken)
                 )
                 _sendState.value = FcmTokenSendState.Success
+                Log.d("FcmTokenViewModel", "FCM token sent successfully")
             } catch (e: Exception) {
                 _sendState.value = FcmTokenSendState.Error(e.message ?: "Unknown error")
+                Log.d("FcmTokenViewModel", "Error sending FCM token: ${e.message}")
             }
         }
     }

@@ -11,7 +11,7 @@ class ViewCountViewModel: ViewModel() {
     fun incrementViewCount(popupUuid: String) {
         viewModelScope.launch {
             try {
-                RetrofitInstance.viewCountApi.incrementViewCount(popupUuid)
+                RetrofitInstance.viewCountIncrementApi.incrementViewCount(popupUuid)
                 delay(300)
                 Log.d("ViewCountViewModel", "View count incremented for popupUuid: $popupUuid")
             } catch (e: Exception) {
@@ -20,11 +20,11 @@ class ViewCountViewModel: ViewModel() {
         }
     }
 
-    fun getTotalViewCount(popupUuid: String, onResult: (Double) -> Unit) {
+    fun getTotalViewCount(userUuid: String, popupUuid: String, onResult: (Double) -> Unit) {
         viewModelScope.launch {
             try {
-                val response = RetrofitInstance.viewCountApi.getTotalViewCount(popupUuid)
-                val count = response.totalViewCount ?: 0.0
+                val response = RetrofitInstance.viewCountApi.getTotalViewCount(userUuid,popupUuid)
+                val count = response.viewCount ?: 0.0
                 onResult(count)
                 delay(300)
                 Log.d("ViewCountViewModel", "Total view count for popupUuid $popupUuid: $count")

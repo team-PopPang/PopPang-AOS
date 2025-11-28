@@ -142,6 +142,7 @@ fun LikeScreen(
                                 favoriteViewModel = favoriteViewModel,
                                 viewCountViewModel = viewCountViewModel,
                                 refreshTrigger = showDetail,
+                                loginResponse = loginResponse
                             )
                         }
                     }
@@ -554,8 +555,10 @@ fun LikeCalendarItem(
     onShowDetail: (PopupEvent) -> Unit,
     favoriteViewModel: FavoriteViewModel,
     viewCountViewModel: ViewCountViewModel,
-    refreshTrigger:Boolean
+    refreshTrigger:Boolean,
+    loginResponse: LoginResponse?
 ) {
+    val userUuid = loginResponse?.userUuid.orEmpty()
     val filteredList = if (selectedDate != null) {
         popupList.filter { popup ->
             val start = LocalDate.parse(popup.startDate)
@@ -602,10 +605,10 @@ fun LikeCalendarItem(
                         var viewCount by remember { mutableStateOf(0) }
 
                         LaunchedEffect(popup.popupUuid,refreshTrigger) {
-                            favoriteViewModel.getFavoriteCount(popup.popupUuid) { count ->
+                            favoriteViewModel.getFavoriteCount(userUuid,popup.popupUuid) { count ->
                                 favoriteCount = count.toInt()
                             }
-                            viewCountViewModel.getTotalViewCount(popup.popupUuid) { count ->
+                            viewCountViewModel.getTotalViewCount(userUuid,popup.popupUuid) { count ->
                                 viewCount = count.toInt()
                             }
                         }
