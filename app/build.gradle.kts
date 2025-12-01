@@ -15,7 +15,7 @@ android {
         applicationId = "com.poppang.PopPang"
         minSdk = 28
         targetSdk = 36
-        versionCode = 13
+        versionCode = 14
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -144,6 +144,7 @@ dependencies {
     implementation("com.google.android.play:app-update-ktx:2.1.0")
     implementation("com.kakao.sdk:v2-user:2.21.3")
     implementation("com.kakao.sdk:v2-share:2.21.3")
+    implementation("io.morfly.compose:advanced-bottomsheet-material3-android:0.1.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
