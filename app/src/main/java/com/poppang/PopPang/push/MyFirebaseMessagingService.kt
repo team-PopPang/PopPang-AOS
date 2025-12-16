@@ -36,7 +36,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             ) == PackageManager.PERMISSION_GRANTED
         ) {
             val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(R.mipmap.ic_launcher_poppang)
                 .setContentTitle(push.title)
                 .setContentText(push.body)
                 .setAutoCancel(true)

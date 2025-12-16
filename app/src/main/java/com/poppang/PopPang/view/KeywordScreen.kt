@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -65,7 +66,7 @@ fun KeywordScreen(keywordViewModel: AddKeywordViewModel) {
                     value = keyword.value,
                     onValueChange = {
                         val filtered = it.text.replace("\n", "")
-                        keyword.value = TextFieldValue(filtered)
+                        keyword.value = it.copy(text = filtered, selection = TextRange(filtered.length))
                     },
                     placeholder = { Text("ex) 화장품, 애니메이션", style = Medium15, color = mainGray2) },
                     modifier = Modifier

@@ -223,14 +223,22 @@ fun ContentDetail(
             Row(
                 verticalAlignment = CenterVertically
             ) {
-                IconButton(
-                    onClick = { onClose() },
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .background(Color.White.copy(alpha = 0.8f), shape = RoundedCornerShape(18.dp)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.drop_back_icon),
-                        contentDescription = "뒤로가기",
-                        tint = Color.Black
-                    )
+                    IconButton(
+                        onClick = { onClose() },
+                        modifier = Modifier.size(14.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.arrow_down),
+                            contentDescription = "뒤로가기",
+                            tint = Color.Black
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.weight(1f))
             }
@@ -273,7 +281,7 @@ fun ContentDetail(
                 Box(
                     modifier = Modifier
                         .padding(start = 20.dp, bottom = 20.dp)
-                        .background(Color(0x50FFFFFF), shape = RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.8f), shape = RoundedCornerShape(12.dp))
                         .align(Alignment.BottomStart)
 
                 ) {

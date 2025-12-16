@@ -158,8 +158,7 @@ fun KakaoLoginButton(onClick: (LoginResponse, String?) -> Unit, modifier: Modifi
                         )
                     },
                     onError = {
-                        Toast.makeText(context, "카카오 로그아웃 실패: ${it.message}", Toast.LENGTH_SHORT)
-                            .show()
+                        Toast.makeText(context, "카카오 로그아웃 실패: ${it.message}", Toast.LENGTH_SHORT).show()
                     }
                 )
             }

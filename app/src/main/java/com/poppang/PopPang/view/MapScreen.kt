@@ -8,6 +8,7 @@ import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Arrangement.Center
 import androidx.compose.foundation.layout.Arrangement.SpaceBetween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -34,17 +36,13 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -61,7 +59,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -116,9 +113,18 @@ import com.poppang.PopPang.viewmodel.MapPopupfilterViewModel
 import com.poppang.PopPang.viewmodel.MapViewModel
 import com.poppang.PopPang.viewmodel.RegionsViewModel
 import com.poppang.PopPang.viewmodel.ViewCountViewModel
+import io.morfly.compose.bottomsheet.material3.BottomSheetScaffold
+import io.morfly.compose.bottomsheet.material3.rememberBottomSheetScaffoldState
+import io.morfly.compose.bottomsheet.material3.rememberBottomSheetState
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalNaverMapApi::class)
+enum class MapSheetValue {
+    Hidden,
+    Middle,
+    Expanded
+}
+
+@OptIn(ExperimentalNaverMapApi::class, ExperimentalFoundationApi::class)
 @SuppressLint("MissingPermission")
 @Composable
 fun MapScreen(
@@ -132,12 +138,6 @@ fun MapScreen(
     regionsViewModel: RegionsViewModel,
     mapPopupfilterViewModel: MapPopupfilterViewModel = viewModel()
 ) {
-    val scaffoldState = rememberBottomSheetScaffoldState(
-        bottomSheetState = rememberStandardBottomSheetState(
-            initialValue = SheetValue.PartiallyExpanded,
-            skipHiddenState = false,
-        )
-    )
     var selectedRegion by remember { mutableStateOf("전체") }
     var selectedDistrict by remember { mutableStateOf("전체") }
     var selectedSort by remember { mutableStateOf("CLOSEST") }
@@ -147,7 +147,7 @@ fun MapScreen(
     val mappopupfilterList by mapPopupfilterViewModel.mapPopupfilterList.collectAsState()
     val searchedPopups by mapviewmodel.searchedPopups.collectAsState(initial = emptyList())
     val isSearched = remember { mutableStateOf(false) }
-    val cameraPositionState = rememberCameraPositionState{
+    val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition(LatLng(latitude, longitude), 14.0)
     }
     val coroutineScope = rememberCoroutineScope()
@@ -177,7 +177,14 @@ fun MapScreen(
         }
     }
 
-    LaunchedEffect(selectedRegion, selectedDistrict, selectedSort, latitude, longitude, loginResponse?.userUuid) {
+    LaunchedEffect(
+        selectedRegion,
+        selectedDistrict,
+        selectedSort,
+        latitude,
+        longitude,
+        loginResponse?.userUuid
+    ) {
         mapPopupfilterViewModel.fetchmappopupfilter(
             userUuid = loginResponse?.userUuid.orEmpty(),
             region = selectedRegion,
@@ -188,13 +195,23 @@ fun MapScreen(
         )
     }
 
+    val listToShow =
+        if (isSearched.value && searchedPopups.isNotEmpty()) searchedPopups else mappopupfilterList
+    val sheetState = rememberBottomSheetState(
+        initialValue = MapSheetValue.Middle,
+        defineValues = {
+            MapSheetValue.Hidden at height(percent = 0)
+            MapSheetValue.Middle at height(percent = 45)
+            MapSheetValue.Expanded at height(percent = 85)
+        }
+    )
+    val scaffoldState = rememberBottomSheetScaffoldState(sheetState)
+
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetContainerColor = Color.White,
         sheetShadowElevation = 8.dp,
         sheetTonalElevation = 8.dp,
-        sheetSwipeEnabled = true,
-        sheetPeekHeight = (360.dp),
         sheetDragHandle = {
             Column {
                 Spacer(modifier = Modifier.height(20.dp))
@@ -211,15 +228,19 @@ fun MapScreen(
             }
         },
         sheetContent = {
-            val listToShow = if (isSearched.value && searchedPopups.isNotEmpty()) searchedPopups else mappopupfilterList
             MapSheetContent(
                 popupList = listToShow,
                 onPopupClick = { popup ->
                     cameraPositionState.move(
-                        CameraUpdate.toCameraPosition(CameraPosition(LatLng(popup.latitude, popup.longitude), 14.0))
+                        CameraUpdate.toCameraPosition(
+                            CameraPosition(
+                                LatLng(popup.latitude, popup.longitude),
+                                14.0
+                            )
+                        )
                     )
                     coroutineScope.launch {
-                        scaffoldState.bottomSheetState.partialExpand()
+                        sheetState.animateTo(MapSheetValue.Middle)
                     }
                 },
                 viewCountViewModel = viewCountViewModel,
@@ -231,11 +252,12 @@ fun MapScreen(
                     selectedSort = sort
                 }
             )
-        },
-    ) {
+        }
+    ) { innerPadding ->
         Box(
             Modifier
                 .fillMaxSize()
+                .padding(innerPadding)
         ) {
             MapView(
                 mapviewmodel = mapviewmodel,
@@ -259,7 +281,7 @@ fun MapScreen(
                 }
             )
             AnimatedVisibility(
-                visible = scaffoldState.bottomSheetState.currentValue != SheetValue.PartiallyExpanded,
+                visible = scaffoldState.sheetState.currentValue == MapSheetValue.Hidden,
                 enter = fadeIn(),
                 exit = fadeOut(),
                 modifier = Modifier
@@ -269,10 +291,10 @@ fun MapScreen(
                 Box(
                     modifier = Modifier
                         .background(Color.White, RoundedCornerShape(20.dp))
-                        . padding(vertical = 10.dp, horizontal = 10.dp)
+                        .padding(vertical = 10.dp, horizontal = 10.dp)
                         .clickable {
                             coroutineScope.launch {
-                            scaffoldState.bottomSheetState.partialExpand()
+                                sheetState.animateTo(MapSheetValue.Middle)
                             }
                         },
                 ) {
@@ -295,7 +317,6 @@ fun MapScreen(
                     }
                 }
             }
-
         }
     }
     if (showDetail && selectedPopup != null) {
@@ -418,7 +439,7 @@ fun MapView(
             },
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .padding(end = 16.dp, bottom = 150.dp)
+                .padding(end = 16.dp)
                 .size(48.dp)
                 .background(Color.White, shape = RoundedCornerShape(24.dp))
                 .border(1.dp, mainGray3, RoundedCornerShape(24.dp))
@@ -445,13 +466,12 @@ fun MapSheetContent(
     selectedSort: String,
     onSortChange: (String) -> Unit
 ) {
+    var showSheet by remember { mutableStateOf(true) }
     val userUuid = loginResponse?.userUuid.orEmpty()
-    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = screenHeight * 0.68f, )
             .padding(horizontal = 24.dp)
     ) {
         Spacer(modifier = Modifier.height(10.dp))
@@ -463,18 +483,21 @@ fun MapSheetContent(
                 onSortSelected = { onSortChange(it) },
             )
         }
-        LazyColumn {
+        Spacer(modifier = Modifier.height(10.dp))
+        LazyColumn(
+            contentPadding = PaddingValues(bottom = 120.dp)
+        ) {
             items(popupList.size) { popup ->
                 val isLiked = favoritePopupUuids.contains(popupList[popup].popupUuid)
                 val popup = popupList[popup]
                 var favoriteCount by remember { mutableStateOf(0) }
                 var viewCount by remember { mutableStateOf(0) }
 
-                LaunchedEffect(popup.popupUuid,refreshTrigger) {
-                    favoriteViewModel.getFavoriteCount(userUuid,popup.popupUuid) { count ->
+                LaunchedEffect(popup.popupUuid, refreshTrigger) {
+                    favoriteViewModel.getFavoriteCount(userUuid, popup.popupUuid) { count ->
                         favoriteCount = count.toInt()
                     }
-                    viewCountViewModel.getTotalViewCount(userUuid,popup.popupUuid) { count ->
+                    viewCountViewModel.getTotalViewCount(userUuid, popup.popupUuid) { count ->
                         viewCount = count.toInt()
                     }
                 }
@@ -514,7 +537,8 @@ fun MapSheetContent(
                                 Box {
                                     Column {
                                         Text(
-                                            text = popup.roadAddress.split(" ").take(2).joinToString(" "),
+                                            text = popup.roadAddress.split(" ").take(2)
+                                                .joinToString(" "),
                                             style = Regular12,
                                             color = mainBlack
                                         )
@@ -569,7 +593,10 @@ fun MapSheetContent(
                                                         popup.popupUuid
                                                     )
                                                 }
-                                                favoriteViewModel.getFavoriteCount(userUuid,popup.popupUuid) { count ->
+                                                favoriteViewModel.getFavoriteCount(
+                                                    userUuid,
+                                                    popup.popupUuid
+                                                ) { count ->
                                                     favoriteCount = count.toInt()
                                                 }
                                             },

@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign.Companion.Center
@@ -492,7 +493,7 @@ fun HomeKeywordScreen(loginResponse: LoginResponse?, viewModel: AlarmKeywordView
                     value = keyword.value,
                     onValueChange = {
                         val filtered = it.text.replace("\n", "")
-                        keyword.value = TextFieldValue(filtered)
+                        keyword.value = it.copy(text = filtered, selection = TextRange(filtered.length))
                     },
                     placeholder = { Text("알림받을 키워드를 입력해주세요.", style = Medium12, color = mainGray2) },
                     modifier = Modifier

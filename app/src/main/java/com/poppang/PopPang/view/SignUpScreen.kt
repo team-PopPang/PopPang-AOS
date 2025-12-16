@@ -1,6 +1,5 @@
 package com.poppang.PopPang.view
 
-import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -35,7 +34,7 @@ import com.poppang.PopPang.viewmodel.SignUpViewModel
 
 @Composable
 fun SignUpScreen(
-    pageCount: Int = 3,
+    pageCount: Int = 2,
     loginResponse: LoginResponse,
     fcmToken: String?,
     onFinish: (LoginResponse) -> Unit = {},
@@ -60,8 +59,7 @@ fun SignUpScreen(
             )
             when (currentPage.value) {
                 0 -> NicknameScreen(viewModel = nicknameViewModel)
-                1 -> CategorySelectionScreen(categoryViewModel = categoryViewModel)
-                2 -> KeywordScreen(keywordViewModel = keywordViewModel)
+                1 -> KeywordScreen(keywordViewModel = keywordViewModel)
             }
         }
         CustomButton(
@@ -71,29 +69,23 @@ fun SignUpScreen(
                         currentPage.value += 1
                     }
                 } else {
-                    if (currentPage.value < pageCount - 1) {
-                        currentPage.value += 1
-                    } else {
-                        signUpViewModel.signUpUser(
-                            loginResponse = loginResponse,
-                            fcmToken = fcmToken,
-                            nicknameViewModel = nicknameViewModel,
-                            keywordViewModel = keywordViewModel,
-                            categoryViewModel = categoryViewModel
-                        ) { success ->
-                            if (success) {
-                                val updatedLoginResponse = loginResponse.copy(
-                                    nickname = nicknameViewModel.nickname,
-                                    fcmToken = fcmToken
-                                )
-                                onFinish(updatedLoginResponse)
-                            } else {
-                                Toast.makeText(context, "회원가입 실패", Toast.LENGTH_SHORT).show()
-                            }
+                    signUpViewModel.signUpUser(
+                        loginResponse = loginResponse,
+                        fcmToken = fcmToken,
+                        nicknameViewModel = nicknameViewModel,
+                        keywordViewModel = keywordViewModel,
+                        categoryViewModel = categoryViewModel
+                    ) { success ->
+                        if (success) {
+                            val updatedLoginResponse = loginResponse.copy(
+                                nickname = nicknameViewModel.nickname,
+                                fcmToken = fcmToken
+                            )
+                            onFinish(updatedLoginResponse)
                         }
                     }
                 }
-            },
+                      },
             text = if (currentPage.value < pageCount - 1) "다음" else "시작하기",
             modifier = Modifier
                 .align(BottomCenter)

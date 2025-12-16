@@ -19,7 +19,7 @@ data class PopupEvent(
     val captionSummary: String,
     val imageUrlList: List<String>,
     val mediaType: String,
-    val recommend: String,
+    val recommendList: List<String>,
     val favoriteCount: Double,
     val viewCount: Double,
     val isFavorited: Boolean,

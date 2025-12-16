@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,6 +37,8 @@ fun NicknameScreen(viewModel: DuplicateNickname = viewModel()) {
     val checkResult = viewModel.checkResult
     val isError = viewModel.isError
     val isSuccess = viewModel.isSuccess
+
+    val isCheckEnabled = nickname.length >= 2
 
     Box(
         modifier = Modifier
@@ -102,11 +105,12 @@ fun NicknameScreen(viewModel: DuplicateNickname = viewModel()) {
                     )
                 )
                 CustomButton2(
-                    onClick = { viewModel.checkNickname() },
+                    onClick = { if (isCheckEnabled) viewModel.checkNickname() },
                     text = "중복확인",
                     modifier = Modifier
                         .weight(3f)
                         .padding(start = 5.dp,end = 24.dp)
+                        .alpha(if (isCheckEnabled) 1f else 0.5f)
                 )
             }
             if (checkResult.isNotBlank()) {

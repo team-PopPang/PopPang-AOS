@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -255,22 +257,37 @@ fun ProfileContent(
             onDismissRequest = { showWithdrawDialog = false },
             title = { Text("회원탈퇴") },
             text = { Text("정말로 회원탈퇴 하시겠습니까?") },
+            containerColor = Color.White,
             confirmButton = {
-                CustomButton3(onClick = {
-                        showWithdrawDialog = false
-                        userDrawViewModel.withdrawUser(userUuid) // ViewModel의 함수 호출
-                        prefs.edit().remove("userUuid").apply()
-                        navController.navigate("login") {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    },
-                    text = "탈퇴하기",
+                Row(
                     modifier = Modifier
-                )
-            },
-            dismissButton = {
-                CustomButton4(onClick = { showWithdrawDialog = false }, text = "취소", modifier = Modifier.background(mainOrange))
-            },
+                        .fillMaxWidth()
+                        .padding(all = 16.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    CustomButton3(
+                        onClick = {
+                            showWithdrawDialog = false
+                            userDrawViewModel.withdrawUser(userUuid)
+                            prefs.edit().remove("userUuid").apply()
+                            navController.navigate("login") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        },
+                        text = "탈퇴하기",
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                    )
+                    CustomButton4(
+                        onClick = { showWithdrawDialog = false },
+                        text = "취소",
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(mainOrange, shape = RoundedCornerShape(5.dp))
+                    )
+                }
+            }
         )
     }
 }
