@@ -15,8 +15,8 @@ android {
         applicationId = "com.poppang.PopPang"
         minSdk = 28
         targetSdk = 36
-        versionCode = 14
-        versionName = "1.0.0"
+        versionCode = 16
+        versionName = "1.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
