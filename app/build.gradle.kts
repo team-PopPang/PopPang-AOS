@@ -15,8 +15,8 @@ android {
         applicationId = "com.poppang.PopPang"
         minSdk = 28
         targetSdk = 36
-        versionCode = 16
-        versionName = "1.0.2"
+        versionCode = 18
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -56,6 +56,7 @@ android {
         val alertpopupapi = localProperties.getProperty("ALERT_POPUP_API") ?: ""
         val alertreadapi = localProperties.getProperty("ALERT_READ_API") ?: ""
         val alertdeleteapi = localProperties.getProperty("ALERT_DELETE_API") ?: ""
+        val relatedpopupapi = localProperties.getProperty("RELATED_POPUP_API") ?: ""
         buildConfigField("String", "KAKAO_KEY", "\"$kakaoKey\"")
         buildConfigField("String", "GOOGLE_KEY", "\"$googleKey\"")
         manifestPlaceholders["KAKAO_KEY"] = kakaoKey
@@ -91,6 +92,7 @@ android {
         buildConfigField("String", "ALERT_POPUP_API", "\"$alertpopupapi\"")
         buildConfigField("String", "ALERT_READ_API", "\"$alertreadapi\"")
         buildConfigField("String", "ALERT_DELETE_API", "\"$alertdeleteapi\"")
+        buildConfigField("String", "RELATED_POPUP_API", "\"$relatedpopupapi\"")
     }
 
     buildTypes {
@@ -106,9 +108,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-        freeCompilerArgs += listOf("-Xopt-in=androidx.compose.material3.ExperimentalMaterial3Api")
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+            freeCompilerArgs.add("-Xopt-in=androidx.compose.material3.ExperimentalMaterial3Api")
+        }
     }
     buildFeatures {
         compose = true
@@ -141,9 +145,8 @@ dependencies {
     implementation (libs.play.services.location)
     implementation (libs.naver.map.location)
     implementation(libs.firebase.messaging)
-    implementation("com.google.android.play:app-update-ktx:2.1.0")
-    implementation("com.kakao.sdk:v2-user:2.21.3")
-    implementation("com.kakao.sdk:v2-share:2.21.3")
+    implementation(libs.app.update.ktx)
+    implementation(libs.v2.share)
     implementation("io.morfly.compose:advanced-bottomsheet-material3-android:0.1.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

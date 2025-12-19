@@ -39,6 +39,13 @@ val Bold20 = TextStyle(
     letterSpacing = 0.4.sp,
     lineHeight = 28.sp
 )
+val Bold18 = TextStyle(
+    fontFamily = FontFamily(Font(R.font.scdream6)),
+    //fontWeight = FontWeight.Bold,
+    fontSize = 18.sp,
+    letterSpacing = 0.36.sp,
+    lineHeight = 25.2.sp
+)
 val Bold17 = TextStyle(
     fontFamily = FontFamily(Font(R.font.scdream6)),
     //fontWeight = FontWeight.Bold,
@@ -89,6 +96,13 @@ val Medium15 = TextStyle(
     fontSize = 15.sp,
     letterSpacing = 0.3.sp,
     lineHeight = 21.sp
+)
+val Medium14 = TextStyle(
+    fontFamily = FontFamily(Font(R.font.scdream5)),
+    //fontWeight = FontWeight.Medium,
+    fontSize = 14.sp,
+    letterSpacing = 0.28.sp,
+    lineHeight = 19.6.sp
 )
 val Medium13 = TextStyle(
     fontFamily = FontFamily(Font(R.font.scdream5)),
@@ -177,6 +191,13 @@ val Regular9 = TextStyle(
 )
 
 //Light
+val Light12 = TextStyle(
+    fontFamily = FontFamily(Font(R.font.scdream3)),
+    //fontWeight = FontWeight.Light,
+    fontSize = 12.sp,
+    letterSpacing = 0.24.sp,
+    lineHeight = 16.8.sp
+)
 val Light10 = TextStyle(
     fontFamily = FontFamily(Font(R.font.scdream3)),
     //fontWeight = FontWeight.Light,
