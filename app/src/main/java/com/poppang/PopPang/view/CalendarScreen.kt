@@ -1,6 +1,7 @@
 package com.poppang.PopPang.view
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Arrangement.SpaceBetween
@@ -16,12 +17,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -41,25 +46,33 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.poppang.PopPang.R
 import com.poppang.PopPang.model.LoginResponse
 import com.poppang.PopPang.model.PopupEvent
+import com.poppang.PopPang.ui.theme.Bold12
 import com.poppang.PopPang.ui.theme.Bold15
-import com.poppang.PopPang.ui.theme.Medium10
+import com.poppang.PopPang.ui.theme.Bold17
+import com.poppang.PopPang.ui.theme.Light10
 import com.poppang.PopPang.ui.theme.Medium12
 import com.poppang.PopPang.ui.theme.Medium17
 import com.poppang.PopPang.ui.theme.Medium18
+import com.poppang.PopPang.ui.theme.Medium8
 import com.poppang.PopPang.ui.theme.Regular12
+import com.poppang.PopPang.ui.theme.Regular15
 import com.poppang.PopPang.ui.theme.mainAmber
 import com.poppang.PopPang.ui.theme.mainBlack
 import com.poppang.PopPang.ui.theme.mainGray1
 import com.poppang.PopPang.ui.theme.mainGray2
+import com.poppang.PopPang.ui.theme.mainGray3
+import com.poppang.PopPang.ui.theme.mainGray4
 import com.poppang.PopPang.ui.theme.mainGray5
 import com.poppang.PopPang.ui.theme.mainOrange
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
+import com.poppang.PopPang.viewmodel.HomePopupfilterViewModel
 import com.poppang.PopPang.viewmodel.RegionsViewModel
 import com.poppang.PopPang.viewmodel.ViewCountViewModel
 import kotlinx.coroutines.launch
@@ -78,6 +91,7 @@ fun CalendarScreen(
     loginResponse: LoginResponse?,
     favoriteViewModel: FavoriteViewModel,
     viewCountViewModel: ViewCountViewModel = viewModel(),
+    homePopupfilterViewModel: HomePopupfilterViewModel = viewModel(),
     regionsViewModel: RegionsViewModel
 ) {
     val selectedDate = remember { mutableStateOf<LocalDate?>(LocalDate.now()) }
@@ -85,9 +99,21 @@ fun CalendarScreen(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     var showScrollToTop by remember { mutableStateOf(false) }
+    var selectedRegion by remember { mutableStateOf("전체") }
+    var selectedDistrict by remember { mutableStateOf("전체") }
+    var selectedSort by remember { mutableStateOf("NEWEST") }
+    val homepopupfilterList by homePopupfilterViewModel.homePopupfilterList.collectAsState()
 
     LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
         showScrollToTop = listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 300
+    }
+    LaunchedEffect(selectedRegion, selectedDistrict, selectedSort, loginResponse?.userUuid) {
+        homePopupfilterViewModel.fetchhomepopupfilter(
+            userUuid = loginResponse?.userUuid.orEmpty(),
+            region = selectedRegion,
+            district = selectedDistrict,
+            homeSortStandard = selectedSort
+        )
     }
     if (showAlarm) {
         AlarmScreen(
@@ -115,12 +141,12 @@ fun CalendarScreen(
                     item {
                         Column {
                             CustomCalendar(
-                                popupList = popupList,
+                                popupList = homepopupfilterList,
                                 selectedDate = selectedDate.value,
                                 onDateSelected = { selectedDate.value = it }
                             )
                             CalendarContent(
-                                popupList = popupList,
+                                popupList = homepopupfilterList,
                                 selectedDate = selectedDate.value,
                                 onShowDetail = { popup ->
                                     selectedPopup = popup
@@ -129,7 +155,18 @@ fun CalendarScreen(
                                 favoriteViewModel = favoriteViewModel,
                                 viewCountViewModel = viewCountViewModel,
                                 refreshTrigger = showDetail,
-                                loginResponse = loginResponse
+                                loginResponse = loginResponse,
+                                regionsViewModel = regionsViewModel,
+                                selectedRegion = selectedRegion,
+                                selectedDistrict = selectedDistrict,
+                                selectedSort = selectedSort,
+                                onRegionChange = { region, district ->
+                                    selectedRegion = region
+                                    selectedDistrict = district
+                                },
+                                onSortChange = { sort ->
+                                    selectedSort = sort
+                                }
                             )
                         }
                     }
@@ -165,7 +202,9 @@ fun CalendarScreen(
                 popup = selectedPopup!!,
                 onClose = { setShowDetail(false) },
                 loginResponse = loginResponse,
-                favoriteViewModel = favoriteViewModel
+                favoriteViewModel = favoriteViewModel,
+                showDetail = showDetail,
+                setShowDetail = setShowDetail,
             )
         }
     }
@@ -197,7 +236,6 @@ fun CalendarTopBar(onAlarmClick: () -> Unit) {
                     painter = painterResource(R.drawable.bell_icon),
                     contentDescription = "bell",
                     modifier = Modifier
-                        .padding(start = 15.dp)
                         .size(23.dp),
                     tint = Color.Unspecified
                 )
@@ -277,7 +315,7 @@ fun CustomCalendar(popupList: List<PopupEvent>,
                         ) {
                             Text(
                                 text = day,
-                                style = Regular12,
+                                style = Bold12,
                                 color = mainGray2
                             )
                         }
@@ -335,7 +373,7 @@ fun CustomCalendar(popupList: List<PopupEvent>,
                                         if (popupCount > 0) {
                                             Text(
                                                 text = "+${popupCount}건",
-                                                style = Medium10,
+                                                style = Medium8,
                                                 color = mainAmber
                                             )
                                         }
@@ -379,7 +417,13 @@ fun CalendarContent(
     favoriteViewModel: FavoriteViewModel,
     viewCountViewModel: ViewCountViewModel,
     refreshTrigger:Boolean,
-    loginResponse: LoginResponse?
+    loginResponse: LoginResponse?,
+    regionsViewModel: RegionsViewModel,
+    selectedRegion: String,
+    selectedDistrict: String,
+    selectedSort: String,
+    onRegionChange: (String, String) -> Unit,
+    onSortChange: (String) -> Unit
 ) {
     val filteredList = if (selectedDate != null) {
         popupList.filter { popup ->
@@ -402,25 +446,51 @@ fun CalendarContent(
             if (selectedDate != null) {
                 Row(
                     modifier = Modifier
-                        .padding(vertical = 20.dp)
+                        .fillMaxWidth()
+                        .padding(top =20.dp),
+                    horizontalArrangement = SpaceBetween,
+                    verticalAlignment = CenterVertically
                 ) {
-                    Text(
-                        text = "${selectedDate.dayOfMonth}일",
-                        style = Medium12,
-                        color = mainBlack,
-                    )
-                    Text(
-                        text = "${
-                            selectedDate.dayOfWeek.getDisplayName(
-                                TextStyle.SHORT,
-                                KOREAN
+                    Box() {
+                        Row() {
+                            Text(
+                                text = "${selectedDate.dayOfMonth}일",
+                                style = Medium12,
+                                color = mainBlack,
                             )
-                        }요일",
-                        style = Medium12,
-                        color = mainBlack,
-                        modifier = Modifier
-                            .padding(start = 5.dp)
-                    )
+                            Text(
+                                text = "${
+                                    selectedDate.dayOfWeek.getDisplayName(
+                                        TextStyle.SHORT,
+                                        KOREAN
+                                    )
+                                }요일",
+                                style = Medium12,
+                                color = mainBlack,
+                                modifier = Modifier
+                                    .padding(start = 5.dp)
+                            )
+                        }
+                    }
+                    Box(){
+                        Row() {
+                            CalendarLocalFilterButton(
+                                selectedRegion = selectedRegion,
+                                onRegionSelected = { regionWithDistrict ->
+                                    val parts = regionWithDistrict.split(" ")
+                                    val region = parts.getOrNull(0) ?: "전체"
+                                    val district = parts.getOrNull(1) ?: "전체"
+                                    onRegionChange(region, district)
+                                },
+                                regionsViewModel = regionsViewModel
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            CalendarSortType(
+                                selectedSort = selectedSort,
+                                onSortSelected = { onSortChange(it) }
+                            )
+                        }
+                    }
                 }
             }
             Box(
@@ -491,7 +561,7 @@ fun CalendarContent(
                                                 Spacer(modifier = Modifier.height(3.dp))
                                                 Text(
                                                     text = popup.startDateFormatted + " - " + popup.endDateFormatted,
-                                                    style = Regular12,
+                                                    style = Regular12.copy(letterSpacing = (-1).sp),
                                                     color = mainGray1
                                                 )
                                             }
@@ -509,7 +579,7 @@ fun CalendarContent(
                                                     painter = painterResource(id = R.drawable.eye_icon),
                                                     contentDescription = "조회수 아이콘",
                                                     tint = mainGray1,
-                                                    modifier = Modifier.size(12.dp)
+                                                    modifier = Modifier.padding(end = 4.dp).size(12.dp)
                                                 )
                                                 Text(
                                                     text = viewCount.toString(),
@@ -535,8 +605,7 @@ fun CalendarContent(
                                                             favoriteCount = count.toInt()
                                                         }
                                                     },
-                                                    modifier = Modifier
-                                                        .size(12.dp)
+                                                    modifier = Modifier.padding(end = 4.dp).size(12.dp)
                                                             ) {
                                                     Icon(
                                                         painter = painterResource(id = R.drawable.heart_gray_icon),
@@ -563,6 +632,293 @@ fun CalendarContent(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun CalendarLocalFilterButton(selectedRegion: String, onRegionSelected: (String) -> Unit, regionsViewModel: RegionsViewModel) {
+    var showSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var currentRegion by remember { mutableStateOf(selectedRegion) }
+    val regionsList by regionsViewModel.regions.collectAsState()
+    val baseMap: Map<String, List<String>> = if (regionsList.isNotEmpty()) {
+        regionsList.associate { it.region to it.districtList }
+    } else {
+        emptyMap()
+    }
+    val regionMap: Map<String, List<String>> = if (baseMap.isEmpty()) {
+        mapOf("전체" to listOf("전체"))
+    } else {
+        val ordered = linkedMapOf<String, List<String>>()
+        ordered["전체"] = listOf("전체")
+        baseMap["서울"]?.let { ordered["서울"] = it }
+        for ((k, v) in baseMap) {
+            if (k != "서울") ordered.putIfAbsent(k, v)
+        }
+        ordered
+    }
+    val regionItems = regionMap.keys.toList()
+    val subAreaList = regionMap[currentRegion] ?: listOf("전체")
+    val cellHeight = 46.dp
+    val tableHeight = (regionItems.size * 46).dp
+
+    Box(
+        modifier = Modifier
+            .clickable { showSheet = true }
+            .background(Color.White, RoundedCornerShape(20.dp))
+            .border(0.dp, mainGray1, RoundedCornerShape(20.dp))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row {
+            Text(
+                text = selectedRegion,
+                color = mainGray1,
+                style = Light10
+            )
+            Icon(
+                painter = painterResource(R.drawable.arrow_up),
+                contentDescription = "지역 선택",
+                modifier = Modifier
+                    .padding(start = 3.dp)
+                    .size(10.dp)
+                    .rotate(if (showSheet) 270f else 90f),
+                tint = mainGray2
+            )
+        }
+    }
+    if (showSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSheet = false },
+            sheetState = sheetState,
+            dragHandle = null,
+            containerColor = Color.White
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 28.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 28.dp, bottom = 30.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "지역",
+                        style = Bold17,
+                        color = mainBlack
+                    )
+                    Icon(
+                        painter = painterResource(id = R.drawable.close_icon),
+                        contentDescription = "닫기",
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clickable { showSheet = false },
+                        tint = mainBlack
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(mainGray3)
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(tableHeight)
+                        .background(Color.White)
+                ) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .width(65.dp)
+                            .background(mainGray4)
+                            .height(tableHeight)
+                    ) {
+                        itemsIndexed(regionItems) { idx, region ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(cellHeight)
+                                    .background(if (currentRegion == region) Color.White else mainGray4)
+                                    .clickable { currentRegion = region },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = region,
+                                    style = Medium12,
+                                    color = if (currentRegion == region) mainOrange else mainGray1
+                                )
+                            }
+                            if (idx != regionItems.lastIndex) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(1.dp)
+                                        .background(mainGray4)
+                                )
+                            }
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .fillMaxHeight()
+                            .background(mainGray5)
+                    )
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(Color.White)
+                            .height(tableHeight)
+                    ) {
+                        itemsIndexed(subAreaList) { idx, subArea ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(cellHeight)
+                                    .clickable {
+                                        onRegionSelected(
+                                            if (subArea == "전체") currentRegion else "$currentRegion $subArea"
+                                        )
+                                        showSheet = false
+                                    }
+                                    .padding(horizontal = 12.dp),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                Text(
+                                    text = subArea,
+                                    style = Medium12,
+                                    color = mainBlack
+                                )
+                            }
+                            if (idx != subAreaList.lastIndex) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(1.dp)
+                                        .background(mainGray5)
+                                )
+                            }
+                        }
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(mainGray3)
+                )
+                Spacer(modifier = Modifier.padding(bottom = 20.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun CalendarSortType(selectedSort: String, onSortSelected: (String) -> Unit) {
+    var showSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sortItems = listOf(
+        "최신순" to "NEWEST",
+        "조회순" to "MOST_VIEWED",
+        "마감임박순" to "CLOSING_SOON"
+    )
+    Box(modifier = Modifier
+        .clickable { showSheet = true }
+        .background(Color.White, RoundedCornerShape(20.dp))
+        .border(0.dp, mainGray1, RoundedCornerShape(20.dp))
+        .padding(horizontal = 10.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ){
+        Row {
+            Text(
+                text = sortItems.find { it.second == selectedSort }?.first ?: "최신순",
+                color = mainGray1,
+                style = Light10
+            )
+            Icon(
+                painter = painterResource(R.drawable.arrow_up),
+                contentDescription = "정렬 선택",
+                modifier = Modifier
+                    .padding(start = 3.dp)
+                    .size(10.dp)
+                    .rotate(if (showSheet) 270f else 90f),
+                tint = mainGray2
+            )
+        }
+    }
+    if (showSheet) {
+        ModalBottomSheet(onDismissRequest = { showSheet = false }, sheetState = sheetState, dragHandle = null, containerColor = Color.White) {
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, top = 28.dp, bottom = 30.dp, end = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "정렬",
+                        style = Bold17,
+                        color = mainBlack,
+                    )
+                    Icon(
+                        painter = painterResource(id = R.drawable.close_icon),
+                        contentDescription = "닫기",
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clickable { showSheet = false },
+                        tint = mainBlack
+                    )
+                }
+                sortItems.forEach { (kor,eng) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onSortSelected(eng)
+                                showSheet = false
+                            }
+                            .background(Color.White),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(46.dp)
+                                .padding(horizontal = 12.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(if (selectedSort == eng) R.drawable.button_on else R.drawable.button_off),
+                                    contentDescription = null,
+                                    tint = Color.Unspecified
+                                )
+                                Text(
+                                    text = kor,
+                                    style = Regular15,
+                                    color = mainBlack,
+                                    modifier = Modifier
+                                        .padding(start = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(
+                    modifier = Modifier
+                        .padding(bottom = 20.dp)
+                )
             }
         }
     }

@@ -1,7 +1,12 @@
 package com.poppang.PopPang.view
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +37,7 @@ import com.poppang.PopPang.viewmodel.CategoryItemViewModel
 import com.poppang.PopPang.viewmodel.DuplicateNickname
 import com.poppang.PopPang.viewmodel.SignUpViewModel
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun SignUpScreen(
     pageCount: Int = 2,
@@ -57,9 +63,41 @@ fun SignUpScreen(
                 modifier = Modifier
                     .padding(top = 44.dp)
             )
-            when (currentPage.value) {
-                0 -> NicknameScreen(viewModel = nicknameViewModel)
-                1 -> KeywordScreen(keywordViewModel = keywordViewModel)
+            AnimatedContent(
+                targetState = currentPage.value,
+                transitionSpec = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(350)
+                    ) togetherWith slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(350)
+                    )
+                }
+            ) { page ->
+                when (page) {
+                    0 -> NicknameScreen(viewModel = nicknameViewModel)
+                    1 -> KeywordScreen(
+                        keywordViewModel = keywordViewModel,
+                        onSkip = {
+                            signUpViewModel.signUpUser(
+                                loginResponse = loginResponse,
+                                fcmToken = fcmToken,
+                                nicknameViewModel = nicknameViewModel,
+                                keywordViewModel = keywordViewModel,
+                                categoryViewModel = categoryViewModel
+                            ) { success ->
+                                if (success) {
+                                    val updatedLoginResponse = loginResponse.copy(
+                                        nickname = nicknameViewModel.nickname,
+                                        fcmToken = fcmToken
+                                    )
+                                    onFinish(updatedLoginResponse)
+                                }
+                            }
+                        }
+                    )
+                }
             }
         }
         CustomButton(

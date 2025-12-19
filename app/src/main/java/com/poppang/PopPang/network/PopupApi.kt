@@ -19,3 +19,11 @@ interface PopupComingApi{
     @GET(BuildConfig.POPUP_COMING_API)
     suspend fun getPopupComingEvent(@Path("userUuid") userUuid : String, @Query("commingType") comingType: String): List<PopupEvent>
 }
+
+interface PopuprelatedApi{
+    @GET(BuildConfig.RELATED_POPUP_API)
+    suspend fun getPopupRelatedEvent(
+        @Path("userUuid") userUuid : String,
+        @Path("popupUuid") popupUuid : String,
+        @Query("relatedType") relatedType: String): List<PopupEvent>
+}

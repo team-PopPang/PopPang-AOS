@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.poppang.PopPang.R
 import com.poppang.PopPang.model.LoginResponse
-import com.poppang.PopPang.ui.theme.Bold15
+import com.poppang.PopPang.ui.theme.Medium15
 import com.poppang.PopPang.ui.theme.google
 import com.poppang.PopPang.ui.theme.kakao
 import com.poppang.PopPang.viewmodel.loginViewModel
@@ -118,7 +118,7 @@ fun GoogleLoginButton(
             )
             Text(
                 text = "구글 로그인",
-                style = Bold15,
+                style = Medium15,
                 color = Color(0xFF333333),
                 modifier = Modifier.padding(start = 8.dp)
             )
@@ -178,7 +178,7 @@ fun KakaoLoginButton(onClick: (LoginResponse, String?) -> Unit, modifier: Modifi
             )
             Text(
                 text = "카카오 로그인",
-                style = Bold15,
+                style = Medium15,
                 color = Color(0xFF3D1D1C),
                 modifier = Modifier
                     .padding(start = 8.dp)

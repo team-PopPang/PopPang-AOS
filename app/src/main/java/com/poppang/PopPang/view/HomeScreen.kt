@@ -112,7 +112,7 @@ fun HomeScreen(
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
     var showScrollToTop by remember { mutableStateOf(false) }
-
+    var showContentScreen by remember { mutableStateOf(false) }
 
     LaunchedEffect(selectedRegion, selectedDistrict, selectedSort, loginResponse?.userUuid) {
         homePopupfilterViewModel.fetchhomepopupfilter(
@@ -156,6 +156,16 @@ fun HomeScreen(
             setShowDetail = setShowDetail,
             favoriteViewModel = favoriteViewModel
         )
+    } else if (showContentScreen) {
+        ContentScreen(
+            onClose = { showContentScreen = false },
+            popupList = popupcomingList,
+            showDetail = showDetail,
+            setShowDetail = setShowDetail,
+            loginResponse = loginResponse,
+            favoriteViewModel = favoriteViewModel,
+            text = "곧 생기는 팝업"
+        )
     } else {
         Box(
             modifier = Modifier
@@ -196,10 +206,13 @@ fun HomeScreen(
                         setShowDetail(true)
                     })
                     Spacer(modifier = Modifier.height(50.dp))
-                    BoxCarousel(popupcomingList = popupcomingList, onShowDetail = { popup ->
+                    BoxCarousel(
+                        popupcomingList = popupcomingList,
+                        onShowDetail = { popup ->
                         selectedPopup = popup
-                        setShowDetail(true)
-                    })
+                        setShowDetail(true) },
+                        onShowAll = { showContentScreen = true }
+                    )
                     Spacer(modifier = Modifier.height(50.dp))
                     FilterSection(
                         regionsViewModel = regionsViewModel,
@@ -255,10 +268,11 @@ fun HomeScreen(
                 popup = selectedPopup!!,
                 onClose = { setShowDetail(false) },
                 loginResponse = loginResponse,
-                favoriteViewModel = favoriteViewModel
+                favoriteViewModel = favoriteViewModel,
+                showDetail = showDetail,
+                setShowDetail = setShowDetail,
             )
         }
-
     }
 }
 
@@ -298,7 +312,6 @@ private fun TopSearchBar(modifier: Modifier, onSearchBarClick: () -> Unit = {}, 
                     painter = painterResource(R.drawable.bell_icon),
                     contentDescription = "bell",
                     modifier = Modifier
-                        .padding(start = 15.dp)
                         .size(23.dp),
                     tint = Color.Unspecified
                 )
@@ -343,11 +356,11 @@ fun BannerCarousel(modifier: Modifier = Modifier, recommendpopupList: List<Popup
                         brush = linearGradient(
                             colorStops = arrayOf(
                                 0.0f to Color(0x00333333),
-                                0.6f to Color(0x10333333),
-                                1.0f to Color(0x38333333)
+                                0.5f to Color(0x85333333),
+                                1.0f to Color(0xD4333333)
                             ),
                             start = Offset(0f, 0f),
-                            end = Offset(0f, 271f)
+                            end = Offset(0f, 700f)
                         )
                     )
             )
@@ -386,7 +399,7 @@ fun BannerCarousel(modifier: Modifier = Modifier, recommendpopupList: List<Popup
 }
 
 @Composable
-fun BoxCarousel(onShowDetail: (PopupEvent) -> Unit, popupcomingList: List<PopupEvent>) {
+fun BoxCarousel(onShowDetail: (PopupEvent) -> Unit, popupcomingList: List<PopupEvent>,onShowAll: () -> Unit) {
     val sortedList = popupcomingList.sortedBy { it.startDate }
     val pagerState = rememberPagerState(initialPage = 0) { sortedList.size }
     Column {
@@ -410,14 +423,18 @@ fun BoxCarousel(onShowDetail: (PopupEvent) -> Unit, popupcomingList: List<PopupE
                         .padding(top = 5.dp)
                 )
             }
-            Icon(
-                painter = painterResource(id = R.drawable.arrow_up),
-                contentDescription = "Arrow Right",
+            IconButton(
+                onClick = {onShowAll()},
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .padding(end = 15.dp)
                     .size(16.dp)
-            )
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.arrow_up),
+                    contentDescription = "Arrow Right",
+                )
+            }
         }
         Spacer(modifier = Modifier.height(15.dp))
         HorizontalPager(
@@ -524,11 +541,10 @@ fun LocalFilterButton(selectedRegion: String, onRegionSelected: (String) -> Unit
 
     Box(
         modifier = Modifier
-            .width(60.dp)
             .clickable { showSheet = true }
             .background(Color.White, RoundedCornerShape(20.dp))
             .border(0.dp, mainGray1, RoundedCornerShape(20.dp))
-            .padding(vertical = 8.dp),
+            .padding(horizontal = 10.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Row {
@@ -687,7 +703,6 @@ fun SortType(selectedSort: String, onSortSelected: (String) -> Unit) {
         "마감임박순" to "CLOSING_SOON"
     )
     Box(modifier = Modifier
-        .width(80.dp)
         .clickable { showSheet = true }
         .background(Color.White, RoundedCornerShape(20.dp))
         .border(0.dp, mainGray1, RoundedCornerShape(20.dp))
@@ -807,7 +822,7 @@ fun FilterSection(
         )
         Box{
             Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ){
                 LocalFilterButton(

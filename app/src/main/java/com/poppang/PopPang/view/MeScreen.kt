@@ -157,7 +157,6 @@ fun MeTopBar(onAlarmClick: () -> Unit) {
                     painter = painterResource(R.drawable.bell_icon),
                     contentDescription = "bell",
                     modifier = Modifier
-                        .padding(start = 15.dp)
                         .size(23.dp),
                     tint = Color.Unspecified
                 )
@@ -246,6 +245,7 @@ fun MeContent(loginResponse: LoginResponse?,alertViewModel: AlertViewModel = vie
                         modifier = Modifier.scale(0.7f),
                         colors = SwitchDefaults.colors(
                             checkedTrackColor = mainOrange,
+                            checkedThumbColor = Color.White,
                             uncheckedTrackColor = Color.White
                         )
                     )

@@ -48,6 +48,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign.Companion.Center
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -129,7 +130,9 @@ fun AlarmScreen(onClose: () -> Unit,
                 popup = selectedPopup!!,
                 onClose = { setShowDetail(false) },
                 loginResponse = loginResponse,
-                favoriteViewModel = favoriteViewModel
+                favoriteViewModel = favoriteViewModel,
+                showDetail = showDetail,
+                setShowDetail = setShowDetail,
             )
         }
     }
@@ -375,7 +378,7 @@ fun ActivityTab(
                                         Spacer(modifier = Modifier.height(3.dp))
                                         Text(
                                             text = popup.startDateFormatted + " - " + popup.endDateFormatted,
-                                            style = Regular12,
+                                            style = Regular12.copy(letterSpacing = (-1).sp),
                                             color = mainGray1
                                         )
                                     }
@@ -390,7 +393,7 @@ fun ActivityTab(
                                             painter = painterResource(id = R.drawable.eye_icon),
                                             contentDescription = "조회수 아이콘",
                                             tint = mainGray1,
-                                            modifier = Modifier.size(12.dp)
+                                            modifier = Modifier.padding(end=4.dp).size(12.dp)
                                         )
                                         Text(
                                             text = viewCount.toString(),
@@ -419,7 +422,7 @@ fun ActivityTab(
                                                     favoriteCount = count.toInt()
                                                 }
                                             },
-                                            modifier = Modifier.size(12.dp)
+                                            modifier = Modifier.padding(end=4.dp).size(12.dp)
                                         ) {
                                             Icon(
                                                 painter = painterResource(id = R.drawable.heart_gray_icon),

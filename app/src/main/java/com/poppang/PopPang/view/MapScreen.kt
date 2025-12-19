@@ -34,8 +34,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
@@ -65,6 +63,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.scale
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -97,7 +96,9 @@ import com.poppang.PopPang.model.LoginResponse
 import com.poppang.PopPang.model.PopupEvent
 import com.poppang.PopPang.ui.theme.Bold15
 import com.poppang.PopPang.ui.theme.Bold17
+import com.poppang.PopPang.ui.theme.Bold18
 import com.poppang.PopPang.ui.theme.Light10
+import com.poppang.PopPang.ui.theme.Light12
 import com.poppang.PopPang.ui.theme.Medium12
 import com.poppang.PopPang.ui.theme.Regular12
 import com.poppang.PopPang.ui.theme.Regular15
@@ -152,6 +153,16 @@ fun MapScreen(
     }
     val coroutineScope = rememberCoroutineScope()
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    var selectedDetailPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    val detailSheetState = rememberBottomSheetState(
+        initialValue = MapSheetValue.Middle,
+        defineValues = {
+            MapSheetValue.Hidden at height(percent = 0)
+            MapSheetValue.Middle at height(percent = 60)
+            MapSheetValue.Expanded at height(percent = 90)
+        }
+    )
+    val detailScaffoldState = rememberBottomSheetScaffoldState(detailSheetState)
 
     LaunchedEffect(popupprogressList) { mapviewmodel.setPopups(popupprogressList) }
 
@@ -194,7 +205,11 @@ fun MapScreen(
             mapSortStandard = selectedSort
         )
     }
-
+    LaunchedEffect(selectedDetailPopup) {
+        if (selectedDetailPopup != null) {
+            detailSheetState.animateTo(MapSheetValue.Middle)
+        }
+    }
     val listToShow =
         if (isSearched.value && searchedPopups.isNotEmpty()) searchedPopups else mappopupfilterList
     val sheetState = rememberBottomSheetState(
@@ -241,6 +256,12 @@ fun MapScreen(
                     )
                     coroutineScope.launch {
                         sheetState.animateTo(MapSheetValue.Middle)
+                        if (selectedDetailPopup != null) {
+                            selectedDetailPopup = null
+                            selectedDetailPopup = popup
+                        } else {
+                            selectedDetailPopup = popup
+                        }
                     }
                 },
                 viewCountViewModel = viewCountViewModel,
@@ -303,7 +324,7 @@ fun MapScreen(
                         horizontalArrangement = Center,
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Menu,
+                            painter = painterResource(id = R.drawable.menu_icon),
                             contentDescription = "리스트 아이콘",
                             tint = Color.Unspecified,
                             modifier = Modifier.size(14.dp)
@@ -319,13 +340,53 @@ fun MapScreen(
             }
         }
     }
+
     if (showDetail && selectedPopup != null) {
         ContentDetail(
             popup = selectedPopup!!,
             onClose = { setShowDetail(false) },
             loginResponse = loginResponse,
-            favoriteViewModel = favoriteViewModel
+            favoriteViewModel = favoriteViewModel,
+            showDetail = showDetail,
+            setShowDetail = setShowDetail,
         )
+    }
+
+    if (selectedDetailPopup != null) {
+        BottomSheetScaffold(
+            scaffoldState = detailScaffoldState,
+            sheetContainerColor = Color.White,
+            sheetShadowElevation = 8.dp,
+            sheetTonalElevation = 8.dp,
+            sheetDragHandle = {
+                Column {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(40.dp)
+                            .height(4.dp)
+                            .background(
+                                color = mainBlack,
+                                shape = RoundedCornerShape(2.dp)
+                            )
+                            .align(Alignment.CenterHorizontally)
+                    )
+                }
+            },
+            sheetContent = {
+                MapSheetContentDeltail(
+                    popup = selectedDetailPopup!!,
+                    onClose = {
+                        coroutineScope.launch {
+                            detailSheetState.animateTo(MapSheetValue.Hidden)
+                            // 애니메이션이 끝난 뒤에 null 처리
+                            selectedDetailPopup = null
+                        }
+                    }
+                )
+            }
+        ) {
+        }
     }
 }
 
@@ -553,7 +614,7 @@ fun MapSheetContent(
                                         Spacer(modifier = Modifier.height(3.dp))
                                         Text(
                                             text = popup.startDateFormatted + " - " + popup.endDateFormatted,
-                                            style = Regular12,
+                                            style = Regular12.copy(letterSpacing = (-1).sp),
                                             color = mainGray1
                                         )
                                     }
@@ -571,7 +632,7 @@ fun MapSheetContent(
                                             painter = painterResource(id = R.drawable.eye_icon),
                                             contentDescription = "조회수 아이콘",
                                             tint = mainGray1,
-                                            modifier = Modifier.size(12.dp)
+                                            modifier = Modifier.padding(end = 4.dp).size(12.dp)
                                         )
                                         Text(
                                             text = viewCount.toString(),
@@ -600,8 +661,7 @@ fun MapSheetContent(
                                                     favoriteCount = count.toInt()
                                                 }
                                             },
-                                            modifier = Modifier
-                                                .size(12.dp)
+                                            modifier = Modifier.padding(end = 4.dp).size(12.dp)
                                         ) {
                                             Icon(
                                                 painter = painterResource(id = R.drawable.heart_gray_icon),
@@ -629,6 +689,99 @@ fun MapSheetContent(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun MapSheetContentDeltail(
+    popup: PopupEvent,
+    onClose: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .background(Color.White)
+            .padding(horizontal = 15.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 15.dp),
+            horizontalArrangement = SpaceBetween
+        ) {
+            popup.recommendList.forEach { recommend ->
+                Text(
+                    text = recommend,
+                    style = Regular12,
+                    color = Color(0xFF666666)
+                )
+            }
+            IconButton(
+                onClick = { onClose() },
+                modifier = Modifier
+                    .size(17.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFFF0F2F4), RoundedCornerShape(20.dp))
+                        .size(17.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.close_icon),
+                        contentDescription = "닫기",
+                        modifier = Modifier
+                            .size(11.dp)
+                            .align(Alignment.Center)
+                    )
+                }
+            }
+        }
+        Text(
+            text = popup.name,
+            style = Bold18,
+            color = mainBlack,
+            modifier = Modifier.padding(bottom = 5.dp)
+        )
+        Row() {
+            Text(text = "운영 장소", style = Light12, color = mainGray1)
+            Spacer(modifier = Modifier.width(5.dp))
+            Text(text = popup.roadAddress, style = Regular12, color = mainBlack)
+        }
+        Spacer(modifier = Modifier.height(5.dp))
+        Row() {
+            Text(text = "운영 날짜", style = Light12, color = mainGray1)
+            Spacer(modifier = Modifier.width(5.dp))
+            Text(
+                text = popup.startDateFormatted + " - " + popup.endDateFormatted,
+                style = Regular12.copy(letterSpacing = (-1).sp),
+                color = mainBlack
+            )
+        }
+        Spacer(modifier = Modifier.height(5.dp))
+        if (!popup.openTime.isNullOrEmpty() && !popup.closeTime.isNullOrEmpty()) {
+            Row() {
+                Text(text = "운영 시간", style = Light12, color = mainGray1)
+                Spacer(modifier = Modifier.width(5.dp))
+                Text(
+                    text = popup.openTime + " ~ " + popup.closeTime,
+                    style = Regular12,
+                    color = mainBlack
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(popup.fullImageUrlList.getOrNull(0))
+                .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                .build(),
+            contentDescription = popup.name,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .background(mainGray4, RoundedCornerShape(8.dp)),
+            contentScale = ContentScale.Crop
+        )
     }
 }
 
@@ -936,7 +1089,6 @@ fun MapSortType(selectedSort: String, onSortSelected: (String) -> Unit) {
         "마감임박순" to "CLOSING_SOON",
     )
     Box(modifier = Modifier
-        .width(80.dp)
         .clickable { showSheet = true }
         .background(Color.White, RoundedCornerShape(20.dp))
         .border(0.dp, mainGray1, RoundedCornerShape(20.dp))
@@ -1032,6 +1184,10 @@ fun MapSortType(selectedSort: String, onSortSelected: (String) -> Unit) {
         }
     }
 }
+
+
+
+
 
 
 

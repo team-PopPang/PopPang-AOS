@@ -191,4 +191,12 @@ object RetrofitInstance {
             .build()
             .create(MapPopupfilterApi::class.java)
     }
+
+    val popupRelatedApi : PopuprelatedApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(USERS_BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(PopuprelatedApi::class.java)
+    }
 }

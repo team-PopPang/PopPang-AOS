@@ -52,10 +52,12 @@ import com.poppang.PopPang.model.LoginResponse
 import com.poppang.PopPang.model.PopupEvent
 import com.poppang.PopPang.ui.theme.Bold15
 import com.poppang.PopPang.ui.theme.Medium12
+import com.poppang.PopPang.ui.theme.Medium14
 import com.poppang.PopPang.ui.theme.Regular11
 import com.poppang.PopPang.ui.theme.Regular12
 import com.poppang.PopPang.ui.theme.mainBlack
 import com.poppang.PopPang.ui.theme.mainGray1
+import com.poppang.PopPang.ui.theme.mainGray2
 import com.poppang.PopPang.ui.theme.mainGray4
 import com.poppang.PopPang.ui.theme.mainOrange
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
@@ -189,7 +191,6 @@ fun SearchScreen(onClose: () -> Unit,
                             painter = painterResource(R.drawable.bell_icon),
                             contentDescription = "bell",
                             modifier = Modifier
-                                .padding(start = 15.dp)
                                 .size(23.dp),
                             tint = Color.Unspecified
                         )
@@ -216,7 +217,9 @@ fun SearchScreen(onClose: () -> Unit,
                 popup = selectedPopup!!,
                 onClose = { showDetail = false },
                 loginResponse = loginResponse,
-                favoriteViewModel = favoriteViewModel
+                favoriteViewModel = favoriteViewModel,
+                showDetail = showDetail,
+                setShowDetail = setShowDetail,
             )
         }
     }
@@ -254,6 +257,30 @@ fun RecentSearchContent(recentQueries: List<String>, loginResponse: LoginRespons
 
 @Composable
 fun SearchContent(popupList: List<PopupEvent>, onShowDetail: (PopupEvent) -> Unit) {
+    if (popupList.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column {
+                Icon(
+                    painter = painterResource(id = R.drawable.info_icon),
+                    contentDescription = "검색 결과 없음",
+                    tint = mainGray2,
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(bottom = 5.dp)
+                        .size(50.dp)
+                )
+                Text(
+                    text = "검색 결과가 없습니다.",
+                    style = Medium14,
+                    color = mainBlack
+                )
+            }
+        }
+    } else {
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
@@ -319,4 +346,5 @@ fun SearchContent(popupList: List<PopupEvent>, onShowDetail: (PopupEvent) -> Uni
             }
         }
     }
+}
 }

@@ -1,6 +1,12 @@
 package com.poppang.PopPang.view
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -41,7 +47,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.poppang.PopPang.R
 
-
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun OnboardingScreen(
     onStartClick: () -> Unit = {}
@@ -72,14 +78,26 @@ fun OnboardingScreen(
         ) {
             Text(text = "건너뛰기", color = Color.Black)
         }
-        Image(
-            painter = painterResource(id = images[page]),
-            contentDescription = null,
+        AnimatedContent(
+            targetState = page,
+            transitionSpec = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(300)
+                ) togetherWith slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> -fullWidth },
+                    animationSpec = tween(300)
+                )
+            },
             modifier = Modifier
                 .align(TopCenter)
                 .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
-
-        )
+        ) { targetPage ->
+            Image(
+                painter = painterResource(id = images[targetPage]),
+                contentDescription = null,
+            )
+        }
         ImageIndicator(
             modifier = Modifier
                 .align(BottomCenter)

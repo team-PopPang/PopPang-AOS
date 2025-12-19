@@ -16,6 +16,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.poppang.PopPang.ui.theme.ExtraBold24
+import com.poppang.PopPang.ui.theme.Medium12
 import com.poppang.PopPang.ui.theme.Medium15
 import com.poppang.PopPang.ui.theme.keyworldline
 import com.poppang.PopPang.ui.theme.mainBlack
@@ -33,7 +35,10 @@ import com.poppang.PopPang.ui.theme.mainGray2
 import com.poppang.PopPang.viewmodel.AddKeywordViewModel
 
 @Composable
-fun KeywordScreen(keywordViewModel: AddKeywordViewModel) {
+fun KeywordScreen(
+    keywordViewModel: AddKeywordViewModel,
+    onSkip: (() -> Unit)? = null // onSkip 콜백 추가
+) {
     val keyword = remember { mutableStateOf(TextFieldValue("")) }
     val context = LocalContext.current
 
@@ -43,11 +48,22 @@ fun KeywordScreen(keywordViewModel: AddKeywordViewModel) {
     ){
         Column {
             Text(
+                text = "건너띄기",
+                style = Medium12,
+                color = mainGray1,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(top = 20.dp, end = 15.dp)
+                    .clickable {
+                        onSkip?.invoke() // 건너띄기 클릭 시 콜백 호출
+                    }
+            )
+            Text(
                 text = "키워드를\n입력해주세요.",
                 style = ExtraBold24,
                 color = mainBlack,
                 modifier = Modifier
-                    .padding(start = 24.dp, top = 44.dp)
+                    .padding(start = 24.dp, top = 22.dp)
             )
             Text(
                 text = "등록된 키워드에 맞춰 알림을 받아볼 수 있습니다.",
@@ -150,10 +166,9 @@ fun KeywordList(
 
 @Composable
 @Preview
-fun KeywordListPreview() {
-    val sampleKeywords = listOf("화장품", "애니메이션", "게임", "음악")
-    KeywordList(
-        keywords = sampleKeywords,
-        onRemove = {}
-    )
+fun KeyworldScreenPreview() {
+    val dummyViewModel = AddKeywordViewModel().apply {
+        keywordList.addAll(listOf("화장품", "애니메이션", "게임"))
+    }
+    KeywordScreen(keywordViewModel = dummyViewModel)
 }

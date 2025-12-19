@@ -48,11 +48,12 @@ import coil.request.ImageRequest
 import com.poppang.PopPang.R
 import com.poppang.PopPang.model.LoginResponse
 import com.poppang.PopPang.model.PopupEvent
+import com.poppang.PopPang.ui.theme.Bold12
 import com.poppang.PopPang.ui.theme.Bold15
-import com.poppang.PopPang.ui.theme.Medium10
 import com.poppang.PopPang.ui.theme.Medium12
 import com.poppang.PopPang.ui.theme.Medium17
 import com.poppang.PopPang.ui.theme.Medium18
+import com.poppang.PopPang.ui.theme.Medium8
 import com.poppang.PopPang.ui.theme.Regular12
 import com.poppang.PopPang.ui.theme.mainAmber
 import com.poppang.PopPang.ui.theme.mainBlack
@@ -154,7 +155,9 @@ fun LikeScreen(
                 popup = selectedPopup!!,
                 onClose = { setShowDetail(false) },
                 loginResponse = loginResponse,
-                favoriteViewModel = favoriteViewModel
+                favoriteViewModel = favoriteViewModel,
+                showDetail = showDetail,
+                setShowDetail = setShowDetail,
             )
         }
     }
@@ -185,7 +188,6 @@ fun LikeTopBar(onAlarmClick: () -> Unit) {
                     painter = painterResource(R.drawable.bell_icon),
                     contentDescription = "bell",
                     modifier = Modifier
-                        .padding(start = 15.dp)
                         .size(23.dp),
                     tint = Color.Unspecified
                 )
@@ -348,7 +350,7 @@ fun LikeCalendarTab(popupList: List<PopupEvent>,
                         ) {
                             Text(
                                 text = day,
-                                style = Regular12,
+                                style = Bold12,
                                 color = mainGray2
                             )
                         }
@@ -408,7 +410,7 @@ fun LikeCalendarTab(popupList: List<PopupEvent>,
                                         if (popupCount > 0) {
                                             Text(
                                                 text = "+${popupCount}건",
-                                                style = Medium10,
+                                                style = Medium8,
                                                 color = mainAmber
                                             )
                                         }
@@ -663,7 +665,7 @@ fun LikeCalendarItem(
                                                 Spacer(modifier = Modifier.height(3.dp))
                                                 Text(
                                                     text = popup.startDateFormatted + " - " + popup.endDateFormatted,
-                                                    style = Regular12,
+                                                    style = Regular12.copy(letterSpacing = (-1).sp),
                                                     color = mainGray1
                                                 )
                                             }
@@ -681,7 +683,7 @@ fun LikeCalendarItem(
                                                     painter = painterResource(id = R.drawable.eye_icon),
                                                     contentDescription = "조회수 아이콘",
                                                     tint = mainGray1,
-                                                    modifier = Modifier.size(12.dp)
+                                                    modifier = Modifier.padding(end=4.dp).size(12.dp)
                                                 )
                                                 Text(
                                                     text = viewCount.toString(),
@@ -693,7 +695,7 @@ fun LikeCalendarItem(
                                                     painter = painterResource(id = R.drawable.heart_gray_icon),
                                                     contentDescription = "좋아요 아이콘",
                                                     tint = mainRed,
-                                                    modifier = Modifier.size(12.dp)
+                                                    modifier = Modifier.padding(end=4.dp).size(12.dp)
                                                 )
                                                 Text(
                                                     text = favoriteCount.toString(),
