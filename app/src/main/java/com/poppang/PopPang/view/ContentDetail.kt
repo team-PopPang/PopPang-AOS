@@ -78,6 +78,7 @@ import com.poppang.PopPang.ui.theme.mainGray5
 import com.poppang.PopPang.ui.theme.mainOrange
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.PopupRelatedViewModel
+import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 import com.poppang.PopPang.viewmodel.ViewCountViewModel
 
 fun createInstagramIntent(context: Context, url: String): Intent {
@@ -100,7 +101,8 @@ fun ContentDetail(
     showDetail: Boolean = false,
     setShowDetail: (Boolean) -> Unit,
     viewCountViewModel: ViewCountViewModel = viewModel(),
-    popupRelatedViewModel: PopupRelatedViewModel = viewModel()
+    popupRelatedViewModel: PopupRelatedViewModel = viewModel(),
+    selectPopupViewModel: SelectPopupViewModel
 ) {
     val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
     val popuprelatedList by popupRelatedViewModel.relatedPopupList.collectAsState()
@@ -154,6 +156,7 @@ fun ContentDetail(
             setShowDetail = setShowDetail,
             loginResponse = loginResponse,
             favoriteViewModel = favoriteViewModel,
+            selectPopupViewModel = selectPopupViewModel,
             text = "이 팝업은 어때?"
         )
     }
@@ -238,15 +241,12 @@ fun ContentDetail(
                                 IconButton(
                                     onClick = {
                                         val newLikeStatus = !localIsLiked
-                                        localIsLiked = newLikeStatus // 즉시 UI 반영
+                                        localIsLiked = newLikeStatus
                                         if (newLikeStatus) {
                                             favoriteViewModel.addFavorite(userUuid, popup.popupUuid)
                                             favoriteCount += 1
                                         } else {
-                                            favoriteViewModel.deleteFavorite(
-                                                userUuid,
-                                                popup.popupUuid
-                                            )
+                                            favoriteViewModel.deleteFavorite(userUuid, popup.popupUuid)
                                             favoriteCount = (favoriteCount - 1).coerceAtLeast(0)
                                         }
                                     },
@@ -531,6 +531,7 @@ fun ContentDetail(
             popupRelatedViewModel = popupRelatedViewModel,
             showDetail = showDetail,
             setShowDetail = setShowDetail,
+            selectPopupViewModel = selectPopupViewModel
         )
     }
 }

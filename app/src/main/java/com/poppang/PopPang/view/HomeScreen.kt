@@ -19,13 +19,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -80,6 +79,7 @@ import com.poppang.PopPang.ui.theme.mainOrange
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.HomePopupfilterViewModel
 import com.poppang.PopPang.viewmodel.RegionsViewModel
+import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate.now
 import java.time.LocalDate.parse
@@ -102,6 +102,7 @@ fun HomeScreen(
     favoriteViewModel: FavoriteViewModel,
     regionsViewModel: RegionsViewModel,
     homePopupfilterViewModel: HomePopupfilterViewModel = viewModel(),
+    selectPopupViewModel: SelectPopupViewModel,
     deepLinkPopupUuid: String? = null
 ) {
     var selectedRegion by remember { mutableStateOf("전체") }
@@ -109,10 +110,15 @@ fun HomeScreen(
     var selectedSort by remember { mutableStateOf("NEWEST") }
     val homepopupfilterList by homePopupfilterViewModel.homePopupfilterList.collectAsState()
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
-    val scrollState = rememberScrollState()
+    val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     var showScrollToTop by remember { mutableStateOf(false) }
     var showContentScreen by remember { mutableStateOf(false) }
+    val selectPopupList by selectPopupViewModel.selectpopupList.collectAsState()
+    var detailPopup by remember { mutableStateOf<PopupEvent?>(null) }
+
+    val userUuid = loginResponse?.userUuid.orEmpty()
+    val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
 
     LaunchedEffect(selectedRegion, selectedDistrict, selectedSort, loginResponse?.userUuid) {
         homePopupfilterViewModel.fetchhomepopupfilter(
@@ -123,8 +129,9 @@ fun HomeScreen(
         )
     }
 
-    LaunchedEffect(scrollState.value) {
-        showScrollToTop = scrollState.value > 300 // 300dp 정도 내려가면 표시
+    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+        showScrollToTop =
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 300
     }
 
     LaunchedEffect(popupList) {
@@ -139,6 +146,20 @@ fun HomeScreen(
             Log.d("DeepLink", "Found and showing popup: ${target.name}")
         }
     }
+    LaunchedEffect(showDetail, selectedPopup) {
+        if (showDetail && selectedPopup != null) {
+            selectPopupViewModel.SelectPopupEvents(
+                userUuid = loginResponse?.userUuid.orEmpty(),
+                popupUuid = selectedPopup!!.popupUuid
+            )
+        }
+    }
+
+    LaunchedEffect(selectPopupList, showDetail, selectedPopup) {
+        if (showDetail && selectedPopup != null) {
+            detailPopup = selectPopupList.firstOrNull { it.popupUuid == selectedPopup!!.popupUuid }
+        }
+    }
 
     if (showSearch) {
         SearchScreen(
@@ -147,6 +168,7 @@ fun HomeScreen(
             favoriteViewModel = favoriteViewModel,
             showDetail = showDetail,
             setShowDetail = setShowDetail,
+            selectPopupViewModel = selectPopupViewModel,
         )
     } else if (showAlarm) {
         AlarmScreen(
@@ -154,7 +176,8 @@ fun HomeScreen(
             loginResponse = loginResponse,
             showDetail = showDetail,
             setShowDetail = setShowDetail,
-            favoriteViewModel = favoriteViewModel
+            favoriteViewModel = favoriteViewModel,
+            selectPopupViewModel = selectPopupViewModel,
         )
     } else if (showContentScreen) {
         ContentScreen(
@@ -164,7 +187,8 @@ fun HomeScreen(
             setShowDetail = setShowDetail,
             loginResponse = loginResponse,
             favoriteViewModel = favoriteViewModel,
-            text = "곧 생기는 팝업"
+            selectPopupViewModel = selectPopupViewModel,
+            text = "곧 생기는 팝업",
         )
     } else {
         Box(
@@ -172,81 +196,96 @@ fun HomeScreen(
                 .fillMaxSize()
                 .background(Color.White)
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize().verticalScroll(scrollState)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                state = listState
             ) {
-                TopSearchBar(
-                    modifier = Modifier,
-                    onSearchBarClick = { setSearchScreen(true) },
-                    onAlarmClick = { setShowAlarm(true) }
-                )
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                ) {
-                    Row() {
-                        loginResponse?.nickname?.let {
-                            Text(
-                                text= it,
-                                style = Bold17,
-                                color = mainOrange,
-                                modifier = Modifier
-                                    .padding(start = 15.dp)
-                            )
-                            Text(
-                                text= "님을 위한 팝업",
-                                style = Bold17,
-                                color = mainBlack,
-                            )
+                item {
+                    TopSearchBar(
+                        modifier = Modifier,
+                        onSearchBarClick = { setSearchScreen(true) },
+                        onAlarmClick = { setShowAlarm(true) }
+                    )
+                }
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 0.dp)
+                    ) {
+                        Row {
+                            loginResponse?.nickname?.let {
+                                Text(
+                                    text = it,
+                                    style = Bold17,
+                                    color = mainOrange,
+                                    modifier = Modifier
+                                        .padding(start = 15.dp)
+                                )
+                                Text(
+                                    text = "님을 위한 팝업",
+                                    style = Bold17,
+                                    color = mainBlack,
+                                )
+                            }
                         }
+                        Spacer(modifier = Modifier.height(15.dp))
+                        BannerCarousel(
+                            recommendpopupList = recommendpopupList,
+                            onShowDetail = { popup ->
+                                selectedPopup = popup
+                                setShowDetail(true)
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(50.dp))
+                        BoxCarousel(
+                            popupcomingList = popupcomingList,
+                            onShowDetail = { popup ->
+                                selectedPopup = popup
+                                setShowDetail(true)
+                            },
+                            onShowAll = { showContentScreen = true }
+                        )
+                        Spacer(modifier = Modifier.height(50.dp))
+                        FilterSection(
+                            regionsViewModel = regionsViewModel,
+                            selectedRegion = selectedRegion,
+                            selectedDistrict = selectedDistrict,
+                            selectedSort = selectedSort,
+                            onRegionChange = { region, district ->
+                                selectedRegion = region
+                                selectedDistrict = district
+                            },
+                            onSortChange = { sort ->
+                                selectedSort = sort
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(15.dp))
                     }
-                    Spacer(modifier = Modifier.height(15.dp))
-                    BannerCarousel(recommendpopupList = recommendpopupList, onShowDetail = { popup ->
-                        selectedPopup = popup
-                        setShowDetail(true)
-                    })
-                    Spacer(modifier = Modifier.height(50.dp))
-                    BoxCarousel(
-                        popupcomingList = popupcomingList,
-                        onShowDetail = { popup ->
-                        selectedPopup = popup
-                        setShowDetail(true) },
-                        onShowAll = { showContentScreen = true }
-                    )
-                    Spacer(modifier = Modifier.height(50.dp))
-                    FilterSection(
-                        regionsViewModel = regionsViewModel,
-                        selectedRegion = selectedRegion,
-                        selectedDistrict = selectedDistrict,
-                        selectedSort = selectedSort,
-                        onRegionChange = { region, district ->
-                            selectedRegion = region
-                            selectedDistrict = district
-                        },
-                        onSortChange = { sort ->
-                            selectedSort = sort
-                        }
-                    )
-                    Spacer(modifier = Modifier.height(15.dp))
+                }
+                itemsIndexed(homepopupfilterList.chunked(2)) { _, pair ->
                     MainContent(
-                        homepopupfilterList = homepopupfilterList, onShowDetail = { popup ->
+                        popupPair = pair,
+                        onShowDetail = { popup ->
                             selectedPopup = popup
                             setShowDetail(true)
                         },
-                        loginResponse = loginResponse,
+                        userUuid = userUuid,
+                        favoritePopupUuids = favoritePopupUuids,
                         favoriteViewModel = favoriteViewModel
                     )
                 }
             }
+
             if (showScrollToTop) {
                 FloatingActionButton(
                     onClick = {
                         coroutineScope.launch {
-                            scrollState.animateScrollTo(0)
+                            listState.animateScrollToItem(0)
                         }
                     },
                     containerColor = Color.White,
-                    shape =CircleShape,
+                    shape = CircleShape,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(10.dp)
@@ -263,14 +302,17 @@ fun HomeScreen(
                 }
             }
         }
-        if (showDetail && selectedPopup != null) {
+        if (showDetail && detailPopup != null) {
             ContentDetail(
-                popup = selectedPopup!!,
-                onClose = { setShowDetail(false) },
+                popup = detailPopup!!,
+                onClose = {
+                    setShowDetail(false)
+                },
                 loginResponse = loginResponse,
                 favoriteViewModel = favoriteViewModel,
                 showDetail = showDetail,
                 setShowDetail = setShowDetail,
+                selectPopupViewModel = selectPopupViewModel
             )
         }
     }
@@ -844,107 +886,105 @@ fun FilterSection(
     }
 }
 
+
 @Composable
 fun MainContent(
+    popupPair: List<PopupEvent>,
     onShowDetail: (PopupEvent) -> Unit,
-    homepopupfilterList: List<PopupEvent>,
-    loginResponse: LoginResponse?,
+    userUuid: String,
+    favoritePopupUuids: Collection<String>,
     favoriteViewModel: FavoriteViewModel
 ) {
-    val userUuid = loginResponse?.userUuid.orEmpty()
-    val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 15.dp, end = 15.dp)
+            .padding(start = 15.dp, end = 15.dp, bottom = 20.dp)
     ) {
-        homepopupfilterList.chunked(2).forEach { pair ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(15.dp)
-            ) {
-                pair.forEach { popup ->
-                    val isLiked = favoritePopupUuids.contains(popup.popupUuid)
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { onShowDetail(popup) }
-                    ) {
-                        Column {
-                            Box(
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(15.dp)
+        ) {
+            popupPair.forEach { popup ->
+                val isLiked = favoritePopupUuids.contains(popup.popupUuid)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onShowDetail(popup) }
+                ) {
+                    Column {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(217.5.dp),
+                        ) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(popup.fullImageUrlList.getOrNull(0))
+                                    .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                    .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                    .build(),
+                                contentDescription = popup.name,
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(217.5.dp),
+                                    .fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            IconButton(
+                                onClick = {
+                                    val newLikeStatus = !isLiked
+                                    if (newLikeStatus) {
+                                        favoriteViewModel.addFavorite(userUuid, popup.popupUuid)
+                                    } else {
+                                        favoriteViewModel.deleteFavorite(
+                                            userUuid,
+                                            popup.popupUuid
+                                        )
+                                    }
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 5.dp, end = 14.dp)
+                                    .size(24.dp)
                             ) {
-                                AsyncImage(
-                                    model = ImageRequest.Builder(LocalContext.current)
-                                        .data(popup.fullImageUrlList.getOrNull(0))
-                                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                                        .build(),
-                                    contentDescription = popup.name,
-                                    modifier = Modifier
-                                        .fillMaxSize(),
-                                    contentScale = ContentScale.Crop
+                                Icon(
+                                    painter = painterResource(id = if (isLiked) R.drawable.heart_gray_icon else R.drawable.heart_icon),
+                                    contentDescription = "Like Icon",
+                                    modifier = Modifier,
+                                    tint = if (isLiked) Color.Red else Color.Unspecified
                                 )
-                                IconButton(
-                                    onClick = {
-                                        val newLikeStatus = !isLiked
-                                        if (newLikeStatus) {
-                                            favoriteViewModel.addFavorite(userUuid, popup.popupUuid)
-                                        } else {
-                                            favoriteViewModel.deleteFavorite(
-                                                userUuid,
-                                                popup.popupUuid
-                                            )
-                                        }
-                                    },
-                                    modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(top = 5.dp, end = 14.dp)
-                                        .size(24.dp)
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = if (isLiked) R.drawable.heart_gray_icon else R.drawable.heart_icon),
-                                        contentDescription = "Like Icon",
-                                        modifier = Modifier,
-                                        tint = if (isLiked) Color.Red else Color.Unspecified
-                                    )
-                                }
                             }
-                            Text(
-                                text = popup.roadAddress.split(" ").take(2).joinToString(" "),
-                                style = Regular12,
-                                color = mainBlack,
-                                modifier = Modifier
-                                    .padding(top = 10.dp)
-                            )
-                            Text(
-                                text = popup.name,
-                                style = Bold15,
-                                color = mainBlack,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier
-                                    .padding(top = 5.dp)
-                            )
-                            Text(
-                                text = popup.startDateFormatted + " - " + popup.endDateFormatted,
-                                style = Regular12.copy(letterSpacing = (-1).sp),
-                                color = mainGray1,
-                                modifier = Modifier
-                                    .padding(top = 5.dp)
-                            )
                         }
+                        Text(
+                            text = popup.roadAddress.split(" ").take(2).joinToString(" "),
+                            style = Regular12,
+                            color = mainBlack,
+                            modifier = Modifier
+                                .padding(top = 10.dp)
+                        )
+                        Text(
+                            text = popup.name,
+                            style = Bold15,
+                            color = mainBlack,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .padding(top = 5.dp)
+                        )
+                        Text(
+                            text = popup.startDateFormatted + " - " + popup.endDateFormatted,
+                            style = Regular12.copy(letterSpacing = (-1).sp),
+                            color = mainGray1,
+                            modifier = Modifier
+                                .padding(top = 5.dp)
+                        )
                     }
                 }
-                if (pair.size == 1)
-                    Spacer(
-                        modifier = Modifier
-                            .weight(1f)
-                    )
+            }
+            if (popupPair.size == 1) {
+                Spacer(
+                    modifier = Modifier
+                        .weight(1f)
+                )
             }
         }
     }

@@ -74,6 +74,7 @@ import com.poppang.PopPang.ui.theme.mainOrange
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.HomePopupfilterViewModel
 import com.poppang.PopPang.viewmodel.RegionsViewModel
+import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 import com.poppang.PopPang.viewmodel.ViewCountViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -92,21 +93,41 @@ fun CalendarScreen(
     favoriteViewModel: FavoriteViewModel,
     viewCountViewModel: ViewCountViewModel = viewModel(),
     homePopupfilterViewModel: HomePopupfilterViewModel = viewModel(),
+    selectPopupViewModel: SelectPopupViewModel,
     regionsViewModel: RegionsViewModel
 ) {
     val selectedDate = remember { mutableStateOf<LocalDate?>(LocalDate.now()) }
-    var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     var showScrollToTop by remember { mutableStateOf(false) }
     var selectedRegion by remember { mutableStateOf("전체") }
     var selectedDistrict by remember { mutableStateOf("전체") }
     var selectedSort by remember { mutableStateOf("NEWEST") }
+
     val homepopupfilterList by homePopupfilterViewModel.homePopupfilterList.collectAsState()
+    val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
+    val userUuid = loginResponse?.userUuid.orEmpty()
+
+    var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    val selectPopupList by selectPopupViewModel.selectpopupList.collectAsState()
+    var detailPopup by remember { mutableStateOf<PopupEvent?>(null) }
+
+    // 날짜 + 필터 기준으로 필터링된 리스트
+    val filteredList = remember(selectedDate.value, homepopupfilterList) {
+        selectedDate.value?.let { date ->
+            homepopupfilterList.filter { popup ->
+                val start = LocalDate.parse(popup.startDate)
+                val end = LocalDate.parse(popup.endDate)
+                !date.isBefore(start) && !date.isAfter(end)
+            }
+        } ?: emptyList()
+    }
 
     LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
-        showScrollToTop = listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 300
+        showScrollToTop =
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 300
     }
+
     LaunchedEffect(selectedRegion, selectedDistrict, selectedSort, loginResponse?.userUuid) {
         homePopupfilterViewModel.fetchhomepopupfilter(
             userUuid = loginResponse?.userUuid.orEmpty(),
@@ -115,13 +136,30 @@ fun CalendarScreen(
             homeSortStandard = selectedSort
         )
     }
+
+    LaunchedEffect(showDetail, selectedPopup) {
+        if (showDetail && selectedPopup != null) {
+            selectPopupViewModel.SelectPopupEvents(
+                userUuid = loginResponse?.userUuid.orEmpty(),
+                popupUuid = selectedPopup!!.popupUuid
+            )
+        }
+    }
+
+    LaunchedEffect(selectPopupList, showDetail, selectedPopup) {
+        if (showDetail && selectedPopup != null) {
+            detailPopup = selectPopupList.firstOrNull { it.popupUuid == selectedPopup!!.popupUuid }
+        }
+    }
+
     if (showAlarm) {
         AlarmScreen(
             onClose = { setShowAlarm(false) },
             loginResponse = loginResponse,
             showDetail = showDetail,
             setShowDetail = setShowDetail,
-            favoriteViewModel = favoriteViewModel
+            favoriteViewModel = favoriteViewModel,
+            selectPopupViewModel = selectPopupViewModel,
         )
     } else {
         Box(
@@ -129,49 +167,219 @@ fun CalendarScreen(
                 .fillMaxSize()
                 .background(Color.White)
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+
                 CalendarTopBar(onAlarmClick = { setShowAlarm(true) })
+
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     state = listState
                 ) {
+
                     item {
-                        Column {
-                            CustomCalendar(
-                                popupList = homepopupfilterList,
-                                selectedDate = selectedDate.value,
-                                onDateSelected = { selectedDate.value = it }
-                            )
-                            CalendarContent(
-                                popupList = homepopupfilterList,
-                                selectedDate = selectedDate.value,
-                                onShowDetail = { popup ->
-                                    selectedPopup = popup
-                                    setShowDetail(true)
-                                },
-                                favoriteViewModel = favoriteViewModel,
-                                viewCountViewModel = viewCountViewModel,
-                                refreshTrigger = showDetail,
-                                loginResponse = loginResponse,
-                                regionsViewModel = regionsViewModel,
-                                selectedRegion = selectedRegion,
-                                selectedDistrict = selectedDistrict,
-                                selectedSort = selectedSort,
-                                onRegionChange = { region, district ->
-                                    selectedRegion = region
-                                    selectedDistrict = district
-                                },
-                                onSortChange = { sort ->
-                                    selectedSort = sort
+                        CustomCalendar(
+                            popupList = homepopupfilterList,
+                            selectedDate = selectedDate.value,
+                            onDateSelected = { selectedDate.value = it }
+                        )
+                    }
+
+                    item {
+                        if (selectedDate.value != null) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top =20.dp, bottom = 10.dp, start = 24.dp, end = 24.dp),
+                                horizontalArrangement = SpaceBetween,
+                                verticalAlignment = CenterVertically
+                            ) {
+                                Row {
+                                    Text(
+                                        text = "${selectedDate.value!!.dayOfMonth}일",
+                                        style = Medium12,
+                                        color = mainBlack,
+                                    )
+                                    Text(
+                                        text = selectedDate.value!!.dayOfWeek.getDisplayName(
+                                            TextStyle.SHORT,
+                                            KOREAN
+                                        ) + "요일",
+                                        style = Medium12,
+                                        color = mainBlack,
+                                        modifier = Modifier.padding(start = 5.dp)
+                                    )
                                 }
+                                Row {
+                                    CalendarLocalFilterButton(
+                                        selectedRegion = selectedRegion,
+                                        onRegionSelected = { regionWithDistrict ->
+                                            val parts = regionWithDistrict.split(" ")
+                                            val region = parts.getOrNull(0) ?: "전체"
+                                            val district = parts.getOrNull(1) ?: "전체"
+                                            selectedRegion = region
+                                            selectedDistrict = district
+                                        },
+                                        regionsViewModel = regionsViewModel
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    CalendarSortType(
+                                        selectedSort = selectedSort,
+                                        onSortSelected = { selectedSort = it }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    itemsIndexed(
+                        items = filteredList,
+                        key = { _, popup -> popup.popupUuid }
+                    ) { _, popup ->
+
+                        val isLiked = favoritePopupUuids.contains(popup.popupUuid)
+                        var favoriteCount by remember { mutableStateOf(0) }
+                        var viewCount by remember { mutableStateOf(0) }
+
+                        LaunchedEffect(popup.popupUuid, showDetail) {
+                            favoriteViewModel.getFavoriteCount(userUuid, popup.popupUuid) { count ->
+                                favoriteCount = count.toInt()
+                            }
+                            viewCountViewModel.getTotalViewCount(userUuid, popup.popupUuid) { count ->
+                                viewCount = count.toInt()
+                            }
+                        }
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(163.dp)
+                                    .padding(vertical = 12.dp)
+                                    .clickable {
+                                        selectedPopup = popup
+                                        setShowDetail(true) }
+                            ) {
+                                Row {
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(popup.fullImageUrlList.getOrNull(0))
+                                            .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                            .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                            .build(),
+                                        contentDescription = popup.name,
+                                        modifier = Modifier
+                                            .height(133.dp)
+                                            .width(106.dp)
+                                            .align(CenterVertically),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    Spacer(modifier = Modifier.width(20.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(vertical = 10.dp)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxHeight(),
+                                            verticalArrangement = SpaceBetween
+                                        ) {
+                                            Box {
+                                                Column {
+                                                    Text(
+                                                        text = popup.roadAddress.split(" ").take(2)
+                                                            .joinToString(" "),
+                                                        style = Regular12,
+                                                        color = mainBlack
+                                                    )
+                                                    Spacer(modifier = Modifier.height(3.dp))
+                                                    Text(
+                                                        text = popup.name,
+                                                        style = Bold15,
+                                                        color = mainBlack,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                    Spacer(modifier = Modifier.height(3.dp))
+                                                    Text(
+                                                        text = popup.startDateFormatted + " - " + popup.endDateFormatted,
+                                                        style = Regular12.copy(letterSpacing = (-1).sp),
+                                                        color = mainGray1
+                                                    )
+                                                }
+                                            }
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 5.dp),
+                                                contentAlignment = Alignment.BottomEnd
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = CenterVertically
+                                                ) {
+                                                    Icon(
+                                                        painter = painterResource(id = R.drawable.eye_icon),
+                                                        contentDescription = "조회수 아이콘",
+                                                        tint = mainGray1,
+                                                        modifier = Modifier.padding(end = 4.dp).size(12.dp)
+                                                    )
+                                                    Text(
+                                                        text = viewCount.toString(),
+                                                        style = Regular12,
+                                                        color = mainGray1,
+                                                    )
+                                                    Spacer(modifier = Modifier.width(10.dp))
+                                                    IconButton(
+                                                        onClick = {
+                                                            val newLikeStatus = !isLiked
+                                                            if (newLikeStatus) {
+                                                                favoriteViewModel.addFavorite(
+                                                                    userUuid,
+                                                                    popup.popupUuid
+                                                                )
+                                                            } else {
+                                                                favoriteViewModel.deleteFavorite(
+                                                                    userUuid,
+                                                                    popup.popupUuid
+                                                                )
+                                                            }
+                                                            favoriteViewModel.getFavoriteCount(userUuid,popup.popupUuid) { count ->
+                                                                favoriteCount = count.toInt()
+                                                            }
+                                                        },
+                                                        modifier = Modifier.padding(end = 4.dp).size(12.dp)
+                                                    ) {
+                                                        Icon(
+                                                            painter = painterResource(id = R.drawable.heart_gray_icon),
+                                                            contentDescription = "Like Icon",
+                                                            tint = if (isLiked) Color.Red else Color.Unspecified
+                                                        )
+                                                    }
+                                                    Text(
+                                                        text = favoriteCount.toString(),
+                                                        style = Regular12,
+                                                        color = mainGray1,
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .height(0.5.dp)
+                                    .fillMaxWidth()
+                                    .background(mainGray5)
                             )
                         }
                     }
                 }
             }
+
             if (showScrollToTop) {
                 FloatingActionButton(
                     onClick = {
@@ -180,7 +388,7 @@ fun CalendarScreen(
                         }
                     },
                     containerColor = Color.White,
-                    shape =CircleShape,
+                    shape = CircleShape,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(10.dp)
@@ -197,19 +405,20 @@ fun CalendarScreen(
                 }
             }
         }
-        if (showDetail && selectedPopup != null) {
+
+        if (showDetail && detailPopup != null) {
             ContentDetail(
-                popup = selectedPopup!!,
+                popup = detailPopup!!,
                 onClose = { setShowDetail(false) },
                 loginResponse = loginResponse,
                 favoriteViewModel = favoriteViewModel,
                 showDetail = showDetail,
                 setShowDetail = setShowDetail,
+                selectPopupViewModel = selectPopupViewModel
             )
         }
     }
 }
-
 
 @Composable
 fun CalendarTopBar(onAlarmClick: () -> Unit) {
@@ -406,234 +615,6 @@ fun CustomCalendar(popupList: List<PopupEvent>,
                     )
                 )
         )
-    }
-}
-
-@Composable
-fun CalendarContent(
-    popupList: List<PopupEvent>,
-    selectedDate: LocalDate?,
-    onShowDetail: (PopupEvent) -> Unit,
-    favoriteViewModel: FavoriteViewModel,
-    viewCountViewModel: ViewCountViewModel,
-    refreshTrigger:Boolean,
-    loginResponse: LoginResponse?,
-    regionsViewModel: RegionsViewModel,
-    selectedRegion: String,
-    selectedDistrict: String,
-    selectedSort: String,
-    onRegionChange: (String, String) -> Unit,
-    onSortChange: (String) -> Unit
-) {
-    val filteredList = if (selectedDate != null) {
-        popupList.filter { popup ->
-            val start = LocalDate.parse(popup.startDate)
-            val end = LocalDate.parse(popup.endDate)
-            !selectedDate.isBefore(start) && !selectedDate.isAfter(end)
-        }
-    } else emptyList()
-    val userUuid = loginResponse?.userUuid.orEmpty()
-    val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            if (selectedDate != null) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top =20.dp),
-                    horizontalArrangement = SpaceBetween,
-                    verticalAlignment = CenterVertically
-                ) {
-                    Box() {
-                        Row() {
-                            Text(
-                                text = "${selectedDate.dayOfMonth}일",
-                                style = Medium12,
-                                color = mainBlack,
-                            )
-                            Text(
-                                text = "${
-                                    selectedDate.dayOfWeek.getDisplayName(
-                                        TextStyle.SHORT,
-                                        KOREAN
-                                    )
-                                }요일",
-                                style = Medium12,
-                                color = mainBlack,
-                                modifier = Modifier
-                                    .padding(start = 5.dp)
-                            )
-                        }
-                    }
-                    Box(){
-                        Row() {
-                            CalendarLocalFilterButton(
-                                selectedRegion = selectedRegion,
-                                onRegionSelected = { regionWithDistrict ->
-                                    val parts = regionWithDistrict.split(" ")
-                                    val region = parts.getOrNull(0) ?: "전체"
-                                    val district = parts.getOrNull(1) ?: "전체"
-                                    onRegionChange(region, district)
-                                },
-                                regionsViewModel = regionsViewModel
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            CalendarSortType(
-                                selectedSort = selectedSort,
-                                onSortSelected = { onSortChange(it) }
-                            )
-                        }
-                    }
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-            ) {
-                Column {
-                    filteredList.forEach { popup ->
-                        val isLiked = favoritePopupUuids.contains(popup.popupUuid)
-                        var favoriteCount by remember { mutableStateOf(0) }
-                        var viewCount by remember { mutableStateOf(0) }
-                        LaunchedEffect(popup.popupUuid, refreshTrigger) {
-                            favoriteViewModel.getFavoriteCount(userUuid,popup.popupUuid) { count ->
-                                favoriteCount = count.toInt()
-                            }
-                            viewCountViewModel.getTotalViewCount(userUuid,popup.popupUuid) { count ->
-                                viewCount = count.toInt()
-                            }
-                        }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(163.dp)
-                                .padding(vertical = 12.dp)
-                                .clickable { onShowDetail(popup) }
-                        ) {
-                            Row {
-                                AsyncImage(
-                                    model = ImageRequest.Builder(LocalContext.current)
-                                        .data(popup.fullImageUrlList.getOrNull(0))
-                                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                                        .build(),
-                                    contentDescription = popup.name,
-                                    modifier = Modifier
-                                        .height(133.dp)
-                                        .width(106.dp)
-                                        .align(CenterVertically),
-                                    contentScale = ContentScale.Crop
-                                )
-                                Spacer(modifier = Modifier.width(20.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(vertical = 10.dp)
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxHeight(),
-                                        verticalArrangement = SpaceBetween
-                                    ) {
-                                        Box {
-                                            Column {
-                                                Text(
-                                                    text = popup.roadAddress.split(" ").take(2)
-                                                        .joinToString(" "),
-                                                    style = Regular12,
-                                                    color = mainBlack
-                                                )
-                                                Spacer(modifier = Modifier.height(3.dp))
-                                                Text(
-                                                    text = popup.name,
-                                                    style = Bold15,
-                                                    color = mainBlack,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                                Spacer(modifier = Modifier.height(3.dp))
-                                                Text(
-                                                    text = popup.startDateFormatted + " - " + popup.endDateFormatted,
-                                                    style = Regular12.copy(letterSpacing = (-1).sp),
-                                                    color = mainGray1
-                                                )
-                                            }
-                                        }
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 5.dp),
-                                            contentAlignment = Alignment.BottomEnd
-                                        ) {
-                                            Row(
-                                                verticalAlignment = CenterVertically
-                                            ) {
-                                                Icon(
-                                                    painter = painterResource(id = R.drawable.eye_icon),
-                                                    contentDescription = "조회수 아이콘",
-                                                    tint = mainGray1,
-                                                    modifier = Modifier.padding(end = 4.dp).size(12.dp)
-                                                )
-                                                Text(
-                                                    text = viewCount.toString(),
-                                                    style = Regular12,
-                                                    color = mainGray1,
-                                                )
-                                                Spacer(modifier = Modifier.width(10.dp))
-                                                IconButton(
-                                                    onClick = {
-                                                        val newLikeStatus = !isLiked
-                                                        if (newLikeStatus) {
-                                                            favoriteViewModel.addFavorite(
-                                                                userUuid,
-                                                                popup.popupUuid
-                                                            )
-                                                        } else {
-                                                            favoriteViewModel.deleteFavorite(
-                                                                userUuid,
-                                                                popup.popupUuid
-                                                            )
-                                                        }
-                                                        favoriteViewModel.getFavoriteCount(userUuid,popup.popupUuid) { count ->
-                                                            favoriteCount = count.toInt()
-                                                        }
-                                                    },
-                                                    modifier = Modifier.padding(end = 4.dp).size(12.dp)
-                                                            ) {
-                                                    Icon(
-                                                        painter = painterResource(id = R.drawable.heart_gray_icon),
-                                                        contentDescription = "Like Icon",
-                                                        tint = if (isLiked) Color.Red else Color.Unspecified
-                                                    )
-                                                }
-                                                Text(
-                                                    text = favoriteCount.toString(),
-                                                    style = Regular12,
-                                                    color = mainGray1,
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        Box(
-                            modifier = Modifier
-                                .height(0.5.dp)
-                                .fillMaxWidth()
-                                .background(mainGray5)
-                        )
-                    }
-                }
-            }
-        }
     }
 }
 

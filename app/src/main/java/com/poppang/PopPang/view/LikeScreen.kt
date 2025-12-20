@@ -64,6 +64,7 @@ import com.poppang.PopPang.ui.theme.mainGray5
 import com.poppang.PopPang.ui.theme.mainOrange
 import com.poppang.PopPang.ui.theme.mainRed
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
+import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 import com.poppang.PopPang.viewmodel.ViewCountViewModel
 import java.time.LocalDate
 import java.time.format.TextStyle
@@ -79,19 +80,38 @@ fun LikeScreen(
     loginResponse: LoginResponse?,
     favoriteViewModel : FavoriteViewModel,
     viewCountViewModel: ViewCountViewModel = viewModel(),
+    selectPopupViewModel: SelectPopupViewModel,
     onNavigateToHome: () -> Unit = {}
 ) {
     val selectedIndex = remember { mutableStateOf(0) }
     val selectedDate = remember { mutableStateOf<LocalDate?>(LocalDate.now()) }
     val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    val selectPopupList by selectPopupViewModel.selectpopupList.collectAsState()
+    var detailPopup by remember { mutableStateOf<PopupEvent?>(null) }
+
+    LaunchedEffect(showDetail, selectedPopup) {
+        if (showDetail && selectedPopup != null) {
+            selectPopupViewModel.SelectPopupEvents(
+                userUuid = loginResponse?.userUuid.orEmpty(),
+                popupUuid = selectedPopup!!.popupUuid
+            )
+        }
+    }
+
+    LaunchedEffect(selectPopupList, showDetail, selectedPopup) {
+        if (showDetail && selectedPopup != null) {
+            detailPopup = selectPopupList.firstOrNull { it.popupUuid == selectedPopup!!.popupUuid }
+        }
+    }
     if (showAlarm) {
         AlarmScreen(
             onClose = { setShowAlarm(false) },
             loginResponse = loginResponse,
             showDetail = showDetail,
             setShowDetail = setShowDetail,
-            favoriteViewModel = favoriteViewModel
+            favoriteViewModel = favoriteViewModel,
+            selectPopupViewModel = selectPopupViewModel,
         )
     } else {
         Column(
@@ -150,14 +170,15 @@ fun LikeScreen(
                 }
             }
         }
-        if (showDetail && selectedPopup != null) {
+        if (showDetail && detailPopup != null) {
             ContentDetail(
-                popup = selectedPopup!!,
+                popup = detailPopup!!,
                 onClose = { setShowDetail(false) },
                 loginResponse = loginResponse,
                 favoriteViewModel = favoriteViewModel,
                 showDetail = showDetail,
                 setShowDetail = setShowDetail,
+                selectPopupViewModel = selectPopupViewModel
             )
         }
     }

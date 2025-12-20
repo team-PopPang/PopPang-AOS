@@ -73,6 +73,7 @@ import com.poppang.PopPang.viewmodel.AlertViewModel
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.SearchViewModel
 import com.poppang.PopPang.viewmodel.SearchViewModelFactory
+import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 import com.poppang.PopPang.viewmodel.ViewCountViewModel
 
 @Composable
@@ -88,9 +89,12 @@ fun AlarmScreen(onClose: () -> Unit,
                 showDetail: Boolean = false,
                 setShowDetail: (Boolean) -> Unit,
                 favoriteViewModel: FavoriteViewModel,
+                selectPopupViewModel: SelectPopupViewModel
 ){
     var selectedIndex = remember { mutableStateOf(0) }
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    val selectPopupList by selectPopupViewModel.selectpopupList.collectAsState()
+    var detailPopup by remember { mutableStateOf<PopupEvent?>(null) }
     var editMode by remember { mutableStateOf(false) }
     val userUuid = loginResponse?.userUuid ?: ""
     val alertpopupList by alertViewModel.alertPopupList.collectAsState()
@@ -98,6 +102,20 @@ fun AlarmScreen(onClose: () -> Unit,
     LaunchedEffect(userUuid) {
         alertViewModel.fetchalertpopup(userUuid)
         AlarmKeywordviewModel.getKeywords(userUuid)
+    }
+    LaunchedEffect(showDetail, selectedPopup) {
+        if (showDetail && selectedPopup != null) {
+            selectPopupViewModel.SelectPopupEvents(
+                userUuid = loginResponse?.userUuid.orEmpty(),
+                popupUuid = selectedPopup!!.popupUuid
+            )
+        }
+    }
+
+    LaunchedEffect(selectPopupList, showDetail, selectedPopup) {
+        if (showDetail && selectedPopup != null) {
+            detailPopup = selectPopupList.firstOrNull { it.popupUuid == selectedPopup!!.popupUuid }
+        }
     }
     Box(
         modifier = Modifier
@@ -125,14 +143,15 @@ fun AlarmScreen(onClose: () -> Unit,
                 1 -> keywordTab(loginResponse = loginResponse, searchviewModel = SearchviewModel, alarmkeywordviewModel = AlarmKeywordviewModel,editMode = editMode)
             }
         }
-        if (showDetail && selectedPopup != null) {
+        if (showDetail && detailPopup != null) {
             ContentDetail(
-                popup = selectedPopup!!,
+                popup = detailPopup!!,
                 onClose = { setShowDetail(false) },
                 loginResponse = loginResponse,
                 favoriteViewModel = favoriteViewModel,
                 showDetail = showDetail,
                 setShowDetail = setShowDetail,
+                selectPopupViewModel = selectPopupViewModel
             )
         }
     }

@@ -54,6 +54,7 @@ import com.poppang.PopPang.ui.theme.mainBlack
 import com.poppang.PopPang.ui.theme.mainOrange
 import com.poppang.PopPang.viewmodel.AlertViewModel
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
+import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 import com.poppang.PopPang.viewmodel.UserDataViewModel
 
 @Composable
@@ -68,7 +69,8 @@ fun MeScreen(
     navController: NavController,
     userDataViewModel: UserDataViewModel,
     onUpdateLoginResponse: (LoginResponse) -> Unit,
-    favoriteViewModel: FavoriteViewModel
+    favoriteViewModel: FavoriteViewModel,
+    selectPopupViewModel: SelectPopupViewModel,
 ) {
     if (showAlarm) {
         AlarmScreen(
@@ -76,7 +78,8 @@ fun MeScreen(
             loginResponse = loginResponse,
             showDetail = showDetail,
             setShowDetail = setShowDetail,
-            favoriteViewModel = favoriteViewModel
+            favoriteViewModel = favoriteViewModel,
+            selectPopupViewModel = selectPopupViewModel,
         )
     }
     else if (showProfile) {

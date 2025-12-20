@@ -25,6 +25,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,6 +64,7 @@ import com.poppang.PopPang.ui.theme.mainOrange
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.SearchViewModel
 import com.poppang.PopPang.viewmodel.SearchViewModelFactory
+import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 
 @Composable
 fun SearchScreen(onClose: () -> Unit,
@@ -75,12 +77,15 @@ fun SearchScreen(onClose: () -> Unit,
                  favoriteViewModel: FavoriteViewModel,
                  showDetail: Boolean = false,
                  setShowDetail: (Boolean) -> Unit,
+                 selectPopupViewModel : SelectPopupViewModel
 ){
     val userUuid = loginResponse?.userUuid ?: ""
     val query = remember { mutableStateOf("") }
     val isSearched = remember { mutableStateOf(false) }
     val popupList = viewModel.popupList.value
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    val selectPopupList by selectPopupViewModel.selectpopupList.collectAsState()
+    var detailPopup by remember { mutableStateOf<PopupEvent?>(null) }
     var showDetail by remember { mutableStateOf(false) }
     var showAlarmScreen by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
@@ -92,13 +97,29 @@ fun SearchScreen(onClose: () -> Unit,
         focusRequester.requestFocus()
         keyboard?.show()
     }
+    LaunchedEffect(showDetail, selectedPopup) {
+        if (showDetail && selectedPopup != null) {
+            selectPopupViewModel.SelectPopupEvents(
+                userUuid = loginResponse?.userUuid.orEmpty(),
+                popupUuid = selectedPopup!!.popupUuid
+            )
+        }
+    }
+
+    LaunchedEffect(selectPopupList, showDetail, selectedPopup) {
+        if (showDetail && selectedPopup != null) {
+            detailPopup = selectPopupList.firstOrNull { it.popupUuid == selectedPopup!!.popupUuid }
+        }
+    }
     if (showAlarmScreen) {
         AlarmScreen(
             onClose = { showAlarmScreen = false },
             loginResponse = loginResponse,
             favoriteViewModel = favoriteViewModel,
             showDetail = showDetail,
-            setShowDetail = setShowDetail,)
+            setShowDetail = setShowDetail,
+            selectPopupViewModel = selectPopupViewModel
+        )
     } else {
         Box(
             modifier = Modifier
@@ -212,14 +233,15 @@ fun SearchScreen(onClose: () -> Unit,
                 }
             }
         }
-        if (showDetail && selectedPopup != null) {
+        if (showDetail && detailPopup != null) {
             ContentDetail(
-                popup = selectedPopup!!,
+                popup = detailPopup!!,
                 onClose = { showDetail = false },
                 loginResponse = loginResponse,
                 favoriteViewModel = favoriteViewModel,
                 showDetail = showDetail,
                 setShowDetail = setShowDetail,
+                selectPopupViewModel = selectPopupViewModel
             )
         }
     }

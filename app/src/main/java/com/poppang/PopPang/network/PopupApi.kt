@@ -27,3 +27,8 @@ interface PopuprelatedApi{
         @Path("popupUuid") popupUuid : String,
         @Query("relatedType") relatedType: String): List<PopupEvent>
 }
+
+interface SelectPopupApi{
+    @GET(BuildConfig.POPUP_SELECT_API)
+    suspend fun getSelectPopup(@Path("userUuid") userUuid: String,@Path("popupUuid") popupUuid: String, @Query("popup") popup: String): PopupEvent
+}

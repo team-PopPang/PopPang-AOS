@@ -113,6 +113,7 @@ import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.MapPopupfilterViewModel
 import com.poppang.PopPang.viewmodel.MapViewModel
 import com.poppang.PopPang.viewmodel.RegionsViewModel
+import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 import com.poppang.PopPang.viewmodel.ViewCountViewModel
 import io.morfly.compose.bottomsheet.material3.BottomSheetScaffold
 import io.morfly.compose.bottomsheet.material3.rememberBottomSheetScaffoldState
@@ -137,7 +138,8 @@ fun MapScreen(
     mapviewmodel: MapViewModel = viewModel(),
     viewCountViewModel: ViewCountViewModel = viewModel(),
     regionsViewModel: RegionsViewModel,
-    mapPopupfilterViewModel: MapPopupfilterViewModel = viewModel()
+    mapPopupfilterViewModel: MapPopupfilterViewModel = viewModel(),
+    selectPopupViewModel: SelectPopupViewModel
 ) {
     var selectedRegion by remember { mutableStateOf("전체") }
     var selectedDistrict by remember { mutableStateOf("전체") }
@@ -153,6 +155,8 @@ fun MapScreen(
     }
     val coroutineScope = rememberCoroutineScope()
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    val selectPopupList by selectPopupViewModel.selectpopupList.collectAsState()
+    var detailPopup by remember { mutableStateOf<PopupEvent?>(null) }
     var selectedDetailPopup by remember { mutableStateOf<PopupEvent?>(null) }
     val detailSheetState = rememberBottomSheetState(
         initialValue = MapSheetValue.Middle,
@@ -166,6 +170,20 @@ fun MapScreen(
 
     LaunchedEffect(popupprogressList) { mapviewmodel.setPopups(popupprogressList) }
 
+    LaunchedEffect(showDetail, selectedPopup) {
+        if (showDetail && selectedPopup != null) {
+            selectPopupViewModel.SelectPopupEvents(
+                userUuid = loginResponse?.userUuid.orEmpty(),
+                popupUuid = selectedPopup!!.popupUuid
+            )
+        }
+    }
+
+    LaunchedEffect(selectPopupList, showDetail, selectedPopup) {
+        if (showDetail && selectedPopup != null) {
+            detailPopup = selectPopupList.firstOrNull { it.popupUuid == selectedPopup!!.popupUuid }
+        }
+    }
     DisposableEffect(Unit) {
         val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
         val locationRequest = com.google.android.gms.location.LocationRequest.create().apply {
@@ -341,14 +359,15 @@ fun MapScreen(
         }
     }
 
-    if (showDetail && selectedPopup != null) {
+    if (showDetail && detailPopup != null) {
         ContentDetail(
-            popup = selectedPopup!!,
+            popup = detailPopup!!,
             onClose = { setShowDetail(false) },
             loginResponse = loginResponse,
             favoriteViewModel = favoriteViewModel,
             showDetail = showDetail,
             setShowDetail = setShowDetail,
+            selectPopupViewModel = selectPopupViewModel
         )
     }
 

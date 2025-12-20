@@ -46,6 +46,7 @@ import com.poppang.PopPang.viewmodel.PopupProgressViewModel
 import com.poppang.PopPang.viewmodel.PopupViewModel
 import com.poppang.PopPang.viewmodel.RecommendPopupViewModel
 import com.poppang.PopPang.viewmodel.RegionsViewModel
+import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 import com.poppang.PopPang.viewmodel.UserDataViewModel
 @Composable
 fun MainScreen(
@@ -58,6 +59,7 @@ fun MainScreen(
     favoriteViewModel: FavoriteViewModel = viewModel(),
     fcmTokenViewModel: FcmTokenViewModel = viewModel(),
     regionsViewModel: RegionsViewModel = viewModel(),
+    selectPopupViewModel: SelectPopupViewModel = viewModel(),
     navController: NavController,
     userDataViewModel: UserDataViewModel,
     onUpdateLoginResponse: (LoginResponse) -> Unit,
@@ -175,7 +177,8 @@ fun MainScreen(
                     loginResponse = loginResponse,
                     favoriteViewModel = favoriteViewModel,
                     regionsViewModel = regionsViewModel,
-                    deepLinkPopupUuid = deepLinkPopupUuid
+                    selectPopupViewModel = selectPopupViewModel,
+                    deepLinkPopupUuid = deepLinkPopupUuid,
                 )
                 is BottomNavItem.Calendar -> CalendarScreen(
                     popupList = popupList,
@@ -185,6 +188,7 @@ fun MainScreen(
                     setShowAlarm = { showAlarm = it },
                     loginResponse = loginResponse,
                     favoriteViewModel = favoriteViewModel,
+                    selectPopupViewModel = selectPopupViewModel,
                     regionsViewModel = regionsViewModel
                 )
                 is BottomNavItem.Map -> MapScreen(
@@ -193,6 +197,7 @@ fun MainScreen(
                     setShowDetail = { showDetail = it },
                     loginResponse = loginResponse,
                     favoriteViewModel = favoriteViewModel,
+                    selectPopupViewModel = selectPopupViewModel,
                     regionsViewModel = regionsViewModel
                 )
                 is BottomNavItem.PopPang -> LikeScreen(
@@ -203,6 +208,7 @@ fun MainScreen(
                     setShowAlarm = { showAlarm = it },
                     loginResponse = loginResponse,
                     favoriteViewModel = favoriteViewModel,
+                    selectPopupViewModel = selectPopupViewModel,
                     onNavigateToHome = { selectedIndex = 0 }
                 )
                 is BottomNavItem.My -> MeScreen(
@@ -217,6 +223,7 @@ fun MainScreen(
                     userDataViewModel = userDataViewModel,
                     onUpdateLoginResponse = onUpdateLoginResponse,
                     favoriteViewModel = favoriteViewModel,
+                    selectPopupViewModel = selectPopupViewModel
                 )
             }
         }

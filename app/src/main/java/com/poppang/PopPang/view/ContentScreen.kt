@@ -2,6 +2,9 @@ package com.poppang.PopPang.view
 
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,6 +22,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +49,7 @@ import com.poppang.PopPang.ui.theme.Regular12
 import com.poppang.PopPang.ui.theme.mainBlack
 import com.poppang.PopPang.ui.theme.mainGray1
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
+import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 
 @Composable
 fun ContentScreen(
@@ -53,37 +59,74 @@ fun ContentScreen(
     setShowDetail: (Boolean) -> Unit,
     loginResponse: LoginResponse?,
     favoriteViewModel : FavoriteViewModel,
-    text:String
-    ) {
-    BackHandler { onClose() }
+    selectPopupViewModel: SelectPopupViewModel,
+    text:String,
+) {
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(color = Color.White)
-    ) {
-        Column {
-            ContentTopBar(onClose = { onClose() }, text = text)
-            ContentListItem(
-                onShowDetail = { popup ->
-                    selectedPopup = popup
-                    setShowDetail(true)
-                },
-                loginResponse = loginResponse,
-                popupList = popupList
+    val selectPopupList by selectPopupViewModel.selectpopupList.collectAsState()
+    var detailPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    var visible by remember { mutableStateOf(false) }
+    var shouldClose by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        visible = true
+    }
+    LaunchedEffect(visible, shouldClose) {
+        if (!visible && shouldClose) {
+            onClose()
+        }
+    }
+    LaunchedEffect(showDetail, selectedPopup) {
+        if (showDetail && selectedPopup != null) {
+            selectPopupViewModel.SelectPopupEvents(
+                userUuid = loginResponse?.userUuid.orEmpty(),
+                popupUuid = selectedPopup!!.popupUuid
             )
         }
-
     }
-    if (showDetail && selectedPopup != null) {
-        ContentDetail(
-            popup = selectedPopup!!,
-            onClose = { setShowDetail(false) },
-            loginResponse = loginResponse,
-            favoriteViewModel = favoriteViewModel,
-            showDetail = showDetail,
-            setShowDetail = setShowDetail,
-        )
+
+    LaunchedEffect(selectPopupList, showDetail, selectedPopup) {
+        if (showDetail && selectedPopup != null) {
+            detailPopup = selectPopupList.firstOrNull { it.popupUuid == selectedPopup!!.popupUuid }
+        }
+    }
+    BackHandler {
+        visible = false
+        shouldClose = true
+    }
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(color = Color.White)
+        ) {
+            Column {
+                ContentTopBar(onClose = { onClose() }, text = text)
+                ContentListItem(
+                    onShowDetail = { popup ->
+                        selectedPopup = popup
+                        setShowDetail(true)
+                    },
+                    loginResponse = loginResponse,
+                    popupList = popupList
+                )
+            }
+
+        }
+        if (showDetail && detailPopup != null) {
+            ContentDetail(
+                popup = detailPopup!!,
+                onClose = { setShowDetail(false) },
+                loginResponse = loginResponse,
+                favoriteViewModel = favoriteViewModel,
+                showDetail = showDetail,
+                setShowDetail = setShowDetail,
+                selectPopupViewModel = selectPopupViewModel
+            )
+        }
     }
 }
 

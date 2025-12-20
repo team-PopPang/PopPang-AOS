@@ -199,4 +199,12 @@ object RetrofitInstance {
             .build()
             .create(PopuprelatedApi::class.java)
     }
+
+    val selectPopupApi : SelectPopupApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(USERS_BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(SelectPopupApi::class.java)
+    }
 }
