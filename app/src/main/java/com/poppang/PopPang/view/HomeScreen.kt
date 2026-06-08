@@ -38,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -110,6 +111,7 @@ fun HomeScreen(
     var selectedSort by remember { mutableStateOf("NEWEST") }
     val homepopupfilterList by homePopupfilterViewModel.homePopupfilterList.collectAsState()
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    var selectedPopupUuid by rememberSaveable { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     var showScrollToTop by remember { mutableStateOf(false) }
@@ -136,28 +138,31 @@ fun HomeScreen(
 
     LaunchedEffect(popupList) {
         if (deepLinkPopupUuid.isNullOrBlank()) return@LaunchedEffect
-        if (selectedPopup != null) return@LaunchedEffect  // 이미 열려 있으면 무시
+        if (selectedPopupUuid != null) return@LaunchedEffect  // 이미 열려 있으면 무시
 
         Log.d("DeepLink", "Searching for popupUuid: $deepLinkPopupUuid")
         val target = popupList.firstOrNull { it.popupUuid == deepLinkPopupUuid }
         if (target != null) {
             selectedPopup = target
+            selectedPopupUuid = target.popupUuid
             setShowDetail(true)
             Log.d("DeepLink", "Found and showing popup: ${target.name}")
         }
     }
-    LaunchedEffect(showDetail, selectedPopup) {
-        if (showDetail && selectedPopup != null) {
+    LaunchedEffect(showDetail, selectedPopupUuid) {
+        val popupUuid = selectedPopupUuid
+        if (showDetail && popupUuid != null) {
             selectPopupViewModel.SelectPopupEvents(
                 userUuid = loginResponse?.userUuid.orEmpty(),
-                popupUuid = selectedPopup!!.popupUuid
+                popupUuid = popupUuid
             )
         }
     }
 
-    LaunchedEffect(selectPopupList, showDetail, selectedPopup) {
-        if (showDetail && selectedPopup != null) {
-            detailPopup = selectPopupList.firstOrNull { it.popupUuid == selectedPopup!!.popupUuid }
+    LaunchedEffect(selectPopupList, showDetail, selectedPopupUuid) {
+        val popupUuid = selectedPopupUuid
+        if (showDetail && popupUuid != null) {
+            detailPopup = selectPopupList.firstOrNull { it.popupUuid == popupUuid }
         }
     }
 
@@ -234,6 +239,7 @@ fun HomeScreen(
                             recommendpopupList = recommendpopupList,
                             onShowDetail = { popup ->
                                 selectedPopup = popup
+                                selectedPopupUuid = popup.popupUuid
                                 setShowDetail(true)
                             }
                         )
@@ -242,6 +248,7 @@ fun HomeScreen(
                             popupcomingList = popupcomingList,
                             onShowDetail = { popup ->
                                 selectedPopup = popup
+                                selectedPopupUuid = popup.popupUuid
                                 setShowDetail(true)
                             },
                             onShowAll = { showContentScreen = true }
@@ -268,6 +275,7 @@ fun HomeScreen(
                         popupPair = pair,
                         onShowDetail = { popup ->
                             selectedPopup = popup
+                            selectedPopupUuid = popup.popupUuid
                             setShowDetail(true)
                         },
                         userUuid = userUuid,
@@ -306,6 +314,9 @@ fun HomeScreen(
             ContentDetail(
                 popup = detailPopup!!,
                 onClose = {
+                    selectedPopup = null
+                    selectedPopupUuid = null
+                    detailPopup = null
                     setShowDetail(false)
                 },
                 loginResponse = loginResponse,

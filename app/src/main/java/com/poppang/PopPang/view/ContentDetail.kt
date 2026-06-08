@@ -480,33 +480,35 @@ fun ContentDetail(
                                 .background(mainGray5)
                         )
                         Spacer(modifier = Modifier.height(20.dp))
-                        Text(
-                            text = "SNS / 홈페이지",
-                            style = Medium15,
-                            color = mainBlack,
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row {
-                            val context = LocalContext.current
-                            InstagramButton(
-                                onClick = {
-                                    val intent = createInstagramIntent(
-                                        context,
-                                        popup.instaPostUrl
-                                    )
-                                    context.startActivity(intent)
-                                },
-                                modifier = Modifier
+                        popup.instaPostUrl?.takeIf { it.isNotBlank() }?.let { instagramUrl ->
+                            Text(
+                                text = "SNS / 홈페이지",
+                                style = Medium15,
+                                color = mainBlack,
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row {
+                                val context = LocalContext.current
+                                InstagramButton(
+                                    onClick = {
+                                        val intent = createInstagramIntent(
+                                            context,
+                                            instagramUrl
+                                        )
+                                        context.startActivity(intent)
+                                    },
+                                    modifier = Modifier
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(mainGray5)
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
                         }
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .background(mainGray5)
-                        )
-                        Spacer(modifier = Modifier.height(20.dp))
                         relatedPopupListSection(
                             popuprelatedList = popuprelatedList,
                             onPopupClick = { popup ->

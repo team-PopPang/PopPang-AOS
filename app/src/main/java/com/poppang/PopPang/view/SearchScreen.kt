@@ -29,6 +29,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.TopCenter
@@ -84,9 +85,10 @@ fun SearchScreen(onClose: () -> Unit,
     val isSearched = remember { mutableStateOf(false) }
     val popupList = viewModel.popupList.value
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    var selectedPopupUuid by rememberSaveable { mutableStateOf<String?>(null) }
     val selectPopupList by selectPopupViewModel.selectpopupList.collectAsState()
     var detailPopup by remember { mutableStateOf<PopupEvent?>(null) }
-    var showDetail by remember { mutableStateOf(false) }
+    var showDetail by rememberSaveable { mutableStateOf(false) }
     var showAlarmScreen by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -97,18 +99,20 @@ fun SearchScreen(onClose: () -> Unit,
         focusRequester.requestFocus()
         keyboard?.show()
     }
-    LaunchedEffect(showDetail, selectedPopup) {
-        if (showDetail && selectedPopup != null) {
+    LaunchedEffect(showDetail, selectedPopupUuid) {
+        val popupUuid = selectedPopupUuid
+        if (showDetail && popupUuid != null) {
             selectPopupViewModel.SelectPopupEvents(
                 userUuid = loginResponse?.userUuid.orEmpty(),
-                popupUuid = selectedPopup!!.popupUuid
+                popupUuid = popupUuid
             )
         }
     }
 
-    LaunchedEffect(selectPopupList, showDetail, selectedPopup) {
-        if (showDetail && selectedPopup != null) {
-            detailPopup = selectPopupList.firstOrNull { it.popupUuid == selectedPopup!!.popupUuid }
+    LaunchedEffect(selectPopupList, showDetail, selectedPopupUuid) {
+        val popupUuid = selectedPopupUuid
+        if (showDetail && popupUuid != null) {
+            detailPopup = selectPopupList.firstOrNull { it.popupUuid == popupUuid }
         }
     }
     if (showAlarmScreen) {
@@ -228,6 +232,7 @@ fun SearchScreen(onClose: () -> Unit,
                         popupList = popupList,
                         onShowDetail = { popup ->
                             selectedPopup = popup
+                            selectedPopupUuid = popup.popupUuid
                             showDetail = true
                         })
                 }
@@ -236,7 +241,12 @@ fun SearchScreen(onClose: () -> Unit,
         if (showDetail && detailPopup != null) {
             ContentDetail(
                 popup = detailPopup!!,
-                onClose = { showDetail = false },
+                onClose = {
+                    selectedPopup = null
+                    selectedPopupUuid = null
+                    detailPopup = null
+                    showDetail = false
+                },
                 loginResponse = loginResponse,
                 favoriteViewModel = favoriteViewModel,
                 showDetail = showDetail,

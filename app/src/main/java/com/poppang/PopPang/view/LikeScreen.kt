@@ -30,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
@@ -87,21 +88,24 @@ fun LikeScreen(
     val selectedDate = remember { mutableStateOf<LocalDate?>(LocalDate.now()) }
     val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    var selectedPopupUuid by rememberSaveable { mutableStateOf<String?>(null) }
     val selectPopupList by selectPopupViewModel.selectpopupList.collectAsState()
     var detailPopup by remember { mutableStateOf<PopupEvent?>(null) }
 
-    LaunchedEffect(showDetail, selectedPopup) {
-        if (showDetail && selectedPopup != null) {
+    LaunchedEffect(showDetail, selectedPopupUuid) {
+        val popupUuid = selectedPopupUuid
+        if (showDetail && popupUuid != null) {
             selectPopupViewModel.SelectPopupEvents(
                 userUuid = loginResponse?.userUuid.orEmpty(),
-                popupUuid = selectedPopup!!.popupUuid
+                popupUuid = popupUuid
             )
         }
     }
 
-    LaunchedEffect(selectPopupList, showDetail, selectedPopup) {
-        if (showDetail && selectedPopup != null) {
-            detailPopup = selectPopupList.firstOrNull { it.popupUuid == selectedPopup!!.popupUuid }
+    LaunchedEffect(selectPopupList, showDetail, selectedPopupUuid) {
+        val popupUuid = selectedPopupUuid
+        if (showDetail && popupUuid != null) {
+            detailPopup = selectPopupList.firstOrNull { it.popupUuid == popupUuid }
         }
     }
     if (showAlarm) {
@@ -130,6 +134,7 @@ fun LikeScreen(
                         loginResponse = loginResponse,
                         onShowDetail = { popup ->
                             selectedPopup = popup
+                            selectedPopupUuid = popup.popupUuid
                             setShowDetail(true)
                         },
                         favoriteViewModel = favoriteViewModel,
@@ -158,6 +163,7 @@ fun LikeScreen(
                                 selectedDate = selectedDate.value,
                                 onShowDetail = { popup ->
                                     selectedPopup = popup
+                                    selectedPopupUuid = popup.popupUuid
                                     setShowDetail(true)
                                 },
                                 favoriteViewModel = favoriteViewModel,
@@ -173,7 +179,12 @@ fun LikeScreen(
         if (showDetail && detailPopup != null) {
             ContentDetail(
                 popup = detailPopup!!,
-                onClose = { setShowDetail(false) },
+                onClose = {
+                    selectedPopup = null
+                    selectedPopupUuid = null
+                    detailPopup = null
+                    setShowDetail(false)
+                },
                 loginResponse = loginResponse,
                 favoriteViewModel = favoriteViewModel,
                 showDetail = showDetail,

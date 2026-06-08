@@ -20,7 +20,7 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat.setDecorFitsSystemWindows
@@ -40,6 +40,10 @@ import com.poppang.PopPang.viewmodel.PopupViewModel
 import com.poppang.PopPang.viewmodel.RecommendPopupViewModel
 
 class MainActivity : ComponentActivity() {
+    companion object {
+        private const val REQUEST_UPDATE = 100
+    }
+
     private val nicknameViewModel: DuplicateNickname by viewModels()
     private val keywordViewModel: AddKeywordViewModel by viewModels()
     private val categoryViewModel: CategoryItemViewModel by viewModels()
@@ -61,7 +65,6 @@ class MainActivity : ComponentActivity() {
         KakaoSdk.init(this, BuildConfig.KAKAO_KEY)
         val appUpdateManager = AppUpdateManagerFactory.create(this)
         val appUpdateInfoTask = appUpdateManager.appUpdateInfo
-        val REQUEST_UPDATE = 100
         deepLinkPopupUuid = intent?.data?.getQueryParameter("popupUuid")
         val listener = object : com.google.android.play.core.install.InstallStateUpdatedListener {
             override fun onStateUpdate(state: com.google.android.play.core.install.InstallState) {
@@ -84,13 +87,18 @@ class MainActivity : ComponentActivity() {
             return
         }
         appUpdateInfoTask.addOnSuccessListener { appUpdateInfo ->
-            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
-                && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
-            ) {
-                appUpdateManager.registerListener(listener)
+            val updateType = when {
+                appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE) -> AppUpdateType.IMMEDIATE
+                appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE) -> AppUpdateType.FLEXIBLE
+                else -> null
+            }
+            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE && updateType != null) {
+                if (updateType == AppUpdateType.FLEXIBLE) {
+                    appUpdateManager.registerListener(listener)
+                }
                 appUpdateManager.startUpdateFlowForResult(
                     appUpdateInfo,
-                    AppUpdateType.FLEXIBLE,
+                    updateType,
                     this,
                     REQUEST_UPDATE
                 )
@@ -116,7 +124,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PopPangAOSTheme {
-                var hideSystemBars by remember { mutableStateOf(true) }
+                var hideSystemBars by rememberSaveable { mutableStateOf(true) }
                 LaunchedEffect(hideSystemBars) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         val controller = window.insetsController
@@ -144,6 +152,14 @@ class MainActivity : ComponentActivity() {
                     deepLinkPopupUuid = deepLinkPopupUuid
                 )
             }
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_UPDATE && resultCode != RESULT_OK) {
+            finish()
         }
     }
 

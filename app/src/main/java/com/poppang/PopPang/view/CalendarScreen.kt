@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
@@ -109,6 +110,7 @@ fun CalendarScreen(
     val userUuid = loginResponse?.userUuid.orEmpty()
 
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    var selectedPopupUuid by rememberSaveable { mutableStateOf<String?>(null) }
     val selectPopupList by selectPopupViewModel.selectpopupList.collectAsState()
     var detailPopup by remember { mutableStateOf<PopupEvent?>(null) }
 
@@ -137,18 +139,20 @@ fun CalendarScreen(
         )
     }
 
-    LaunchedEffect(showDetail, selectedPopup) {
-        if (showDetail && selectedPopup != null) {
+    LaunchedEffect(showDetail, selectedPopupUuid) {
+        val popupUuid = selectedPopupUuid
+        if (showDetail && popupUuid != null) {
             selectPopupViewModel.SelectPopupEvents(
                 userUuid = loginResponse?.userUuid.orEmpty(),
-                popupUuid = selectedPopup!!.popupUuid
+                popupUuid = popupUuid
             )
         }
     }
 
-    LaunchedEffect(selectPopupList, showDetail, selectedPopup) {
-        if (showDetail && selectedPopup != null) {
-            detailPopup = selectPopupList.firstOrNull { it.popupUuid == selectedPopup!!.popupUuid }
+    LaunchedEffect(selectPopupList, showDetail, selectedPopupUuid) {
+        val popupUuid = selectedPopupUuid
+        if (showDetail && popupUuid != null) {
+            detailPopup = selectPopupList.firstOrNull { it.popupUuid == popupUuid }
         }
     }
 
@@ -260,6 +264,7 @@ fun CalendarScreen(
                                     .padding(vertical = 12.dp)
                                     .clickable {
                                         selectedPopup = popup
+                                        selectedPopupUuid = popup.popupUuid
                                         setShowDetail(true) }
                             ) {
                                 Row {
@@ -409,7 +414,12 @@ fun CalendarScreen(
         if (showDetail && detailPopup != null) {
             ContentDetail(
                 popup = detailPopup!!,
-                onClose = { setShowDetail(false) },
+                onClose = {
+                    selectedPopup = null
+                    selectedPopupUuid = null
+                    detailPopup = null
+                    setShowDetail(false)
+                },
                 loginResponse = loginResponse,
                 favoriteViewModel = favoriteViewModel,
                 showDetail = showDetail,

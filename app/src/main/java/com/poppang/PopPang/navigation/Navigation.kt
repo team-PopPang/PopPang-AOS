@@ -10,6 +10,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,6 +36,35 @@ import com.poppang.PopPang.viewmodel.RecommendPopupViewModel
 import com.poppang.PopPang.viewmodel.UserDataViewModel
 import kotlinx.coroutines.delay
 
+private val LoginResponseSaver = Saver<LoginResponse?, List<Any?>>(
+    save = { loginResponse ->
+        loginResponse?.let {
+            listOf(
+                it.uid,
+                it.userUuid,
+                it.provider,
+                it.email,
+                it.nickname,
+                it.role,
+                it.fcmToken,
+                it.isAlerted
+            )
+        }
+    },
+    restore = { saved ->
+        LoginResponse(
+            uid = saved[0] as String?,
+            userUuid = saved[1] as String?,
+            provider = saved[2] as String?,
+            email = saved[3] as String?,
+            nickname = saved[4] as String?,
+            role = saved[5] as String?,
+            fcmToken = saved[6] as String?,
+            isAlerted = saved[7] as Boolean?
+        )
+    }
+)
+
 @Composable
 fun Navigation(
     nicknameViewModel: DuplicateNickname,
@@ -49,7 +80,9 @@ fun Navigation(
     deepLinkPopupUuid: String? = null
 ) {
     val navController = rememberNavController()
-    var loginResponse by remember { mutableStateOf<LoginResponse?>(null) }
+    var loginResponse by rememberSaveable(stateSaver = LoginResponseSaver) {
+        mutableStateOf<LoginResponse?>(null)
+    }
     val latestUserData by userDataViewModel.userData.collectAsState()
     var fcmToken by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current

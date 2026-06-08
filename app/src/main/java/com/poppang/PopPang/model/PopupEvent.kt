@@ -15,7 +15,7 @@ data class PopupEvent(
     val latitude: Double,
     val longitude: Double,
     val instaPostId: String,
-    val instaPostUrl: String,
+    val instaPostUrl: String?,
     val captionSummary: String,
     val imageUrlList: List<String>,
     val mediaType: String,

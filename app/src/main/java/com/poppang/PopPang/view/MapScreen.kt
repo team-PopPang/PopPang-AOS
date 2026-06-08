@@ -50,6 +50,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
@@ -155,6 +156,7 @@ fun MapScreen(
     }
     val coroutineScope = rememberCoroutineScope()
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
+    var selectedPopupUuid by rememberSaveable { mutableStateOf<String?>(null) }
     val selectPopupList by selectPopupViewModel.selectpopupList.collectAsState()
     var detailPopup by remember { mutableStateOf<PopupEvent?>(null) }
     var selectedDetailPopup by remember { mutableStateOf<PopupEvent?>(null) }
@@ -170,18 +172,20 @@ fun MapScreen(
 
     LaunchedEffect(popupprogressList) { mapviewmodel.setPopups(popupprogressList) }
 
-    LaunchedEffect(showDetail, selectedPopup) {
-        if (showDetail && selectedPopup != null) {
+    LaunchedEffect(showDetail, selectedPopupUuid) {
+        val popupUuid = selectedPopupUuid
+        if (showDetail && popupUuid != null) {
             selectPopupViewModel.SelectPopupEvents(
                 userUuid = loginResponse?.userUuid.orEmpty(),
-                popupUuid = selectedPopup!!.popupUuid
+                popupUuid = popupUuid
             )
         }
     }
 
-    LaunchedEffect(selectPopupList, showDetail, selectedPopup) {
-        if (showDetail && selectedPopup != null) {
-            detailPopup = selectPopupList.firstOrNull { it.popupUuid == selectedPopup!!.popupUuid }
+    LaunchedEffect(selectPopupList, showDetail, selectedPopupUuid) {
+        val popupUuid = selectedPopupUuid
+        if (showDetail && popupUuid != null) {
+            detailPopup = selectPopupList.firstOrNull { it.popupUuid == popupUuid }
         }
     }
     DisposableEffect(Unit) {
@@ -226,6 +230,11 @@ fun MapScreen(
     LaunchedEffect(selectedDetailPopup) {
         if (selectedDetailPopup != null) {
             detailSheetState.animateTo(MapSheetValue.Middle)
+        }
+    }
+    LaunchedEffect(detailSheetState.currentValue) {
+        if (detailSheetState.currentValue == MapSheetValue.Hidden) {
+            selectedDetailPopup = null
         }
     }
     val listToShow =
@@ -274,12 +283,8 @@ fun MapScreen(
                     )
                     coroutineScope.launch {
                         sheetState.animateTo(MapSheetValue.Middle)
-                        if (selectedDetailPopup != null) {
-                            selectedDetailPopup = null
-                            selectedDetailPopup = popup
-                        } else {
-                            selectedDetailPopup = popup
-                        }
+                        selectedDetailPopup = popup
+                        detailSheetState.animateTo(MapSheetValue.Middle)
                     }
                 },
                 viewCountViewModel = viewCountViewModel,
@@ -304,6 +309,7 @@ fun MapScreen(
                 setShowDetail = { show, popup ->
                     setShowDetail(show)
                     selectedPopup = popup
+                    selectedPopupUuid = popup?.popupUuid
                 },
                 latitude = latitude,
                 longitude = longitude
@@ -362,7 +368,12 @@ fun MapScreen(
     if (showDetail && detailPopup != null) {
         ContentDetail(
             popup = detailPopup!!,
-            onClose = { setShowDetail(false) },
+            onClose = {
+                selectedPopup = null
+                selectedPopupUuid = null
+                detailPopup = null
+                setShowDetail(false)
+            },
             loginResponse = loginResponse,
             favoriteViewModel = favoriteViewModel,
             showDetail = showDetail,
