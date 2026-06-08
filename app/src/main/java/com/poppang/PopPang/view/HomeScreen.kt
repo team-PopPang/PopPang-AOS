@@ -1,6 +1,11 @@
 package com.poppang.PopPang.view
 
+import android.content.Context
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.util.Log
+import android.view.Gravity
+import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,6 +37,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,9 +58,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.google.android.gms.ads.AdLoader
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.nativead.MediaView
+import com.google.android.gms.ads.nativead.NativeAd
+import com.google.android.gms.ads.nativead.NativeAdOptions
+import com.google.android.gms.ads.nativead.NativeAdView
+import com.poppang.PopPang.BuildConfig
 import com.poppang.PopPang.R
 import com.poppang.PopPang.model.LoginResponse
 import com.poppang.PopPang.model.PopupEvent
@@ -86,6 +100,10 @@ import java.time.LocalDate.now
 import java.time.LocalDate.parse
 import java.time.format.DateTimeFormatter.ofPattern
 import java.time.temporal.ChronoUnit
+import kotlin.math.roundToInt
+import android.graphics.Color as AndroidColor
+import android.widget.LinearLayout as AndroidLinearLayout
+import android.widget.TextView as AndroidTextView
 
 @Composable
 fun HomeScreen(
@@ -270,9 +288,10 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(15.dp))
                     }
                 }
-                itemsIndexed(homepopupfilterList.chunked(2)) { _, pair ->
+                val homeContentItems = buildHomeContentItems(homepopupfilterList)
+                itemsIndexed(homeContentItems.chunked(2)) { _, pair ->
                     MainContent(
-                        popupPair = pair,
+                        contentPair = pair,
                         onShowDetail = { popup ->
                             selectedPopup = popup
                             selectedPopupUuid = popup.popupUuid
@@ -899,8 +918,8 @@ fun FilterSection(
 
 
 @Composable
-fun MainContent(
-    popupPair: List<PopupEvent>,
+private fun MainContent(
+    contentPair: List<HomeContentItem>,
     onShowDetail: (PopupEvent) -> Unit,
     userUuid: String,
     favoritePopupUuids: Collection<String>,
@@ -916,82 +935,95 @@ fun MainContent(
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(15.dp)
         ) {
-            popupPair.forEach { popup ->
-                val isLiked = favoritePopupUuids.contains(popup.popupUuid)
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onShowDetail(popup) }
-                ) {
-                    Column {
+            contentPair.forEach { item ->
+                when (item) {
+                    is HomeContentItem.Popup -> {
+                        val popup = item.popup
+                        val isLiked = favoritePopupUuids.contains(popup.popupUuid)
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(217.5.dp),
+                                .weight(1f)
+                                .clickable { onShowDetail(popup) }
                         ) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(popup.fullImageUrlList.getOrNull(0))
-                                    .diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                                    .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                                    .build(),
-                                contentDescription = popup.name,
-                                modifier = Modifier
-                                    .fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                            IconButton(
-                                onClick = {
-                                    val newLikeStatus = !isLiked
-                                    if (newLikeStatus) {
-                                        favoriteViewModel.addFavorite(userUuid, popup.popupUuid)
-                                    } else {
-                                        favoriteViewModel.deleteFavorite(
-                                            userUuid,
-                                            popup.popupUuid
+                            Column {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(217.5.dp),
+                                ) {
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(popup.fullImageUrlList.getOrNull(0))
+                                            .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                            .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                            .build(),
+                                        contentDescription = popup.name,
+                                        modifier = Modifier
+                                            .fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    IconButton(
+                                        onClick = {
+                                            val newLikeStatus = !isLiked
+                                            if (newLikeStatus) {
+                                                favoriteViewModel.addFavorite(userUuid, popup.popupUuid)
+                                            } else {
+                                                favoriteViewModel.deleteFavorite(
+                                                    userUuid,
+                                                    popup.popupUuid
+                                                )
+                                            }
+                                        },
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(top = 5.dp, end = 14.dp)
+                                            .size(24.dp)
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = if (isLiked) R.drawable.heart_gray_icon else R.drawable.heart_icon),
+                                            contentDescription = "Like Icon",
+                                            modifier = Modifier,
+                                            tint = if (isLiked) Color.Red else Color.Unspecified
                                         )
                                     }
-                                },
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(top = 5.dp, end = 14.dp)
-                                    .size(24.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = if (isLiked) R.drawable.heart_gray_icon else R.drawable.heart_icon),
-                                    contentDescription = "Like Icon",
-                                    modifier = Modifier,
-                                    tint = if (isLiked) Color.Red else Color.Unspecified
+                                }
+                                Text(
+                                    text = popup.roadAddress.split(" ").take(2).joinToString(" "),
+                                    style = Regular12,
+                                    color = mainBlack,
+                                    modifier = Modifier
+                                        .padding(top = 10.dp)
+                                )
+                                Text(
+                                    text = popup.name,
+                                    style = Bold15,
+                                    color = mainBlack,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier
+                                        .padding(top = 5.dp)
+                                )
+                                Text(
+                                    text = popup.startDateFormatted + " - " + popup.endDateFormatted,
+                                    style = Regular12.copy(letterSpacing = (-1).sp),
+                                    color = mainGray1,
+                                    modifier = Modifier
+                                        .padding(top = 5.dp)
                                 )
                             }
                         }
-                        Text(
-                            text = popup.roadAddress.split(" ").take(2).joinToString(" "),
-                            style = Regular12,
-                            color = mainBlack,
+                    }
+
+                    HomeContentItem.NativeAd -> {
+                        HomeNativeAdCard(
                             modifier = Modifier
-                                .padding(top = 10.dp)
-                        )
-                        Text(
-                            text = popup.name,
-                            style = Bold15,
-                            color = mainBlack,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .padding(top = 5.dp)
-                        )
-                        Text(
-                            text = popup.startDateFormatted + " - " + popup.endDateFormatted,
-                            style = Regular12.copy(letterSpacing = (-1).sp),
-                            color = mainGray1,
-                            modifier = Modifier
-                                .padding(top = 5.dp)
+                                .weight(1f)
+                                .height(HOME_NATIVE_AD_CARD_HEIGHT_DP.dp)
                         )
                     }
                 }
             }
-            if (popupPair.size == 1) {
+            if (contentPair.size == 1) {
                 Spacer(
                     modifier = Modifier
                         .weight(1f)
@@ -1000,3 +1032,213 @@ fun MainContent(
         }
     }
 }
+
+private sealed interface HomeContentItem {
+    data class Popup(val popup: PopupEvent) : HomeContentItem
+    data object NativeAd : HomeContentItem
+}
+
+private fun buildHomeContentItems(popups: List<PopupEvent>): List<HomeContentItem> {
+    if (popups.isEmpty()) return emptyList()
+
+    val popupItems = popups.map { HomeContentItem.Popup(it) }
+    val adIndex = minOf(HOME_NATIVE_AD_INSERT_INDEX, popupItems.size)
+
+    return buildList {
+        addAll(popupItems.take(adIndex))
+        add(HomeContentItem.NativeAd)
+        addAll(popupItems.drop(adIndex))
+    }
+}
+
+@Composable
+private fun HomeNativeAdCard(
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val nativeAdState = remember { mutableStateOf<NativeAd?>(null) }
+
+    DisposableEffect(context) {
+        val adLoader = AdLoader.Builder(context, BuildConfig.ADMOB_NATIVE_KEY)
+            .forNativeAd { nativeAd ->
+                nativeAdState.value?.destroy()
+                nativeAdState.value = nativeAd
+            }
+            .withNativeAdOptions(
+                NativeAdOptions.Builder()
+                    .setAdChoicesPlacement(NativeAdOptions.ADCHOICES_TOP_RIGHT)
+                    .build()
+            )
+            .build()
+
+        adLoader.loadAd(AdRequest.Builder().build())
+
+        onDispose {
+            nativeAdState.value?.destroy()
+            nativeAdState.value = null
+        }
+    }
+
+    val nativeAd = nativeAdState.value
+
+    Box(modifier = modifier) {
+        if (nativeAd != null) {
+            AndroidView(
+                factory = { createHomeNativeAdView(it) },
+                update = { populateHomeNativeAdView(nativeAd, it) },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+private fun createHomeNativeAdView(context: Context): NativeAdView {
+    val nativeAdView = NativeAdView(context).apply {
+        layoutParams = AndroidLinearLayout.LayoutParams(
+            AndroidLinearLayout.LayoutParams.MATCH_PARENT,
+            AndroidLinearLayout.LayoutParams.MATCH_PARENT
+        )
+    }
+
+    val container = AndroidLinearLayout(context).apply {
+        orientation = AndroidLinearLayout.VERTICAL
+        layoutParams = AndroidLinearLayout.LayoutParams(
+            AndroidLinearLayout.LayoutParams.MATCH_PARENT,
+            AndroidLinearLayout.LayoutParams.MATCH_PARENT
+        )
+        background = GradientDrawable().apply {
+            setColor(AndroidColor.WHITE)
+            cornerRadius = 6.dpToPx(context).toFloat()
+            setStroke(1.dpToPx(context), AndroidColor.rgb(229, 229, 229))
+        }
+    }
+
+    val mediaView = MediaView(context).apply {
+        layoutParams = AndroidLinearLayout.LayoutParams(
+            AndroidLinearLayout.LayoutParams.MATCH_PARENT,
+            165.dpToPx(context)
+        )
+        setBackgroundColor(AndroidColor.rgb(245, 245, 245))
+    }
+
+    val contentContainer = AndroidLinearLayout(context).apply {
+        orientation = AndroidLinearLayout.VERTICAL
+        setPadding(
+            10.dpToPx(context),
+            8.dpToPx(context),
+            10.dpToPx(context),
+            10.dpToPx(context)
+        )
+    }
+
+    val headlineRow = AndroidLinearLayout(context).apply {
+        orientation = AndroidLinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        layoutParams = AndroidLinearLayout.LayoutParams(
+            AndroidLinearLayout.LayoutParams.MATCH_PARENT,
+            AndroidLinearLayout.LayoutParams.WRAP_CONTENT
+        )
+    }
+
+    val adBadgeView = AndroidTextView(context).apply {
+        text = "광고"
+        textSize = 10f
+        typeface = Typeface.DEFAULT_BOLD
+        setTextColor(AndroidColor.WHITE)
+        gravity = Gravity.CENTER
+        setPadding(4.dpToPx(context), 1.dpToPx(context), 4.dpToPx(context), 1.dpToPx(context))
+        background = GradientDrawable().apply {
+            setColor(AndroidColor.rgb(255, 137, 37))
+            cornerRadius = 3.dpToPx(context).toFloat()
+        }
+        layoutParams = AndroidLinearLayout.LayoutParams(
+            AndroidLinearLayout.LayoutParams.WRAP_CONTENT,
+            AndroidLinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            rightMargin = 5.dpToPx(context)
+        }
+    }
+
+    val headlineView = AndroidTextView(context).apply {
+        textSize = 14f
+        typeface = Typeface.DEFAULT_BOLD
+        setTextColor(AndroidColor.rgb(32, 32, 32))
+        maxLines = 1
+        ellipsize = android.text.TextUtils.TruncateAt.END
+        layoutParams = AndroidLinearLayout.LayoutParams(
+            0,
+            AndroidLinearLayout.LayoutParams.WRAP_CONTENT,
+            1f
+        )
+    }
+
+    val bodyView = AndroidTextView(context).apply {
+        textSize = 11f
+        setTextColor(AndroidColor.rgb(110, 110, 110))
+        maxLines = 1
+        ellipsize = android.text.TextUtils.TruncateAt.END
+        layoutParams = AndroidLinearLayout.LayoutParams(
+            AndroidLinearLayout.LayoutParams.MATCH_PARENT,
+            AndroidLinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            topMargin = 4.dpToPx(context)
+        }
+    }
+
+    val callToActionView = AndroidTextView(context).apply {
+        textSize = 13f
+        typeface = Typeface.DEFAULT_BOLD
+        setTextColor(AndroidColor.WHITE)
+        gravity = Gravity.CENTER
+        background = GradientDrawable().apply {
+            setColor(AndroidColor.rgb(255, 137, 37))
+            cornerRadius = 5.dpToPx(context).toFloat()
+        }
+        layoutParams = AndroidLinearLayout.LayoutParams(
+            AndroidLinearLayout.LayoutParams.MATCH_PARENT,
+            38.dpToPx(context)
+        ).apply {
+            topMargin = 8.dpToPx(context)
+        }
+    }
+
+    headlineRow.addView(adBadgeView)
+    headlineRow.addView(headlineView)
+    contentContainer.addView(headlineRow)
+    contentContainer.addView(bodyView)
+    contentContainer.addView(callToActionView)
+    container.addView(mediaView)
+    container.addView(contentContainer)
+    nativeAdView.addView(container)
+
+    nativeAdView.mediaView = mediaView
+    nativeAdView.headlineView = headlineView
+    nativeAdView.bodyView = bodyView
+    nativeAdView.callToActionView = callToActionView
+
+    return nativeAdView
+}
+
+private fun populateHomeNativeAdView(nativeAd: NativeAd, nativeAdView: NativeAdView) {
+    (nativeAdView.headlineView as? AndroidTextView)?.text = nativeAd.headline.orEmpty()
+    (nativeAdView.bodyView as? AndroidTextView)?.apply {
+        val body = nativeAd.body
+        visibility = if (body.isNullOrBlank()) View.GONE else View.VISIBLE
+        text = body.orEmpty()
+    }
+    (nativeAdView.callToActionView as? AndroidTextView)?.apply {
+        val callToAction = nativeAd.callToAction
+        visibility = if (callToAction.isNullOrBlank()) View.GONE else View.VISIBLE
+        text = callToAction.orEmpty()
+    }
+    nativeAd.mediaContent?.let { mediaContent ->
+        nativeAdView.mediaView?.mediaContent = mediaContent
+    }
+    nativeAdView.setNativeAd(nativeAd)
+}
+
+private fun Int.dpToPx(context: Context): Int =
+    (this * context.resources.displayMetrics.density).roundToInt()
+
+private const val HOME_NATIVE_AD_INSERT_INDEX = 2
+private const val HOME_NATIVE_AD_CARD_HEIGHT_DP = 278

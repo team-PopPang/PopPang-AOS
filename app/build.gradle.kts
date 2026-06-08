@@ -16,7 +16,7 @@ android {
         minSdk = 28
         targetSdk = 36
         versionCode = 18
-        versionName = "1.1.0"
+        versionName = "1.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -24,6 +24,10 @@ android {
         localProperties.load(project.rootProject.file("local.properties").inputStream())
         val kakaoKey = localProperties.getProperty("KAKAO_KEY") ?: ""
         val googleKey = localProperties.getProperty("GOOGLE_KEY") ?: ""
+        val admobKey = localProperties.getProperty("ADMOB_KEY")
+            ?: "ca-app-pub-3940256099942544~3347511713"
+        val admobNativeKey = localProperties.getProperty("ADMOB_NATIVE_KEY")
+            ?: "ca-app-pub-3940256099942544/2247696110"
         val authurl = localProperties.getProperty("AUTH_BASE_URL") ?: ""
         val userurl = localProperties.getProperty("USER_BASE_URL") ?: ""
         val usersurl = localProperties.getProperty("USERS_BASE_URL") ?: ""
@@ -59,7 +63,11 @@ android {
         val relatedpopupapi = localProperties.getProperty("RELATED_POPUP_API") ?: ""
         buildConfigField("String", "KAKAO_KEY", "\"$kakaoKey\"")
         buildConfigField("String", "GOOGLE_KEY", "\"$googleKey\"")
+        buildConfigField("String", "ADMOB_KEY", "\"$admobKey\"")
+        buildConfigField("String", "ADMOB_NATIVE_KEY", "\"$admobNativeKey\"")
         manifestPlaceholders["KAKAO_KEY"] = kakaoKey
+        manifestPlaceholders["ADMOB_KEY"] = admobKey
+
         buildConfigField("String", "AUTH_BASE_URL", "\"$authurl\"")
         buildConfigField("String", "USER_BASE_URL", "\"$userurl\"")
         buildConfigField("String", "USERS_BASE_URL", "\"$usersurl\"")
@@ -136,6 +144,7 @@ dependencies {
     implementation(libs.converter.gson)
     implementation(libs.v2.user)
     implementation(libs.play.services.auth)
+    implementation(libs.play.services.ads)
     implementation(libs.google.services)
     implementation(libs.coil.compose)
     implementation(libs.androidx.datastore.preferences)

@@ -20,6 +20,7 @@ naverMapCompose = "1.9.0"
 naverMapLocation = "21.0.2"
 navigationCompose = "2.9.6"
 playServicesAuth = "21.4.0"
+playServicesAds = "25.3.0"
 playServicesLocation = "21.3.0"
 retrofit = "3.0.0"
 v2Share = "2.21.3"
@@ -53,6 +54,7 @@ lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel
 naver-map-compose = { module = "io.github.fornewid:naver-map-compose", version.ref = "naverMapCompose" }
 naver-map-location = { module = "io.github.fornewid:naver-map-location", version.ref = "naverMapLocation" }
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
+play-services-ads = { module = "com.google.android.gms:play-services-ads", version.ref = "playServicesAds" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 v2-share = { module = "com.kakao.sdk:v2-share", version.ref = "v2Share" }
