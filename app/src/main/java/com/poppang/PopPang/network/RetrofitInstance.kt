@@ -8,6 +8,7 @@ object RetrofitInstance {
     private const val AUTH_BASE_URL = BuildConfig.AUTH_BASE_URL
     private const val USER_BASE_URL = BuildConfig.USER_BASE_URL
     private const val USERS_BASE_URL = BuildConfig.USERS_BASE_URL
+    private const val ADMIN_BASE_URL = BuildConfig.ADMIN_BASE_URL
     private const val BASE_URL = BuildConfig.BASE_URL
     val authApi: AuthApi by lazy {
         Retrofit.Builder()
@@ -39,6 +40,30 @@ object RetrofitInstance {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(CategoryItemApi::class.java)
+    }
+
+    val submissionApi: SubmissionApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(SubmissionApi::class.java)
+    }
+
+    val adminSubmissionApi: AdminSubmissionApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(ADMIN_BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(AdminSubmissionApi::class.java)
+    }
+
+    val adminPopupApi: AdminPopupApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(ADMIN_BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(AdminPopupApi::class.java)
     }
 
     val popupProgressApi: PopupProgressApi by lazy {

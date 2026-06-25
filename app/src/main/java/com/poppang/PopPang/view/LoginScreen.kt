@@ -79,6 +79,7 @@ fun GoogleLoginButton(
     ) { result ->
         val data = result.data
         viewModel.googleLogin(
+            context = context,
             data = data,
             onSuccess = { response ->
                 viewModel.saveuserUuid(context, response.userUuid ?: "")

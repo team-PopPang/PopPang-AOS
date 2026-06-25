@@ -31,6 +31,7 @@ android {
         val authurl = localProperties.getProperty("AUTH_BASE_URL") ?: ""
         val userurl = localProperties.getProperty("USER_BASE_URL") ?: ""
         val usersurl = localProperties.getProperty("USERS_BASE_URL") ?: ""
+        val adminbaseurl = localProperties.getProperty("ADMIN_BASE_URL") ?: ""
         val baseurl = localProperties.getProperty("BASE_URL") ?: ""
         val urlimage = localProperties.getProperty("URL_IMAGE") ?: ""
         val authapikakao = localProperties.getProperty("AUTH_API_KAKAO") ?: ""
@@ -61,16 +62,18 @@ android {
         val alertreadapi = localProperties.getProperty("ALERT_READ_API") ?: ""
         val alertdeleteapi = localProperties.getProperty("ALERT_DELETE_API") ?: ""
         val relatedpopupapi = localProperties.getProperty("RELATED_POPUP_API") ?: ""
+        val popupsubmissionapi = localProperties.getProperty("POPUP_SUBMISSION_API") ?: ""
+        val popupdeactivateapi = localProperties.getProperty("POPUP_DEACTIVATE_API") ?: ""
         buildConfigField("String", "KAKAO_KEY", "\"$kakaoKey\"")
         buildConfigField("String", "GOOGLE_KEY", "\"$googleKey\"")
         buildConfigField("String", "ADMOB_KEY", "\"$admobKey\"")
         buildConfigField("String", "ADMOB_NATIVE_KEY", "\"$admobNativeKey\"")
         manifestPlaceholders["KAKAO_KEY"] = kakaoKey
         manifestPlaceholders["ADMOB_KEY"] = admobKey
-
         buildConfigField("String", "AUTH_BASE_URL", "\"$authurl\"")
         buildConfigField("String", "USER_BASE_URL", "\"$userurl\"")
         buildConfigField("String", "USERS_BASE_URL", "\"$usersurl\"")
+        buildConfigField("String", "ADMIN_BASE_URL", "\"$adminbaseurl\"")
         buildConfigField("String", "BASE_URL", "\"$baseurl\"")
         buildConfigField("String", "AUTH_API_KAKAO", "\"$authapikakao\"")
         buildConfigField("String", "AUTH_API_GOOGLE", "\"$authapigoogle\"")
@@ -101,6 +104,8 @@ android {
         buildConfigField("String", "ALERT_READ_API", "\"$alertreadapi\"")
         buildConfigField("String", "ALERT_DELETE_API", "\"$alertdeleteapi\"")
         buildConfigField("String", "RELATED_POPUP_API", "\"$relatedpopupapi\"")
+        buildConfigField("String", "POPUP_SUBMISSION_API", "\"$popupsubmissionapi\"")
+        buildConfigField("String", "POPUP_DEACTIVATE_API", "\"$popupdeactivateapi\"")
     }
 
     buildTypes {

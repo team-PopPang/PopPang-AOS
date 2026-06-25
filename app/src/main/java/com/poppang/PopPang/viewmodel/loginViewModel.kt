@@ -12,6 +12,7 @@ import com.google.android.gms.common.api.ApiException
 import com.kakao.sdk.auth.model.OAuthToken
 import com.kakao.sdk.user.UserApiClient
 import com.poppang.PopPang.BuildConfig
+import com.poppang.PopPang.datastore.AuthTokenStore
 import com.poppang.PopPang.model.GoogleLoginRequest
 import com.poppang.PopPang.model.KakaoLoginRequest
 import com.poppang.PopPang.model.LoginResponse
@@ -36,6 +37,7 @@ class loginViewModel : ViewModel() {
                         val request = KakaoLoginRequest(access_token = token.accessToken)
                         val response = authApi.kakaoLogin(request)
                         if (response.isSuccessful && response.body() != null) {
+                            AuthTokenStore.saveFromLoginResponse(context, response)
                             onSuccess(response.body()!!)
                         } else {
                             onError(Exception("로그인 실패: ${response.errorBody()?.string()}"))
@@ -74,6 +76,7 @@ class loginViewModel : ViewModel() {
     }
 
     fun googleLogin(
+        context: Context,
         data: Intent?,
         onSuccess: (LoginResponse) -> Unit,
         onError: (Throwable) -> Unit
@@ -89,6 +92,7 @@ class loginViewModel : ViewModel() {
                         val request = GoogleLoginRequest(id_token = idToken)
                         val response = authApi.googleLogin(request)
                         if (response.isSuccessful && response.body() != null) {
+                            AuthTokenStore.saveFromLoginResponse(context, response)
                             onSuccess(response.body()!!)
                         } else {
                             val errorMsg = response.errorBody()?.string() ?: "Unknown error"

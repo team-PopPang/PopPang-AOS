@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.poppang.PopPang.model.AutoLoginRequest
 import com.poppang.PopPang.model.LoginResponse
 import com.poppang.PopPang.network.RetrofitInstance
+import com.poppang.PopPang.datastore.AuthTokenStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,6 +38,7 @@ class AutoLoginViewModel : ViewModel() {
                 }
             }
             if (response != null && response.isSuccessful) {
+                AuthTokenStore.saveFromLoginResponse(context, response)
                 _loginResponse.value = response.body()
             } else {
                 _loginResponse.value = null

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -29,10 +30,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -62,6 +65,7 @@ import com.kakao.sdk.template.model.FeedTemplate
 import com.kakao.sdk.template.model.Link
 import com.kakao.sdk.template.model.TextTemplate
 import com.poppang.PopPang.R
+import com.poppang.PopPang.datastore.AuthTokenStore
 import com.poppang.PopPang.model.LoginResponse
 import com.poppang.PopPang.model.PopupEvent
 import com.poppang.PopPang.ui.theme.Bold20
@@ -77,6 +81,7 @@ import com.poppang.PopPang.ui.theme.mainGray2
 import com.poppang.PopPang.ui.theme.mainGray5
 import com.poppang.PopPang.ui.theme.mainOrange
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
+import com.poppang.PopPang.viewmodel.AdminPopupViewModel
 import com.poppang.PopPang.viewmodel.PopupRelatedViewModel
 import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 import com.poppang.PopPang.viewmodel.ViewCountViewModel
@@ -102,7 +107,9 @@ fun ContentDetail(
     setShowDetail: (Boolean) -> Unit,
     viewCountViewModel: ViewCountViewModel = viewModel(),
     popupRelatedViewModel: PopupRelatedViewModel = viewModel(),
-    selectPopupViewModel: SelectPopupViewModel
+    selectPopupViewModel: SelectPopupViewModel,
+    adminPopupViewModel: AdminPopupViewModel = viewModel(),
+    onPopupDeactivated: (String) -> Unit = {}
 ) {
     val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
     val popuprelatedList by popupRelatedViewModel.relatedPopupList.collectAsState()
@@ -118,6 +125,8 @@ fun ContentDetail(
     var shouldClose by remember { mutableStateOf(false) }
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
     var showContentScreen by remember { mutableStateOf(false) }
+    var showDeactivateDialog by remember { mutableStateOf(false) }
+    val isAdmin = loginResponse?.role.equals("ADMIN", ignoreCase = true)
 
     LaunchedEffect(Unit) {
         visible = true
@@ -366,6 +375,32 @@ fun ContentDetail(
                                 )
                             }
                         }
+                        if (isAdmin) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(end = 20.dp, bottom = 20.dp)
+                                    .background(
+                                        color = Color(0xFFD94B4B).copy(alpha = 0.92f),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable(enabled = !adminPopupViewModel.isDeactivating) {
+                                        showDeactivateDialog = true
+                                    }
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (adminPopupViewModel.isDeactivating) {
+                                        "처리 중..."
+                                    } else {
+                                        "팝업 비활성화"
+                                    },
+                                    style = Medium12,
+                                    color = Color.White
+                                )
+                            }
+                        }
                     }
                     Column(
                         modifier = Modifier.fillMaxWidth()
@@ -534,6 +569,84 @@ fun ContentDetail(
             showDetail = showDetail,
             setShowDetail = setShowDetail,
             selectPopupViewModel = selectPopupViewModel
+        )
+    }
+
+    if (showDeactivateDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!adminPopupViewModel.isDeactivating) {
+                    showDeactivateDialog = false
+                }
+            },
+            title = {
+                Text(
+                    text = "팝업 비활성화",
+                    style = Medium15,
+                    color = mainBlack
+                )
+            },
+            text = {
+                Text(
+                    text = "이 팝업을 비활성화하시겠습니까? 비활성화하면 일반 사용자 목록에서 노출되지 않습니다.",
+                    style = Medium12,
+                    color = mainGray1
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !adminPopupViewModel.isDeactivating,
+                    onClick = {
+                        val authorization = AuthTokenStore.getAuthorizationHeader(context)
+                        if (authorization == null) {
+                            showDeactivateDialog = false
+                            Toast.makeText(
+                                context,
+                                "관리자 인증 토큰이 없습니다. 다시 로그인해 주세요.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            adminPopupViewModel.deactivatePopup(
+                                popupUuid = popup.popupUuid,
+                                authorization = authorization,
+                                onSuccess = {
+                                    showDeactivateDialog = false
+                                    Toast.makeText(
+                                        context,
+                                        "팝업을 비활성화했습니다.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    onPopupDeactivated(popup.popupUuid)
+                                    visible = false
+                                    shouldClose = true
+                                },
+                                onError = { message ->
+                                    showDeactivateDialog = false
+                                    Toast.makeText(
+                                        context,
+                                        message,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            )
+                        }
+                    }
+                ) {
+                    Text(
+                        text = if (adminPopupViewModel.isDeactivating) "처리 중..." else "비활성화",
+                        style = Medium12,
+                        color = Color(0xFFD94B4B)
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !adminPopupViewModel.isDeactivating,
+                    onClick = { showDeactivateDialog = false }
+                ) {
+                    Text(text = "취소", style = Medium12, color = mainGray1)
+                }
+            }
         )
     }
 }

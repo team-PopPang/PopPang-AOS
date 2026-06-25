@@ -41,6 +41,8 @@ import com.poppang.PopPang.ui.theme.Medium10
 import com.poppang.PopPang.ui.theme.mainBlack
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.FcmTokenViewModel
+import com.poppang.PopPang.viewmodel.CategoryItemViewModel
+import com.poppang.PopPang.viewmodel.AdminPopupViewModel
 import com.poppang.PopPang.viewmodel.PopupComingViewModel
 import com.poppang.PopPang.viewmodel.PopupProgressViewModel
 import com.poppang.PopPang.viewmodel.PopupViewModel
@@ -54,12 +56,14 @@ fun MainScreen(
     popupcomingViewModel: PopupComingViewModel,
     popupViewModel: PopupViewModel,
     recommendPopupViewModel: RecommendPopupViewModel,
+    categoryViewModel: CategoryItemViewModel,
     loginResponse: LoginResponse? = null,
     fcmToken: String?,
     favoriteViewModel: FavoriteViewModel = viewModel(),
     fcmTokenViewModel: FcmTokenViewModel = viewModel(),
     regionsViewModel: RegionsViewModel = viewModel(),
     selectPopupViewModel: SelectPopupViewModel = viewModel(),
+    adminPopupViewModel: AdminPopupViewModel = viewModel(),
     navController: NavController,
     userDataViewModel: UserDataViewModel,
     onUpdateLoginResponse: (LoginResponse) -> Unit,
@@ -70,6 +74,7 @@ fun MainScreen(
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var showAlarm by rememberSaveable { mutableStateOf(false) }
     var showProfile by rememberSaveable { mutableStateOf(false) }
+    var showMyFullScreen by rememberSaveable { mutableStateOf(false) }
     var lastBackPressedTime by remember { mutableStateOf(0L) }
     val context = LocalContext.current
     val items = BottomNavItem.items
@@ -79,7 +84,17 @@ fun MainScreen(
     val popupcomingList by popupcomingViewModel.popupcomingList.collectAsState()
     val recommendpopupList by recommendPopupViewModel.recommedPopupList.collectAsState()
     val popupList by popupViewModel.popupList.collectAsState()
-    val hideBottomNav = showDetail || showSearch || showAlarm || showProfile
+    val deactivatedPopupUuids by adminPopupViewModel.deactivatedPopupUuids.collectAsState()
+    val activePopupProgressList =
+        popupprogressList.filterNot { it.popupUuid in deactivatedPopupUuids }
+    val activePopupComingList =
+        popupcomingList.filterNot { it.popupUuid in deactivatedPopupUuids }
+    val activeRecommendPopupList =
+        recommendpopupList.filterNot { it.popupUuid in deactivatedPopupUuids }
+    val activePopupList =
+        popupList.filterNot { it.popupUuid in deactivatedPopupUuids }
+    val hideBottomNav =
+        showDetail || showSearch || showAlarm || showProfile || showMyFullScreen
 
     BackHandler {
         val currentTime = System.currentTimeMillis()
@@ -170,10 +185,10 @@ fun MainScreen(
                     setSearchScreen = { showSearch = it },
                     showAlarm = showAlarm,
                     setShowAlarm = { showAlarm = it },
-                    popupprogressList = popupprogressList,
-                    popupcomingList = popupcomingList,
-                    recommendpopupList = recommendpopupList,
-                    popupList = popupList,
+                    popupprogressList = activePopupProgressList,
+                    popupcomingList = activePopupComingList,
+                    recommendpopupList = activeRecommendPopupList,
+                    popupList = activePopupList,
                     loginResponse = loginResponse,
                     favoriteViewModel = favoriteViewModel,
                     regionsViewModel = regionsViewModel,
@@ -181,7 +196,7 @@ fun MainScreen(
                     deepLinkPopupUuid = deepLinkPopupUuid,
                 )
                 is BottomNavItem.Calendar -> CalendarScreen(
-                    popupList = popupList,
+                    popupList = activePopupList,
                     showDetail = showDetail,
                     setShowDetail = { showDetail = it },
                     showAlarm = showAlarm,
@@ -192,7 +207,7 @@ fun MainScreen(
                     regionsViewModel = regionsViewModel
                 )
                 is BottomNavItem.Map -> MapScreen(
-                    popupprogressList = popupprogressList,
+                    popupprogressList = activePopupProgressList,
                     showDetail = showDetail,
                     setShowDetail = { showDetail = it },
                     loginResponse = loginResponse,
@@ -201,7 +216,7 @@ fun MainScreen(
                     regionsViewModel = regionsViewModel
                 )
                 is BottomNavItem.PopPang -> LikeScreen(
-                    popupList = popupList,
+                    popupList = activePopupList,
                     showDetail = showDetail,
                     setShowDetail = { showDetail = it },
                     showAlarm = showAlarm,
@@ -223,7 +238,9 @@ fun MainScreen(
                     userDataViewModel = userDataViewModel,
                     onUpdateLoginResponse = onUpdateLoginResponse,
                     favoriteViewModel = favoriteViewModel,
-                    selectPopupViewModel = selectPopupViewModel
+                    selectPopupViewModel = selectPopupViewModel,
+                    categoryViewModel = categoryViewModel,
+                    setMyFullScreen = { showMyFullScreen = it }
                 )
             }
         }

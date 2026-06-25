@@ -204,6 +204,7 @@ fun Navigation(
                     popupcomingViewModel = popupcomingViewModel,
                     popupViewModel = popupViewModel,
                     recommendPopupViewModel = recommendPopupViewModel,
+                    categoryViewModel = categoryViewModel,
                     loginResponse = loginResponse,
                     fcmToken = fcmToken,
                     navController = navController,
