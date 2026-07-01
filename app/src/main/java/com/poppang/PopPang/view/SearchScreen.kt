@@ -318,54 +318,67 @@ fun SearchContent(popupList: List<PopupEvent>, onShowDetail: (PopupEvent) -> Uni
             .fillMaxWidth()
             .padding(start = 15.dp, end = 15.dp)
     ) {
-        items(popupList.chunked(2)) { pair ->
+        items(buildPopupAdListItems(popupList).chunked(2)) { pair ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(15.dp)
             ) {
-                pair.forEach { popup ->
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable {onShowDetail(popup) }
-                    ) {
-                        Column {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(popup.fullImageUrlList.getOrNull(0))
-                                    .diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                                    .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                                    .build(),
-                                contentDescription = popup.name,
+                pair.forEach { item ->
+                    when (item) {
+                        is PopupAdListItem.Popup -> {
+                            val popup = item.popup
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(217.5.dp),
-                                contentScale = ContentScale.Crop
-                            )
-                            Text(
-                                text = popup.roadAddress.split(" ").take(2).joinToString(" "),
-                                style = Regular12,
-                                color = mainBlack,
+                                    .weight(1f)
+                                    .clickable {onShowDetail(popup) }
+                            ) {
+                                Column {
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(popup.fullImageUrlList.getOrNull(0))
+                                            .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                            .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                            .build(),
+                                        contentDescription = popup.name,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(217.5.dp),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    Text(
+                                        text = popup.roadAddress.split(" ").take(2).joinToString(" "),
+                                        style = Regular12,
+                                        color = mainBlack,
+                                        modifier = Modifier
+                                            .padding(top = 10.dp)
+                                    )
+                                    Text(
+                                        text = popup.name,
+                                        style = Bold15,
+                                        color = mainBlack,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier
+                                            .padding(top = 5.dp)
+                                    )
+                                    Text(
+                                        text = popup.startDateFormatted + " - " + popup.endDateFormatted,
+                                        style = Regular12.copy(letterSpacing = (-1).sp),
+                                        color = mainGray1,
+                                        modifier = Modifier
+                                            .padding(top = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        PopupAdListItem.NativeAd -> {
+                            PopupNativeAdCard(
                                 modifier = Modifier
-                                    .padding(top = 10.dp)
-                            )
-                            Text(
-                                text = popup.name,
-                                style = Bold15,
-                                color = mainBlack,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier
-                                    .padding(top = 5.dp)
-                            )
-                            Text(
-                                text = popup.startDateFormatted + " - " + popup.endDateFormatted,
-                                style = Regular12.copy(letterSpacing = (-1).sp),
-                                color = mainGray1,
-                                modifier = Modifier
-                                    .padding(top = 4.dp)
+                                    .weight(1f)
+                                    .height(POPUP_NATIVE_AD_CARD_HEIGHT_DP.dp)
                             )
                         }
                     }

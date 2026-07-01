@@ -338,34 +338,6 @@ fun MeContent(
                 )
             }
         }
-        if (loginResponse?.role.equals("ADMIN", ignoreCase = true)) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp)
-                    .clickable {
-                        onAdminSubmissionClick()
-                    }
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "팝업 제보 관리",
-                        style = Regular12,
-                        color = mainBlack,
-                        modifier = Modifier.padding(bottom = 3.dp)
-                    )
-                    Icon(
-                        painter = painterResource(R.drawable.arrow_up),
-                        contentDescription = "팝업 제보 관리",
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-        }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -399,33 +371,61 @@ fun MeContent(
                 )
             }
         }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 10.dp)
-                .clickable {
-                    onPopupReportClick()
-                }
-        ) {
-            Row(
+//        Box(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(vertical = 10.dp)
+//                .clickable {
+//                    onPopupReportClick()
+//                }
+//        ) {
+//            Row(
+//                modifier = Modifier
+//                    .fillMaxWidth(),
+//                verticalAlignment = CenterVertically,
+//                horizontalArrangement = Arrangement.SpaceBetween
+//            ) {
+//                Text(
+//                    text = "팝업 제보하기",
+//                    style = Regular12,
+//                    color = mainBlack,
+//                    modifier = Modifier
+//                        .padding(bottom = 3.dp)
+//                )
+//                Icon(
+//                    painter = painterResource(R.drawable.arrow_up),
+//                    contentDescription = "profile",
+//                    modifier = Modifier
+//                        .size(16.dp)1
+//                )
+//            }
+//        }
+        if (loginResponse?.role.equals("ADMIN", ignoreCase = true)) {
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth(),
-                verticalAlignment = CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp)
+                    .clickable {
+                        onAdminSubmissionClick()
+                    }
             ) {
-                Text(
-                    text = "팝업 제보하기",
-                    style = Regular12,
-                    color = mainBlack,
-                    modifier = Modifier
-                        .padding(bottom = 3.dp)
-                )
-                Icon(
-                    painter = painterResource(R.drawable.arrow_up),
-                    contentDescription = "profile",
-                    modifier = Modifier
-                        .size(16.dp)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "팝업 제보 관리",
+                        style = Regular12,
+                        color = mainBlack,
+                        modifier = Modifier.padding(bottom = 3.dp)
+                    )
+                    Icon(
+                        painter = painterResource(R.drawable.arrow_up),
+                        contentDescription = "팝업 제보 관리",
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
         Box(

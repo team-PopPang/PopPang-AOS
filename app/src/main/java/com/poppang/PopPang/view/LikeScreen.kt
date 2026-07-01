@@ -492,82 +492,95 @@ fun LikeListItem(
             .fillMaxWidth()
             .padding(start = 15.dp, end = 15.dp)
     ) {
-        items(popupList.chunked(2)) { pair ->
+        items(buildPopupAdListItems(popupList).chunked(2)) { pair ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(15.dp)
             ) {
-                pair.forEach { popup ->
-                    val isLiked = favoritePopupUuids.contains(popup.popupUuid)
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { onShowDetail(popup)
-                            Log.d("LikeListItem", "Popup clicked: ${popup.name}") }
-                    ) {
-                        Column {
+                pair.forEach { item ->
+                    when (item) {
+                        is PopupAdListItem.Popup -> {
+                            val popup = item.popup
+                            val isLiked = favoritePopupUuids.contains(popup.popupUuid)
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(217.5.dp),
+                                    .weight(1f)
+                                    .clickable { onShowDetail(popup)
+                                    Log.d("LikeListItem", "Popup clicked: ${popup.name}") }
                             ) {
-                                AsyncImage(
-                                    model = ImageRequest.Builder(LocalContext.current)
-                                        .data(popup.fullImageUrlList.getOrNull(0))
-                                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                                        .build(),
-                                    contentDescription = popup.name,
-                                    modifier = Modifier
-                                        .fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                                IconButton(
-                                    onClick = {
-                                        val newLikeStatus = !isLiked
-                                        if (newLikeStatus) {
-                                            favoriteViewModel.addFavorite(userUuid, popup.popupUuid)
-                                        } else {
-                                            favoriteViewModel.deleteFavorite(userUuid, popup.popupUuid)
+                                Column {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(217.5.dp),
+                                    ) {
+                                        AsyncImage(
+                                            model = ImageRequest.Builder(LocalContext.current)
+                                                .data(popup.fullImageUrlList.getOrNull(0))
+                                                .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                                .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                                .build(),
+                                            contentDescription = popup.name,
+                                            modifier = Modifier
+                                                .fillMaxSize(),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                        IconButton(
+                                            onClick = {
+                                                val newLikeStatus = !isLiked
+                                                if (newLikeStatus) {
+                                                    favoriteViewModel.addFavorite(userUuid, popup.popupUuid)
+                                                } else {
+                                                    favoriteViewModel.deleteFavorite(userUuid, popup.popupUuid)
+                                                }
+                                            },
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .padding(top = 5.dp, end = 14.dp)
+                                                .size(24.dp)
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(id = if (isLiked) R.drawable.heart_gray_icon else R.drawable.heart_icon),
+                                                contentDescription = "Like Icon",
+                                                modifier = Modifier,
+                                                tint = if(isLiked) Color.Red else Color.Unspecified
+                                            )
                                         }
-                                    },
-                                    modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(top = 5.dp, end = 14.dp)
-                                        .size(24.dp)
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = if (isLiked) R.drawable.heart_gray_icon else R.drawable.heart_icon),
-                                        contentDescription = "Like Icon",
-                                        modifier = Modifier,
-                                        tint = if(isLiked) Color.Red else Color.Unspecified
+                                    }
+                                    Text(
+                                        text = popup.roadAddress.split(" ").take(2).joinToString(" "),
+                                        style = Regular12,
+                                        color = mainBlack,
+                                        modifier = Modifier
+                                            .padding(top = 10.dp)
+                                    )
+                                    Text(
+                                        text = popup.name,
+                                        style = Bold15,
+                                        color = mainBlack,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier
+                                            .padding(top = 5.dp)
+                                    )
+                                    Text(
+                                        text = popup.startDateFormatted + " - " + popup.endDateFormatted,
+                                        style = Regular12.copy(letterSpacing = (-1).sp),
+                                        color = mainGray1,
+                                        modifier = Modifier
+                                            .padding(top = 5.dp)
                                     )
                                 }
                             }
-                            Text(
-                                text = popup.roadAddress.split(" ").take(2).joinToString(" "),
-                                style = Regular12,
-                                color = mainBlack,
+                        }
+
+                        PopupAdListItem.NativeAd -> {
+                            PopupNativeAdCard(
                                 modifier = Modifier
-                                    .padding(top = 10.dp)
-                            )
-                            Text(
-                                text = popup.name,
-                                style = Bold15,
-                                color = mainBlack,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier
-                                    .padding(top = 5.dp)
-                            )
-                            Text(
-                                text = popup.startDateFormatted + " - " + popup.endDateFormatted,
-                                style = Regular12.copy(letterSpacing = (-1).sp),
-                                color = mainGray1,
-                                modifier = Modifier
-                                    .padding(top = 5.dp)
+                                    .weight(1f)
+                                    .height(POPUP_NATIVE_AD_CARD_HEIGHT_DP.dp)
                             )
                         }
                     }
