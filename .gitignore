@@ -18,3 +18,11 @@ local.
 /app/google-services.json
 /firebase-debug.log
 /app/firebase-debug.log
+
+# React Native prebuilt artifacts (installed by scripts/install-rn-android.ps1)
+/Vendor/PopPangRN/
+/app/src/main/assets/index.android.bundle
+/app/src/main/res/drawable-*/node_modules_*
+/app/src/main/res/drawable-*/src_assets_*
+/app/src/main/res/raw/keep.xml
+/.rn-release-temp/

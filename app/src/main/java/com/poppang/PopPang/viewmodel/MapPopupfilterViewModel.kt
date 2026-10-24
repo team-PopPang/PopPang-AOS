@@ -19,7 +19,6 @@ class MapPopupfilterViewModel : ViewModel() {
         viewModelScope.launch{
             try{
                 val response = RetrofitInstance.mapPopupFilterApi.getMapPopupfilter(
-                    userUuid = userUuid,
                     region = region,
                     district = district,
                     longitude = longitude,

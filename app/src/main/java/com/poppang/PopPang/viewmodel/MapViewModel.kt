@@ -50,7 +50,7 @@ class MapViewModel : ViewModel() {
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             try {
-                val result = RetrofitInstance.searchApi.search(userUuid,query)
+                val result = RetrofitInstance.searchApi.search(query)
                 _searchedPopups.value = result
             } catch (e: Exception) {
                 _searchedPopups.value = emptyList()

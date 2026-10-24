@@ -17,7 +17,7 @@ class SelectPopupViewModel: ViewModel() {
     fun SelectPopupEvents(userUuid: String, popupUuid: String) {
         viewModelScope.launch {
             try {
-                val response = RetrofitInstance.selectPopupApi.getSelectPopup(userUuid, popupUuid,"all") // API에 맞게 수정
+                val response = RetrofitInstance.selectPopupApi.getSelectPopup(popupUuid) // API에 맞게 수정
                 _popupList.value = listOf(response)
                 Log.e("SelectPopupViewModel", "팝업 이벤트 불러오기 성공: ${response}")
             } catch (e: Exception) {

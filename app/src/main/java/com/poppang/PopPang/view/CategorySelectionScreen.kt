@@ -33,7 +33,7 @@ import com.poppang.PopPang.viewmodel.CategoryItemViewModel
 @Composable
 fun CategorySelectionScreen(categoryViewModel: CategoryItemViewModel) {
     LaunchedEffect(Unit) {
-        categoryViewModel.fetchCategoryItems()
+        categoryViewModel.fetchCategoryItems(forSignup = true)
     }
     val viewModel = remember { categoryViewModel }
     val categories = viewModel.categories

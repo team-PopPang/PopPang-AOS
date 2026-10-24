@@ -1,235 +1,54 @@
 package com.poppang.PopPang.network
 
 import com.poppang.PopPang.BuildConfig
+import com.poppang.PopPang.datastore.AuthTokenStore
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitInstance {
-    private const val AUTH_BASE_URL = BuildConfig.AUTH_BASE_URL
-    private const val USER_BASE_URL = BuildConfig.USER_BASE_URL
-    private const val USERS_BASE_URL = BuildConfig.USERS_BASE_URL
-    private const val ADMIN_BASE_URL = BuildConfig.ADMIN_BASE_URL
-    private const val BASE_URL = BuildConfig.BASE_URL
-    val authApi: AuthApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(AUTH_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(AuthApi::class.java)
-    }
+    private val publicClient = OkHttpClient.Builder().retryOnConnectionFailure(false).build()
+    private val accessClient = publicClient.newBuilder()
+        .addInterceptor(SessionInterceptor({ AuthTokenStore.session })).build()
+    private val signupClient = publicClient.newBuilder()
+        .addInterceptor(SessionInterceptor({ AuthTokenStore.session }, signup = true)).build()
 
-    val userSignUpApi: UserSignUpApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(AUTH_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(UserSignUpApi::class.java)
-    }
+    private fun retrofit(baseUrl: String, client: OkHttpClient) = Retrofit.Builder()
+        .baseUrl(baseUrl).client(client)
+        .addConverterFactory(GsonConverterFactory.create()).build()
 
-    val duplicateNicknameApi: DuplicateNicknameApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USER_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(DuplicateNicknameApi::class.java)
-    }
+    private val publicV2 by lazy { retrofit(BuildConfig.V2_BASE_URL, publicClient) }
+    private val accessV2 by lazy { retrofit(BuildConfig.V2_BASE_URL, accessClient) }
+    private val signupV2 by lazy { retrofit(BuildConfig.V2_BASE_URL, signupClient) }
+    private val admin by lazy { retrofit(BuildConfig.ADMIN_BASE_URL, publicClient) }
 
-    val categoryItemApi: CategoryItemApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(CategoryItemApi::class.java)
-    }
-
-    val submissionApi: SubmissionApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(SubmissionApi::class.java)
-    }
-
-    val adminSubmissionApi: AdminSubmissionApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(ADMIN_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(AdminSubmissionApi::class.java)
-    }
-
-    val adminPopupApi: AdminPopupApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(ADMIN_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(AdminPopupApi::class.java)
-    }
-
-    val popupProgressApi: PopupProgressApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USERS_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(PopupProgressApi::class.java)
-    }
-
-    val popupComingApi: PopupComingApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USERS_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(PopupComingApi::class.java)
-    }
-
-    val popupApi: PopupApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USERS_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(PopupApi::class.java)
-    }
-    val searchApi: SearchApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USERS_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(SearchApi::class.java)
-    }
-
-    val keywordApi: KeywordApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(KeywordApi::class.java)
-    }
-
-    val favoriteApi: FavoriteApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(FavoriteApi::class.java)
-    }
-
-    val favoriteCountApi: FavoriteCountApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USERS_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(FavoriteCountApi::class.java)
-    }
-
-    val viewCountApi: ViewCountApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USERS_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(ViewCountApi::class.java)
-    }
-
-    val viewCountIncrementApi : ViewCountIncrementApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(ViewCountIncrementApi::class.java)
-    }
-
-    val fcmTokenApi: FcmTokenApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USER_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(FcmTokenApi::class.java)
-    }
-
-    val alertApi: AlertApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USER_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(AlertApi::class.java)
-    }
-
-    val regionsApi: RegionsApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(RegionsApi::class.java)
-    }
-
-    val userDrawApi: UserDrawApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USER_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(UserDrawApi::class.java)
-    }
-
-    val changeNicknameApi : ChangeNicknameApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USER_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(ChangeNicknameApi::class.java)
-    }
-
-    val userDataApi : UserDataApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USER_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(UserDataApi::class.java)
-    }
-
-    val recommendPopupApi : RecommendPopupApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USERS_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(RecommendPopupApi::class.java)
-    }
-
-    val homePopupFilterApi : HomePopupfilterApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USERS_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(HomePopupfilterApi::class.java)
-    }
-
-    val alertPopupApi : AlertPopupApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USERS_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(AlertPopupApi::class.java)
-    }
-
-    val mapPopupFilterApi : MapPopupfilterApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USERS_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(MapPopupfilterApi::class.java)
-    }
-
-    val popupRelatedApi : PopuprelatedApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USERS_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(PopuprelatedApi::class.java)
-    }
-
-    val selectPopupApi : SelectPopupApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(USERS_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(SelectPopupApi::class.java)
-    }
+    val authApi: AuthApi by lazy { publicV2.create(AuthApi::class.java) }
+    val logoutApi: LogoutApi by lazy { accessV2.create(LogoutApi::class.java) }
+    val userSignUpApi: UserSignUpApi by lazy { signupV2.create(UserSignUpApi::class.java) }
+    val duplicateNicknameApi: DuplicateNicknameApi by lazy { accessV2.create(DuplicateNicknameApi::class.java) }
+    val signupNicknameApi: DuplicateNicknameApi by lazy { signupV2.create(DuplicateNicknameApi::class.java) }
+    val categoryItemApi: CategoryItemApi by lazy { accessV2.create(CategoryItemApi::class.java) }
+    val signupCategoryApi: CategoryItemApi by lazy { signupV2.create(CategoryItemApi::class.java) }
+    val adminPopupApi: AdminPopupApi by lazy { admin.create(AdminPopupApi::class.java) }
+    val popupProgressApi: PopupProgressApi by lazy { accessV2.create(PopupProgressApi::class.java) }
+    val popupComingApi: PopupComingApi by lazy { accessV2.create(PopupComingApi::class.java) }
+    val popupApi: PopupApi by lazy { accessV2.create(PopupApi::class.java) }
+    val searchApi: SearchApi by lazy { accessV2.create(SearchApi::class.java) }
+    val keywordApi: KeywordApi by lazy { accessV2.create(KeywordApi::class.java) }
+    val favoriteApi: FavoriteApi by lazy { accessV2.create(FavoriteApi::class.java) }
+    val favoriteCountApi: FavoriteCountApi by lazy { accessV2.create(FavoriteCountApi::class.java) }
+    val viewCountApi: ViewCountApi by lazy { accessV2.create(ViewCountApi::class.java) }
+    val viewCountIncrementApi: ViewCountIncrementApi by lazy { accessV2.create(ViewCountIncrementApi::class.java) }
+    val fcmTokenApi: FcmTokenApi by lazy { accessV2.create(FcmTokenApi::class.java) }
+    val alertApi: AlertApi by lazy { accessV2.create(AlertApi::class.java) }
+    val regionsApi: RegionsApi by lazy { accessV2.create(RegionsApi::class.java) }
+    val userDrawApi: UserDrawApi by lazy { accessV2.create(UserDrawApi::class.java) }
+    val changeNicknameApi: ChangeNicknameApi by lazy { accessV2.create(ChangeNicknameApi::class.java) }
+    val userDataApi: UserDataApi by lazy { accessV2.create(UserDataApi::class.java) }
+    val recommendPopupApi: RecommendPopupApi by lazy { accessV2.create(RecommendPopupApi::class.java) }
+    val homePopupFilterApi: HomePopupfilterApi by lazy { accessV2.create(HomePopupfilterApi::class.java) }
+    val alertPopupApi: AlertPopupApi by lazy { accessV2.create(AlertPopupApi::class.java) }
+    val mapPopupFilterApi: MapPopupfilterApi by lazy { accessV2.create(MapPopupfilterApi::class.java) }
+    val popupRelatedApi: PopuprelatedApi by lazy { accessV2.create(PopuprelatedApi::class.java) }
+    val selectPopupApi: SelectPopupApi by lazy { accessV2.create(SelectPopupApi::class.java) }
 }

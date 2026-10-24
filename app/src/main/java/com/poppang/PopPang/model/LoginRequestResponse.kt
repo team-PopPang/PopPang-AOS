@@ -1,7 +1,5 @@
 package com.poppang.PopPang.model
 
-import com.google.gson.annotations.SerializedName
-
 data class KakaoLoginRequest(
     val access_token: String
 )
@@ -11,17 +9,11 @@ data class GoogleLoginRequest(
 )
 
 data class LoginResponse(
-    val uid: String?,
-    val userUuid: String?,
-    val provider: String?,
-    val email: String?,
-    val nickname: String?,
-    val role: String?,
-    val fcmToken: String?,
-    val isAlerted: Boolean?,
-    @SerializedName(
-        value = "accessToken",
-        alternate = ["access_token", "token", "jwt"]
-    )
-    val accessToken: String? = null
+    val userUuid: String? = null,
+    val provider: String? = null,
+    val email: String? = null,
+    val nickname: String? = null,
+    val role: String? = null,
+    val isAlerted: Boolean? = null,
+    val signupStatus: SignupStatus = SignupStatus.COMPLETED,
 )

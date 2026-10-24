@@ -26,11 +26,10 @@ class AlertViewModel: ViewModel() {
     fun AlertStatus(userUuid: String, isAlerted: Boolean) {
         viewModelScope.launch {
             try {
-                RetrofitInstance.alertApi.updateAlertStatus(
-                    userUuid = userUuid,
+                val updated = RetrofitInstance.alertApi.updateAlertStatus(
                     body = AlertStatusResponse(isAlerted)
-                )
-                alertedState = isAlerted
+                ).requireData()
+                alertedState = updated.isAlerted
                 Log.e("AlertViewModel", "Alert status updated successfully to $isAlerted")
             } catch (e: Exception) {
                 Log.e("AlertViewModel", "Error updating alert status: ${e.message}")
@@ -40,7 +39,7 @@ class AlertViewModel: ViewModel() {
     fun fetchalertpopup(userUuid: String) {
         viewModelScope.launch {
             try {
-                val response = RetrofitInstance.alertPopupApi.getAlertPopup(userUuid = userUuid)
+                val response = RetrofitInstance.alertPopupApi.getAlertPopup().requireData()
                 Log.e("AlertViewModel", "Fetched alert status successfully")
                 _popupList.value = response
             } catch (e: Exception) {
@@ -52,7 +51,6 @@ class AlertViewModel: ViewModel() {
         viewModelScope.launch {
             try {
                 RetrofitInstance.alertPopupApi.updateAlertReadStatus(
-                    userUuid = userUuid,
                     popupUuid = popupUuid
                 )
                 Log.e("AlertViewModel", "Alert read status updated successfully for popupUuid: $popupUuid")
@@ -68,7 +66,6 @@ class AlertViewModel: ViewModel() {
                 Log.e( "AlertViewModel", "Attempting to delete alert popup with popupUuid: $popupUuid")
 
                 RetrofitInstance.alertPopupApi.deleteAlertPopup(
-                    userUuid = userUuid,
                     request = DeleteAlertPopupRequest(popupUuid)
                 )
                 Log.e("AlertViewModel", "Alert popup deleted successfully for popupUuid: $popupUuid")

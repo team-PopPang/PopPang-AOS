@@ -4,20 +4,22 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.poppang.PopPang.model.PopupEvent
+import com.poppang.PopPang.network.HomePopupfilterApi
 import com.poppang.PopPang.network.RetrofitInstance
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class HomePopupfilterViewModel : ViewModel() {
+class HomePopupfilterViewModel(
+    private val api: HomePopupfilterApi = RetrofitInstance.homePopupFilterApi,
+) : ViewModel() {
     private val _popupList = MutableStateFlow<List<PopupEvent>>(emptyList())
     val homePopupfilterList: StateFlow<List<PopupEvent>> = _popupList
 
     fun fetchhomepopupfilter(userUuid: String, region: String, district: String, homeSortStandard: String) {
         viewModelScope.launch{
             try{
-                val response = RetrofitInstance.homePopupFilterApi.getHomePopupfilter(
-                    userUuid,
+                val response = api.getHomePopupfilter(
                     region,
                     district,
                     homeSortStandard

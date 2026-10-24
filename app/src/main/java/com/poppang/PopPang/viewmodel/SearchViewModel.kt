@@ -33,7 +33,7 @@ class SearchViewModel(private val searchQueryDataStore: SearchQueryDataStore) : 
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             try {
-                val result = RetrofitInstance.searchApi.search(userUuid,query)
+                val result = RetrofitInstance.searchApi.search(query)
                 popupList.value = result
             } catch (e: Exception) {
                 popupList.value = emptyList()

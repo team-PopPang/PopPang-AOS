@@ -107,12 +107,19 @@ fun CalendarScreen(
 
     val homepopupfilterList by homePopupfilterViewModel.homePopupfilterList.collectAsState()
     val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
+    val favoriteCounts by favoriteViewModel.favoriteCounts.collectAsState()
+    val viewCounts by viewCountViewModel.viewCounts.collectAsState()
     val userUuid = loginResponse?.userUuid.orEmpty()
 
     var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
     var selectedPopupUuid by rememberSaveable { mutableStateOf<String?>(null) }
     val selectPopupList by selectPopupViewModel.selectpopupList.collectAsState()
     var detailPopup by remember { mutableStateOf<PopupEvent?>(null) }
+
+    LaunchedEffect(homepopupfilterList) {
+        favoriteViewModel.updateCountsFromList(homepopupfilterList)
+        viewCountViewModel.updateCountsFromList(homepopupfilterList)
+    }
 
     // 날짜 + 필터 기준으로 필터링된 리스트
     val filteredList = remember(selectedDate.value, homepopupfilterList) {
@@ -241,17 +248,8 @@ fun CalendarScreen(
                     ) { _, popup ->
 
                         val isLiked = favoritePopupUuids.contains(popup.popupUuid)
-                        var favoriteCount by remember { mutableStateOf(0) }
-                        var viewCount by remember { mutableStateOf(0) }
-
-                        LaunchedEffect(popup.popupUuid, showDetail) {
-                            favoriteViewModel.getFavoriteCount(userUuid, popup.popupUuid) { count ->
-                                favoriteCount = count.toInt()
-                            }
-                            viewCountViewModel.getTotalViewCount(userUuid, popup.popupUuid) { count ->
-                                viewCount = count.toInt()
-                            }
-                        }
+                        val favoriteCount = favoriteCounts[popup.popupUuid] ?: popup.favoriteCount
+                        val viewCount = viewCounts[popup.popupUuid] ?: popup.viewCount
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -351,9 +349,6 @@ fun CalendarScreen(
                                                                     popup.popupUuid
                                                                 )
                                                             }
-                                                            favoriteViewModel.getFavoriteCount(userUuid,popup.popupUuid) { count ->
-                                                                favoriteCount = count.toInt()
-                                                            }
                                                         },
                                                         modifier = Modifier.padding(end = 4.dp).size(12.dp)
                                                     ) {
@@ -422,6 +417,7 @@ fun CalendarScreen(
                 },
                 loginResponse = loginResponse,
                 favoriteViewModel = favoriteViewModel,
+                viewCountViewModel = viewCountViewModel,
                 showDetail = showDetail,
                 setShowDetail = setShowDetail,
                 selectPopupViewModel = selectPopupViewModel

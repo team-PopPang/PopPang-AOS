@@ -17,7 +17,7 @@ class AlarmKeywordViewModel : ViewModel() {
     fun getKeywords(userUuid: String) {
         viewModelScope.launch {
             try {
-                val response = RetrofitInstance.keywordApi.getKeyword(userUuid)
+                val response = RetrofitInstance.keywordApi.getKeyword().requireData()
                 _keywords.value = response.map { it.alertKeyword }
             } catch (e: Exception) {
                 Log.e("AlarmKeywordViewModel", "Error fetching keywords", e)
@@ -28,7 +28,7 @@ class AlarmKeywordViewModel : ViewModel() {
     fun insertKeyword(userUuid: String, newAlertKeyword: String) {
         viewModelScope.launch {
             try {
-                val request = KeywordInsertRequest(userUuid, newAlertKeyword)
+                val request = KeywordInsertRequest(newAlertKeyword)
                 RetrofitInstance.keywordApi.insertKeyword(request)
                 getKeywords(userUuid)
             } catch (e: Exception) {
@@ -40,7 +40,7 @@ class AlarmKeywordViewModel : ViewModel() {
     fun deleteKeyword(userUuid: String, deleteAlertKeyword: String) {
         viewModelScope.launch {
             try {
-                val request = KeywordDeleteRequest(userUuid, deleteAlertKeyword)
+                val request = KeywordDeleteRequest(deleteAlertKeyword)
                 RetrofitInstance.keywordApi.deleteKeyword(request)
                 getKeywords(userUuid)
             } catch (e: Exception) {

@@ -326,14 +326,14 @@ fun ActivityTab(
             LazyColumn {
                 items(alertpopupList) { popup ->
                     val isLiked = favoritePopupUuids.contains(popup.popupUuid)
-                    var favoriteCount by remember { mutableStateOf(0) }
-                    var viewCount by remember { mutableStateOf(0) }
+                    var favoriteCount by remember { mutableStateOf(0L) }
+                    var viewCount by remember { mutableStateOf(0L) }
                     LaunchedEffect(popup.popupUuid, refreshTrigger) {
                         favoriteViewModel.getFavoriteCount(userUuid, popup.popupUuid) { count ->
-                            favoriteCount = count.toInt()
+                            favoriteCount = count
                         }
                         viewCountViewModel.getTotalViewCount(userUuid, popup.popupUuid) { count ->
-                            viewCount = count.toInt()
+                            viewCount = count
                         }
                     }
                     Box(
@@ -448,7 +448,7 @@ fun ActivityTab(
                                                     userUuid,
                                                     popup.popupUuid
                                                 ) { count ->
-                                                    favoriteCount = count.toInt()
+                                                    favoriteCount = count
                                                 }
                                             },
                                             modifier = Modifier.padding(end=4.dp).size(12.dp)

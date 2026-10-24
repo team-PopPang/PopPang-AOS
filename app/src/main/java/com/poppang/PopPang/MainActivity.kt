@@ -66,6 +66,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.poppang.PopPang.datastore.AuthTokenStore.initialize(applicationContext)
+        com.poppang.PopPang.datastore.FcmTokenStore.initialize(applicationContext)
         KakaoSdk.init(this, BuildConfig.KAKAO_KEY)
         CoroutineScope(Dispatchers.IO).launch {
             MobileAds.initialize(this@MainActivity) {}
@@ -124,8 +126,7 @@ class MainActivity : ComponentActivity() {
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 val token = task.result
-                val prefs = getSharedPreferences("fcm", MODE_PRIVATE)
-                prefs.edit().putString("fcm_token", token).apply()
+                com.poppang.PopPang.datastore.FcmTokenStore.update(applicationContext, token)
             }
         }
         enableEdgeToEdge()

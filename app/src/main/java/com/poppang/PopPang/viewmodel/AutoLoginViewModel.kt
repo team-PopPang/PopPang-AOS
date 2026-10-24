@@ -1,49 +1,69 @@
 package com.poppang.PopPang.viewmodel
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.poppang.PopPang.model.AutoLoginRequest
-import com.poppang.PopPang.model.LoginResponse
-import com.poppang.PopPang.network.RetrofitInstance
 import com.poppang.PopPang.datastore.AuthTokenStore
-import kotlinx.coroutines.Dispatchers
+import com.poppang.PopPang.model.LoginResponse
+import com.poppang.PopPang.model.SignupStatus
+import com.poppang.PopPang.network.RetrofitInstance
+import com.poppang.PopPang.network.SessionStatus
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+
+sealed interface SessionRestoreState {
+    data object Loading : SessionRestoreState
+    data object SignedOut : SessionRestoreState
+    data class Restored(val user: LoginResponse) : SessionRestoreState
+    data class Failed(val message: String) : SessionRestoreState
+}
 
 class AutoLoginViewModel : ViewModel() {
-    private val _loginResponse = MutableStateFlow<LoginResponse?>(null)
-    val loginResponse: StateFlow<LoginResponse?> = _loginResponse
+    private val mutableState = MutableStateFlow<SessionRestoreState>(SessionRestoreState.Loading)
+    val state = mutableState.asStateFlow()
 
-    private val _loading = MutableStateFlow(false)
-
-    fun getuserUuid(context: Context): String? {
-        val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-        val userUuid = prefs.getString("userUuid", null)
-        return userUuid
-    }
-
-    fun autoLogin(context: Context) {
-        val userUuid = getuserUuid(context)
-        if (userUuid.isNullOrBlank()) return
-        _loading.value = true
+    fun restoreSession() {
+        mutableState.value = SessionRestoreState.Loading
         viewModelScope.launch {
-            val response = withContext(Dispatchers.IO) {
-                try {
-                    RetrofitInstance.authApi.autoLogin(AutoLoginRequest(userUuid))
-                } catch (e: Exception) {
-                    null
+            val session = AuthTokenStore.session
+            try {
+                if (session.state.value.status == SessionStatus.SIGNING_UP) {
+                    val token = session.signupToken()
+                    mutableState.value = if (token != null) {
+                        SessionRestoreState.Restored(LoginResponse(
+                            provider = session.signupProvider(),
+                            signupStatus = SignupStatus.PENDING,
+                        ))
+                    } else SessionRestoreState.SignedOut
+                    return@launch
+                }
+                if (session.requestSession() == null) {
+                    mutableState.value = SessionRestoreState.SignedOut
+                    return@launch
+                }
+                val response = RetrofitInstance.userDataApi.getUserData()
+                mutableState.value = if (response.isSuccessful) {
+                    SessionRestoreState.Restored(checkNotNull(response.body()).requireData())
+                } else if (session.requestSession() == null) {
+                    SessionRestoreState.SignedOut
+                } else {
+                    SessionRestoreState.Failed("로그인 정보를 확인하지 못했습니다. 다시 시도해 주세요.")
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                mutableState.value = if (session.requestSession() == null) {
+                    SessionRestoreState.SignedOut
+                } else {
+                    SessionRestoreState.Failed("서버에 연결하지 못했습니다. 다시 시도해 주세요.")
                 }
             }
-            if (response != null && response.isSuccessful) {
-                AuthTokenStore.saveFromLoginResponse(context, response)
-                _loginResponse.value = response.body()
-            } else {
-                _loginResponse.value = null
-            }
-            _loading.value = false
         }
+    }
+
+    fun signOut() {
+        AuthTokenStore.session.clear()
+        mutableState.value = SessionRestoreState.SignedOut
     }
 }

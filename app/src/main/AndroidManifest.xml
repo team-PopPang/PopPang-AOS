@@ -45,6 +45,10 @@
             </intent-filter>
         </activity>
         <activity
+            android:name="com.poppang.rn.PopPangRnActivity"
+            android:theme="@style/Theme.PopPangReactNative"
+            tools:replace="android:theme" />
+        <activity
             android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
             android:exported="true">
             <intent-filter>

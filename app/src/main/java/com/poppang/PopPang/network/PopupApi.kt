@@ -1,34 +1,26 @@
 package com.poppang.PopPang.network
 
-import com.poppang.PopPang.BuildConfig
 import com.poppang.PopPang.model.PopupEvent
 import retrofit2.http.GET
 import retrofit2.http.Path
-import retrofit2.http.Query
 
 interface PopupApi {
-    @GET(BuildConfig.POPUP_API)
-    suspend fun getPopupEvent(@Path("userUuid") userUuid : String , @Query("popup") popup: String): List<PopupEvent>
+    @GET("user/popups")
+    suspend fun getPopupEvent(): List<PopupEvent>
 }
-interface PopupProgressApi{
-    @GET(BuildConfig.POPUP_PROGRESS_API)
-    suspend fun getPopupProgressEvent(@Path("userUuid") userUuid : String,@Query("progressType") progressType: String): List<PopupEvent>
+interface PopupProgressApi {
+    @GET("user/popups/inProgress")
+    suspend fun getPopupProgressEvent(): List<PopupEvent>
 }
-
-interface PopupComingApi{
-    @GET(BuildConfig.POPUP_COMING_API)
-    suspend fun getPopupComingEvent(@Path("userUuid") userUuid : String, @Query("commingType") comingType: String): List<PopupEvent>
+interface PopupComingApi {
+    @GET("user/popups/upcoming")
+    suspend fun getPopupComingEvent(): List<PopupEvent>
 }
-
-interface PopuprelatedApi{
-    @GET(BuildConfig.RELATED_POPUP_API)
-    suspend fun getPopupRelatedEvent(
-        @Path("userUuid") userUuid : String,
-        @Path("popupUuid") popupUuid : String,
-        @Query("relatedType") relatedType: String): List<PopupEvent>
+interface PopuprelatedApi {
+    @GET("user/popups/{popupUuid}/related")
+    suspend fun getPopupRelatedEvent(@Path("popupUuid") popupUuid: String): List<PopupEvent>
 }
-
-interface SelectPopupApi{
-    @GET(BuildConfig.POPUP_SELECT_API)
-    suspend fun getSelectPopup(@Path("userUuid") userUuid: String,@Path("popupUuid") popupUuid: String, @Query("popup") popup: String): PopupEvent
+interface SelectPopupApi {
+    @GET("user/popups/{popupUuid}")
+    suspend fun getSelectPopup(@Path("popupUuid") popupUuid: String): PopupEvent
 }

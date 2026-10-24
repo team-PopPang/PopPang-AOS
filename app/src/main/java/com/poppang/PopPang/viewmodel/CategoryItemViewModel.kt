@@ -22,18 +22,26 @@ class CategoryItemViewModel : ViewModel() {
         private set
 
     private var isLoaded = false
+    private var loadedForSignup: Boolean? = null
+    private var lastForSignup = false
 
-    fun fetchCategoryItems(forceRefresh: Boolean = false) {
-        if (isLoading || (!forceRefresh && isLoaded)) return
+    fun fetchCategoryItems(forceRefresh: Boolean = false, forSignup: Boolean = false) {
+        if (isLoading || (!forceRefresh && isLoaded && loadedForSignup == forSignup)) return
+        lastForSignup = forSignup
 
         viewModelScope.launch {
             isLoading = true
             errorMessage = null
             try {
-                val result = RetrofitInstance.categoryItemApi.getCategoryItems("")
+                val result = if (forSignup) {
+                    RetrofitInstance.signupCategoryApi.getCategoryItems()
+                } else {
+                    RetrofitInstance.categoryItemApi.getCategoryItems()
+                }
                 categories.clear()
                 categories.addAll(result)
                 isLoaded = true
+                loadedForSignup = forSignup
             } catch (e: Exception) {
                 errorMessage = "카테고리를 불러오지 못했습니다."
             } finally {
@@ -43,7 +51,7 @@ class CategoryItemViewModel : ViewModel() {
     }
 
     fun retryFetchCategoryItems() {
-        fetchCategoryItems(forceRefresh = true)
+        fetchCategoryItems(forceRefresh = true, forSignup = lastForSignup)
     }
 
     fun toggleCategory(category: CategoryItem) {

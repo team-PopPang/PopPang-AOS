@@ -53,7 +53,6 @@ import com.poppang.PopPang.ui.theme.Regular12
 import com.poppang.PopPang.ui.theme.mainBlack
 import com.poppang.PopPang.ui.theme.mainOrange
 import com.poppang.PopPang.viewmodel.AlertViewModel
-import com.poppang.PopPang.viewmodel.CategoryItemViewModel
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 import com.poppang.PopPang.viewmodel.UserDataViewModel
@@ -72,21 +71,7 @@ fun MeScreen(
     onUpdateLoginResponse: (LoginResponse) -> Unit,
     favoriteViewModel: FavoriteViewModel,
     selectPopupViewModel: SelectPopupViewModel,
-    categoryViewModel: CategoryItemViewModel,
-    setMyFullScreen: (Boolean) -> Unit = {},
 ) {
-    var showPopupReport by remember { mutableStateOf(false) }
-    var showAdminSubmission by remember { mutableStateOf(false) }
-
-    LaunchedEffect(showPopupReport, showAdminSubmission) {
-        setMyFullScreen(showPopupReport || showAdminSubmission)
-    }
-    DisposableEffect(Unit) {
-        onDispose {
-            setMyFullScreen(false)
-        }
-    }
-
     if (showAlarm) {
         AlarmScreen(
             onClose = { setShowAlarm(false) },
@@ -105,20 +90,6 @@ fun MeScreen(
             ondataChanged = { userUuid: String ->
                 userDataViewModel.fetchUserData(userUuid)
             })
-    }
-    else if (showPopupReport) {
-        PopupReportScreen(
-            onClose = { showPopupReport = false },
-            userUuid = loginResponse?.userUuid.orEmpty(),
-            categoryViewModel = categoryViewModel
-        )
-    }
-    else if (showAdminSubmission && loginResponse?.role.equals("ADMIN", ignoreCase = true)) {
-        AdminSubmissionScreen(
-            adminUuid = loginResponse?.userUuid.orEmpty(),
-            categoryViewModel = categoryViewModel,
-            onClose = { showAdminSubmission = false }
-        )
     }
     else {
         Column(
@@ -159,11 +130,7 @@ fun MeScreen(
                     .height(6.dp)
                     .background(color = Color(0xFFF1F1F1))
             )
-            MeContent(
-                loginResponse = loginResponse,
-                onPopupReportClick = { showPopupReport = true },
-                onAdminSubmissionClick = { showAdminSubmission = true }
-            )
+            MeContent(loginResponse = loginResponse)
         }
     }
 }
@@ -204,9 +171,7 @@ fun MeTopBar(onAlarmClick: () -> Unit) {
 @Composable
 fun MeContent(
     loginResponse: LoginResponse?,
-    alertViewModel: AlertViewModel = viewModel(),
-    onPopupReportClick: () -> Unit = {},
-    onAdminSubmissionClick: () -> Unit = {}
+    alertViewModel: AlertViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
@@ -369,63 +334,6 @@ fun MeContent(
                     modifier = Modifier
                         .size(16.dp)
                 )
-            }
-        }
-//        Box(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(vertical = 10.dp)
-//                .clickable {
-//                    onPopupReportClick()
-//                }
-//        ) {
-//            Row(
-//                modifier = Modifier
-//                    .fillMaxWidth(),
-//                verticalAlignment = CenterVertically,
-//                horizontalArrangement = Arrangement.SpaceBetween
-//            ) {
-//                Text(
-//                    text = "팝업 제보하기",
-//                    style = Regular12,
-//                    color = mainBlack,
-//                    modifier = Modifier
-//                        .padding(bottom = 3.dp)
-//                )
-//                Icon(
-//                    painter = painterResource(R.drawable.arrow_up),
-//                    contentDescription = "profile",
-//                    modifier = Modifier
-//                        .size(16.dp)1
-//                )
-//            }
-//        }
-        if (loginResponse?.role.equals("ADMIN", ignoreCase = true)) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp)
-                    .clickable {
-                        onAdminSubmissionClick()
-                    }
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "팝업 제보 관리",
-                        style = Regular12,
-                        color = mainBlack,
-                        modifier = Modifier.padding(bottom = 3.dp)
-                    )
-                    Icon(
-                        painter = painterResource(R.drawable.arrow_up),
-                        contentDescription = "팝업 제보 관리",
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
             }
         }
         Box(

@@ -41,7 +41,6 @@ import com.poppang.PopPang.ui.theme.Medium10
 import com.poppang.PopPang.ui.theme.mainBlack
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.FcmTokenViewModel
-import com.poppang.PopPang.viewmodel.CategoryItemViewModel
 import com.poppang.PopPang.viewmodel.AdminPopupViewModel
 import com.poppang.PopPang.viewmodel.PopupComingViewModel
 import com.poppang.PopPang.viewmodel.PopupProgressViewModel
@@ -56,7 +55,6 @@ fun MainScreen(
     popupcomingViewModel: PopupComingViewModel,
     popupViewModel: PopupViewModel,
     recommendPopupViewModel: RecommendPopupViewModel,
-    categoryViewModel: CategoryItemViewModel,
     loginResponse: LoginResponse? = null,
     fcmToken: String?,
     favoriteViewModel: FavoriteViewModel = viewModel(),
@@ -74,12 +72,10 @@ fun MainScreen(
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var showAlarm by rememberSaveable { mutableStateOf(false) }
     var showProfile by rememberSaveable { mutableStateOf(false) }
-    var showMyFullScreen by rememberSaveable { mutableStateOf(false) }
     var lastBackPressedTime by remember { mutableStateOf(0L) }
     val context = LocalContext.current
     val items = BottomNavItem.items
     val userUuid = loginResponse?.userUuid.orEmpty()
-    val loginfcmToken = loginResponse?.fcmToken
     val popupprogressList by popupprogressViewModel.popupprogressList.collectAsState()
     val popupcomingList by popupcomingViewModel.popupcomingList.collectAsState()
     val recommendpopupList by recommendPopupViewModel.recommedPopupList.collectAsState()
@@ -94,7 +90,7 @@ fun MainScreen(
     val activePopupList =
         popupList.filterNot { it.popupUuid in deactivatedPopupUuids }
     val hideBottomNav =
-        showDetail || showSearch || showAlarm || showProfile || showMyFullScreen
+        showDetail || showSearch || showAlarm || showProfile
 
     BackHandler {
         val currentTime = System.currentTimeMillis()
@@ -118,14 +114,8 @@ fun MainScreen(
             recommendPopupViewModel.fetchrecommendpopupEventsOnce(userUuid)
         }
     }
-    LaunchedEffect(userUuid, fcmToken) {
-        Log.d("MainScreen", "User UUID: $userUuid")
-        Log.d("MainScreen", "loginfcmToken: $loginfcmToken, fcmToken: $fcmToken")
-        if (loginfcmToken != fcmToken) {
-            if (userUuid.isNotEmpty() && !fcmToken.isNullOrBlank()) {
-               fcmTokenViewModel.sendFcmToken(userUuid, fcmToken)
-                Log.d("MainScreen", "FCM token updated successfully")
-            }
+    LaunchedEffect(userUuid, fcmToken) {        if (userUuid.isNotEmpty() && !fcmToken.isNullOrBlank()) {
+            fcmTokenViewModel.sendFcmToken(userUuid, fcmToken)
         }
     }
 
@@ -238,9 +228,7 @@ fun MainScreen(
                     userDataViewModel = userDataViewModel,
                     onUpdateLoginResponse = onUpdateLoginResponse,
                     favoriteViewModel = favoriteViewModel,
-                    selectPopupViewModel = selectPopupViewModel,
-                    categoryViewModel = categoryViewModel,
-                    setMyFullScreen = { showMyFullScreen = it }
+                    selectPopupViewModel = selectPopupViewModel
                 )
             }
         }

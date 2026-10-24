@@ -17,7 +17,7 @@ class PopupRelatedViewModel: ViewModel() {
     fun fetchRelatedPopups(userUuid: String, popupUuid: String) {
         viewModelScope.launch {
             try {
-                val response = RetrofitInstance.popupRelatedApi.getPopupRelatedEvent(userUuid, popupUuid,"all" )
+                val response = RetrofitInstance.popupRelatedApi.getPopupRelatedEvent(popupUuid)
                 _popupList.value = response
                 Log.e("PopupRelatedViewModel", "Fetched related popups: $response" )
             }

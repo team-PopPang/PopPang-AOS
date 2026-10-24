@@ -112,14 +112,15 @@ fun ContentDetail(
     onPopupDeactivated: (String) -> Unit = {}
 ) {
     val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
+    val viewCounts by viewCountViewModel.viewCounts.collectAsState()
     val popuprelatedList by popupRelatedViewModel.relatedPopupList.collectAsState()
     val userUuid = loginResponse?.userUuid.orEmpty()
     val imageList = popup.fullImageUrlList
     val pagerState = rememberPagerState { imageList.size }
-    var favoriteCount by remember { mutableStateOf(popup.favoriteCount.toInt()) }
+    var favoriteCount by remember { mutableStateOf(popup.favoriteCount) }
     val isLikedFromServer = favoritePopupUuids.contains(popup.popupUuid)
     var localIsLiked by remember { mutableStateOf(isLikedFromServer) }
-    var viewCount by remember { mutableStateOf(popup.viewCount.toInt()) }
+    val viewCount = viewCounts[popup.popupUuid] ?: popup.viewCount
     val context = LocalContext.current
     var visible by remember { mutableStateOf(false) }
     var shouldClose by remember { mutableStateOf(false) }
@@ -136,7 +137,8 @@ fun ContentDetail(
             onClose()
         }
     }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(popup.popupUuid) {
+        viewCountViewModel.updateCountsFromList(listOf(popup))
         viewCountViewModel.incrementViewCount(popup.popupUuid)
     }
     BackHandler {
@@ -145,10 +147,7 @@ fun ContentDetail(
     }
     LaunchedEffect(popup.popupUuid) {
         favoriteViewModel.getFavoriteCount(userUuid, popup.popupUuid) { count ->
-            favoriteCount = count.toInt()
-        }
-        viewCountViewModel.getTotalViewCount(userUuid, popup.popupUuid) { count ->
-            viewCount = count.toInt()
+            favoriteCount = count
         }
     }
     LaunchedEffect(isLikedFromServer) {
@@ -256,7 +255,7 @@ fun ContentDetail(
                                             favoriteCount += 1
                                         } else {
                                             favoriteViewModel.deleteFavorite(userUuid, popup.popupUuid)
-                                            favoriteCount = (favoriteCount - 1).coerceAtLeast(0)
+                                            favoriteCount = (favoriteCount - 1).coerceAtLeast(0L)
                                         }
                                     },
                                     modifier = Modifier.size(25.dp)
@@ -264,6 +263,7 @@ fun ContentDetail(
                                     Icon(
                                         painter = painterResource(id = if (localIsLiked) R.drawable.heart_gray_icon else R.drawable.heart_white_icon),
                                         contentDescription = "좋아요 아이콘",
+                                        modifier = Modifier.size(24.dp),
                                         tint = if (localIsLiked) Color.Red else Color.Unspecified,
 
                                         )
@@ -508,14 +508,14 @@ fun ContentDetail(
                             color = mainBlack,
                         )
                         Spacer(modifier = Modifier.height(20.dp))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .background(mainGray5)
-                        )
-                        Spacer(modifier = Modifier.height(20.dp))
-                        popup.instaPostUrl?.takeIf { it.isNotBlank() }?.let { instagramUrl ->
+                        popup.instaPostUrl?.trim()?.takeIf { it.isNotEmpty() }?.let { instagramUrl ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(mainGray5)
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
                             Text(
                                 text = "SNS / 홈페이지",
                                 style = Medium15,

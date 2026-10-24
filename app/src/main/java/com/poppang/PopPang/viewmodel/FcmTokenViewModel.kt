@@ -24,7 +24,6 @@ class FcmTokenViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 RetrofitInstance.fcmTokenApi.registerToken(
-                    userUuid = userUuid,
                     body = FcmTokenRequest(fcmToken)
                 )
                 _sendState.value = FcmTokenSendState.Success

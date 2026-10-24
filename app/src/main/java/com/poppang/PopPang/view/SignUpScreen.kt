@@ -1,5 +1,7 @@
 package com.poppang.PopPang.view
 
+import android.widget.Toast
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.animateFloatAsState
@@ -86,13 +88,12 @@ fun SignUpScreen(
                                 nicknameViewModel = nicknameViewModel,
                                 keywordViewModel = keywordViewModel,
                                 categoryViewModel = categoryViewModel
-                            ) { success ->
-                                if (success) {
-                                    val updatedLoginResponse = loginResponse.copy(
-                                        nickname = nicknameViewModel.nickname,
-                                        fcmToken = fcmToken
-                                    )
-                                    onFinish(updatedLoginResponse)
+                            ) { profile ->
+                                if (profile != null) {
+                                    onFinish(profile)
+                                } else {
+                                    Toast.makeText(context, signUpViewModel.errorMessage, Toast.LENGTH_LONG).show()
+                                    currentPage.value = 0
                                 }
                             }
                         }
@@ -102,6 +103,7 @@ fun SignUpScreen(
         }
         CustomButton(
             onClick = {
+                if (signUpViewModel.isSubmitting) return@CustomButton
                 if (currentPage.value == 0) {
                     if (nicknameViewModel.isSuccess && currentPage.value < pageCount - 1) {
                         currentPage.value += 1
@@ -113,18 +115,17 @@ fun SignUpScreen(
                         nicknameViewModel = nicknameViewModel,
                         keywordViewModel = keywordViewModel,
                         categoryViewModel = categoryViewModel
-                    ) { success ->
-                        if (success) {
-                            val updatedLoginResponse = loginResponse.copy(
-                                nickname = nicknameViewModel.nickname,
-                                fcmToken = fcmToken
-                            )
-                            onFinish(updatedLoginResponse)
-                        }
-                    }
+                    ) { profile ->
+                                if (profile != null) {
+                                    onFinish(profile)
+                                } else {
+                                    Toast.makeText(context, signUpViewModel.errorMessage, Toast.LENGTH_LONG).show()
+                                    currentPage.value = 0
+                                }
+                            }
                 }
                       },
-            text = if (currentPage.value < pageCount - 1) "다음" else "시작하기",
+            text = if (signUpViewModel.isSubmitting) "가입 중…" else if (currentPage.value < pageCount - 1) "다음" else "시작하기",
             modifier = Modifier
                 .align(BottomCenter)
                 .padding(

@@ -1,6 +1,10 @@
 package com.poppang.PopPang.view
 
+import android.app.Activity
 import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -51,6 +55,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityOptionsCompat
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -81,6 +86,7 @@ import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.HomePopupfilterViewModel
 import com.poppang.PopPang.viewmodel.RegionsViewModel
 import com.poppang.PopPang.viewmodel.SelectPopupViewModel
+import com.poppang.rn.PopPangRnSdk
 import kotlinx.coroutines.launch
 import java.time.LocalDate.now
 import java.time.LocalDate.parse
@@ -106,6 +112,22 @@ fun HomeScreen(
     selectPopupViewModel: SelectPopupViewModel,
     deepLinkPopupUuid: String? = null
 ) {
+    val context = LocalContext.current
+    val isAdmin = loginResponse?.role.equals("ADMIN", ignoreCase = true)
+    val popupRequestLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val eventName = result.data?.getStringExtra(PopPangRnSdk.EXTRA_EVENT)
+        if (
+            result.resultCode == Activity.RESULT_OK &&
+            eventName == PopPangRnSdk.NativeEvent.POPUP_REQUEST_SUBMITTED
+        ) {
+            Toast.makeText(context, "팝업 제보가 완료되었습니다.", Toast.LENGTH_SHORT).show()
+        }
+    }
+    val popupRequestManagementLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { }
     var selectedRegion by remember { mutableStateOf("전체") }
     var selectedDistrict by remember { mutableStateOf("전체") }
     var selectedSort by remember { mutableStateOf("NEWEST") }
@@ -209,7 +231,38 @@ fun HomeScreen(
                     TopSearchBar(
                         modifier = Modifier,
                         onSearchBarClick = { setSearchScreen(true) },
-                        onAlarmClick = { setShowAlarm(true) }
+                        onPopupReportClick = {
+                            popupRequestLauncher.launch(
+                                PopPangRnSdk.createIntent(
+                                    context,
+                                    RN_FEATURE_REQUEST,
+                                    userUuid,
+                                    setOf(
+                                        PopPangRnSdk.NativeEvent.POPUP_REQUEST_SUBMITTED,
+                                        PopPangRnSdk.NativeEvent.POPUP_REQUEST_BACK
+                                    )
+                                ),
+                                ActivityOptionsCompat.makeCustomAnimation(
+                                    context,
+                                    R.anim.slide_in_from_bottom,
+                                    R.anim.keep_current_screen
+                                )
+                            )
+                        },
+                        onAlarmClick = { setShowAlarm(true) },
+                        onPopupReportManagementClick = {
+                            popupRequestManagementLauncher.launch(
+                                PopPangRnSdk.createIntent(
+                                    context,
+                                    RN_FEATURE_REQUEST_MANAGEMENT,
+                                    userUuid,
+                                    setOf(
+                                        PopPangRnSdk.NativeEvent.POPUP_REQUEST_MANAGEMENT_BACK
+                                    )
+                                )
+                            )
+                        },
+                        showPopupReportManagementAction = isAdmin
                     )
                 }
                 item {
@@ -331,7 +384,14 @@ fun HomeScreen(
 }
 
 @Composable
-private fun TopSearchBar(modifier: Modifier, onSearchBarClick: () -> Unit = {}, onAlarmClick: () -> Unit = {}) {
+private fun TopSearchBar(
+    modifier: Modifier,
+    onSearchBarClick: () -> Unit = {},
+    onPopupReportClick: () -> Unit = {},
+    onAlarmClick: () -> Unit = {},
+    onPopupReportManagementClick: () -> Unit = {},
+    showPopupReportManagementAction: Boolean = false
+) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -349,30 +409,59 @@ private fun TopSearchBar(modifier: Modifier, onSearchBarClick: () -> Unit = {}, 
                 modifier = Modifier
                     .weight(1f)
             )
-            IconButton(onClick = { onSearchBarClick() }) {
+            IconButton(
+                onClick = onSearchBarClick,
+                modifier = Modifier.size(40.dp)
+            ) {
                 Icon(
                     painter = painterResource(id = R.drawable.serch_icon),
                     contentDescription = "search",
-                    modifier = Modifier
-                        .padding(end = 10.dp)
-                        .size(20.dp),
-                    tint = Color.Unspecified
+                    modifier = Modifier.size(20.dp),
+                    tint = mainBlack
                 )
             }
             IconButton(
-                onClick = { onAlarmClick() },
+                onClick = onPopupReportClick,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_popup_report),
+                    contentDescription = "팝업 제보하기",
+                    modifier = Modifier.size(23.dp),
+                    tint = mainBlack
+                )
+            }
+            IconButton(
+                onClick = onAlarmClick,
+                modifier = Modifier.size(40.dp)
             ) {
                 Icon(
                     painter = painterResource(R.drawable.bell_icon),
                     contentDescription = "bell",
                     modifier = Modifier
                         .size(23.dp),
-                    tint = Color.Unspecified
+                    tint = mainBlack
                 )
+            }
+            if (showPopupReportManagementAction) {
+                IconButton(
+                    onClick = onPopupReportManagementClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_popup_report_management),
+                        contentDescription = "팝업 제보 관리",
+                        modifier = Modifier.size(23.dp),
+                        tint = mainBlack
+                    )
+                }
             }
         }
     }
 }
+
+private const val RN_FEATURE_REQUEST = "request"
+private const val RN_FEATURE_REQUEST_MANAGEMENT = "request-management"
 
 @Composable
 fun BannerCarousel(modifier: Modifier = Modifier, recommendpopupList: List<PopupEvent>, onShowDetail: (PopupEvent) -> Unit) {
@@ -964,7 +1053,7 @@ private fun MainContent(
                                         Icon(
                                             painter = painterResource(id = if (isLiked) R.drawable.heart_gray_icon else R.drawable.heart_icon),
                                             contentDescription = "Like Icon",
-                                            modifier = Modifier,
+                                            modifier = Modifier.size(24.dp),
                                             tint = if (isLiked) Color.Red else Color.Unspecified
                                         )
                                     }

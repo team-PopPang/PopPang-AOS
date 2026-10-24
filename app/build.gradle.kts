@@ -9,14 +9,15 @@ plugins {
 
 android {
     namespace = "com.poppang.PopPang"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.poppang.PopPang"
         minSdk = 28
+        //noinspection OldTargetApi
         targetSdk = 36
-        versionCode = 18
-        versionName = "1.1.1"
+        versionCode = 24
+        versionName = "1.1.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -33,6 +34,8 @@ android {
         val usersurl = localProperties.getProperty("USERS_BASE_URL") ?: ""
         val adminbaseurl = localProperties.getProperty("ADMIN_BASE_URL") ?: ""
         val baseurl = localProperties.getProperty("BASE_URL") ?: ""
+        val v2BaseUrl = localProperties.getProperty("V2_BASE_URL")
+            ?: baseurl.replace(Regex("/api/v1/?$"), "/api/v2/")
         val urlimage = localProperties.getProperty("URL_IMAGE") ?: ""
         val authapikakao = localProperties.getProperty("AUTH_API_KAKAO") ?: ""
         val authapigoogle = localProperties.getProperty("AUTH_API_GOOGLE") ?: ""
@@ -62,7 +65,6 @@ android {
         val alertreadapi = localProperties.getProperty("ALERT_READ_API") ?: ""
         val alertdeleteapi = localProperties.getProperty("ALERT_DELETE_API") ?: ""
         val relatedpopupapi = localProperties.getProperty("RELATED_POPUP_API") ?: ""
-        val popupsubmissionapi = localProperties.getProperty("POPUP_SUBMISSION_API") ?: ""
         val popupdeactivateapi = localProperties.getProperty("POPUP_DEACTIVATE_API") ?: ""
         buildConfigField("String", "KAKAO_KEY", "\"$kakaoKey\"")
         buildConfigField("String", "GOOGLE_KEY", "\"$googleKey\"")
@@ -75,6 +77,7 @@ android {
         buildConfigField("String", "USERS_BASE_URL", "\"$usersurl\"")
         buildConfigField("String", "ADMIN_BASE_URL", "\"$adminbaseurl\"")
         buildConfigField("String", "BASE_URL", "\"$baseurl\"")
+        buildConfigField("String", "V2_BASE_URL", "\"$v2BaseUrl\"")
         buildConfigField("String", "AUTH_API_KAKAO", "\"$authapikakao\"")
         buildConfigField("String", "AUTH_API_GOOGLE", "\"$authapigoogle\"")
         buildConfigField("String", "AUTH_API_AUTOLOGIN", "\"$authapiautologin\"")
@@ -104,13 +107,13 @@ android {
         buildConfigField("String", "ALERT_READ_API", "\"$alertreadapi\"")
         buildConfigField("String", "ALERT_DELETE_API", "\"$alertdeleteapi\"")
         buildConfigField("String", "RELATED_POPUP_API", "\"$relatedpopupapi\"")
-        buildConfigField("String", "POPUP_SUBMISSION_API", "\"$popupsubmissionapi\"")
         buildConfigField("String", "POPUP_DEACTIVATE_API", "\"$popupdeactivateapi\"")
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -135,6 +138,7 @@ android {
 
 dependencies {
 
+    implementation(libs.poppang.rn.android)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -163,6 +167,7 @@ dependencies {
     implementation(libs.v2.share)
     implementation("io.morfly.compose:advanced-bottomsheet-material3-android:0.1.0")
     testImplementation(libs.junit)
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

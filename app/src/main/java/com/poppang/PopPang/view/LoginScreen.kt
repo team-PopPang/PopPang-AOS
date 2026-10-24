@@ -81,9 +81,7 @@ fun GoogleLoginButton(
         viewModel.googleLogin(
             context = context,
             data = data,
-            onSuccess = { response ->
-                viewModel.saveuserUuid(context, response.userUuid ?: "")
-                onClick(response, null)
+            onSuccess = { response ->                onClick(response, null)
             },
             onError = {
                 Toast.makeText(context, "구글 로그인 실패: ${it.message}", Toast.LENGTH_SHORT).show()
@@ -98,7 +96,7 @@ fun GoogleLoginButton(
             .background(google, shape = RoundedCornerShape(5.dp))
             .border(width = 1.dp, color = Color(0xFFCCCCCC), shape = RoundedCornerShape(5.dp))
             .height(52.dp)
-            .clickable {
+            .clickable(enabled = !viewModel.isLoading) {
                 viewModel.GoogleLogOut(context) {
                     val intent = viewModel.getGoogleSignInIntent(context)
                     launcher.launch(intent)
@@ -139,15 +137,13 @@ fun KakaoLoginButton(onClick: (LoginResponse, String?) -> Unit, modifier: Modifi
             .padding(horizontal = 24.dp)
             .background(kakao, shape = RoundedCornerShape(5.dp))
             .height(52.dp)
-            .clickable {
+            .clickable(enabled = !viewModel.isLoading) {
                 viewModel.kakaoLogout(
                     onComplete = {
                         viewModel.kakaoLogin(
                             activity = activity,
                             context = context,
-                            onSuccess = { response ->
-                                viewModel.saveuserUuid(context, response.userUuid ?: "")
-                                onClick(response, null)
+                            onSuccess = { response ->                                onClick(response, null)
                             },
                             onError = {
                                 Toast.makeText(

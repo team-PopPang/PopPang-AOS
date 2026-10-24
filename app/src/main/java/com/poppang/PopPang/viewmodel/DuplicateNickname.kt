@@ -27,18 +27,26 @@ class DuplicateNickname : ViewModel() {
         isSuccess = false
     }
 
-    fun checkNickname() {
+    fun checkNickname(forSignup: Boolean = false) {
         if (nickname.isBlank()) {
             checkResult = "닉네임을 입력해주세요."
             isError = true
             isSuccess = false
             return
         }
+        val checkedNickname = nickname.trim()
         viewModelScope.launch {
             try {
-                val response = duplicateNicknameApi.checkNickname(nickname)
-                if (response.isSuccessful && response.body() != null) {
-                    val isDuplicated = response.body()!!.isDuplicated
+                val api = if (forSignup) {
+                    RetrofitInstance.signupNicknameApi
+                } else {
+                    duplicateNicknameApi
+                }
+                val response = api.checkNickname(checkedNickname)
+                check(response.isSuccessful) { "닉네임 확인에 실패했습니다." }
+                val isDuplicated = checkNotNull(response.body()).requireData().isDuplicated
+                if (nickname.trim() != checkedNickname) return@launch
+                run {
                     if (isDuplicated) {
                         checkResult = "이미 사용 중인 닉네임입니다"
                         isError = true
@@ -48,12 +56,9 @@ class DuplicateNickname : ViewModel() {
                         isError = false
                         isSuccess = true
                     }
-                } else {
-                    checkResult = "서버 오류"
-                    isError = true
-                    isSuccess = false
                 }
             } catch (e: Exception) {
+                if (nickname.trim() != checkedNickname) return@launch
                 checkResult = "네트워크 오류"
                 isError = true
                 isSuccess = false

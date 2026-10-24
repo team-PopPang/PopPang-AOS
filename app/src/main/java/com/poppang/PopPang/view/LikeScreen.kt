@@ -544,7 +544,7 @@ fun LikeListItem(
                                             Icon(
                                                 painter = painterResource(id = if (isLiked) R.drawable.heart_gray_icon else R.drawable.heart_icon),
                                                 contentDescription = "Like Icon",
-                                                modifier = Modifier,
+                                                modifier = Modifier.size(24.dp),
                                                 tint = if(isLiked) Color.Red else Color.Unspecified
                                             )
                                         }
@@ -648,15 +648,15 @@ fun LikeCalendarItem(
             ) {
                 Column {
                     filteredList.forEach { popup ->
-                        var favoriteCount by remember { mutableStateOf(0) }
-                        var viewCount by remember { mutableStateOf(0) }
+                        var favoriteCount by remember { mutableStateOf(0L) }
+                        var viewCount by remember { mutableStateOf(0L) }
 
                         LaunchedEffect(popup.popupUuid,refreshTrigger) {
                             favoriteViewModel.getFavoriteCount(userUuid,popup.popupUuid) { count ->
-                                favoriteCount = count.toInt()
+                                favoriteCount = count
                             }
                             viewCountViewModel.getTotalViewCount(userUuid,popup.popupUuid) { count ->
-                                viewCount = count.toInt()
+                                viewCount = count
                             }
                         }
                         Box(

@@ -1,6 +1,7 @@
 package com.poppang.PopPang.view
 
 import android.content.Context
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -62,6 +63,7 @@ fun ProfileScreen(
     changeNicknameViewModel: ChangeNicknameViewModel = viewModel(),
     ondataChanged: ((String) -> Unit)? = null
 ) {
+    val context = LocalContext.current
     LaunchedEffect(Unit) {
         DuplicateNickname.onNicknameChange("")
     }
@@ -92,9 +94,14 @@ fun ProfileScreen(
                 if (DuplicateNickname.isSuccess) {
                     val userUuid = loginResponse?.userUuid.orEmpty()
                     val newNickname = DuplicateNickname.nickname
-                    changeNicknameViewModel.changeNickname(userUuid, newNickname)
-                    ondataChanged?.invoke(userUuid)
-                    onClose()
+                    changeNicknameViewModel.changeNickname(userUuid, newNickname) { success ->
+                        if (success) {
+                            ondataChanged?.invoke(userUuid)
+                            onClose()
+                        } else {
+                            Toast.makeText(context, changeNicknameViewModel.errorMessage, Toast.LENGTH_LONG).show()
+                        }
+                    }
                 }
             },
             backgroundColor = if (DuplicateNickname.isSuccess) mainOrange else mainGray5,
@@ -227,10 +234,9 @@ fun ProfileContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 10.dp)
-                .clickable {
-                    prefs.edit().remove("userUuid").apply()
-                    navController.navigate("login") {
-                        popUpTo(0) { inclusive = true }
+                .clickable(enabled = !userDrawViewModel.isWorking) {
+                    userDrawViewModel.logout { error ->
+                        if (error != null) Toast.makeText(context, error, Toast.LENGTH_LONG).show()
                     }
                 }
         ) {
@@ -256,7 +262,7 @@ fun ProfileContent(
         AlertDialog(
             onDismissRequest = { showWithdrawDialog = false },
             title = { Text("회원탈퇴") },
-            text = { Text("정말로 회원탈퇴 하시겠습니까?") },
+            text = { Text("탈퇴하면 계정이 비활성화되며 같은 소셜 계정으로 다시 가입할 수 없습니다. 탈퇴하시겠습니까?") },
             containerColor = Color.White,
             confirmButton = {
                 Row(
@@ -268,10 +274,8 @@ fun ProfileContent(
                     CustomButton3(
                         onClick = {
                             showWithdrawDialog = false
-                            userDrawViewModel.withdrawUser(userUuid)
-                            prefs.edit().remove("userUuid").apply()
-                            navController.navigate("login") {
-                                popUpTo(0) { inclusive = true }
+                            userDrawViewModel.withdrawUser { error ->
+                                if (error != null) Toast.makeText(context, error, Toast.LENGTH_LONG).show()
                             }
                         },
                         text = "탈퇴하기",

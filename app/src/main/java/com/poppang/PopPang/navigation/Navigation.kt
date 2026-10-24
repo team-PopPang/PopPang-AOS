@@ -1,9 +1,12 @@
 package com.poppang.PopPang.navigation
 
 import android.content.Context
-import android.util.Log
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -19,7 +22,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.poppang.PopPang.datastore.AuthTokenStore
 import com.poppang.PopPang.model.LoginResponse
+import com.poppang.PopPang.model.SignupStatus
+import com.poppang.PopPang.network.SessionStatus
 import com.poppang.PopPang.view.LoginScreen
 import com.poppang.PopPang.view.MainScreen
 import com.poppang.PopPang.view.OnboardingScreen
@@ -33,36 +39,23 @@ import com.poppang.PopPang.viewmodel.PopupComingViewModel
 import com.poppang.PopPang.viewmodel.PopupProgressViewModel
 import com.poppang.PopPang.viewmodel.PopupViewModel
 import com.poppang.PopPang.viewmodel.RecommendPopupViewModel
+import com.poppang.PopPang.viewmodel.SessionRestoreState
 import com.poppang.PopPang.viewmodel.UserDataViewModel
-import kotlinx.coroutines.delay
 
+// Saved UI state contains profile fields only; tokens stay in the encrypted session store.
 private val LoginResponseSaver = Saver<LoginResponse?, List<Any?>>(
-    save = { loginResponse ->
-        loginResponse?.let {
-            listOf(
-                it.uid,
-                it.userUuid,
-                it.provider,
-                it.email,
-                it.nickname,
-                it.role,
-                it.fcmToken,
-                it.isAlerted
-            )
-        }
-    },
-    restore = { saved ->
-        LoginResponse(
-            uid = saved[0] as String?,
-            userUuid = saved[1] as String?,
-            provider = saved[2] as String?,
-            email = saved[3] as String?,
-            nickname = saved[4] as String?,
-            role = saved[5] as String?,
-            fcmToken = saved[6] as String?,
-            isAlerted = saved[7] as Boolean?
-        )
-    }
+    save = { user -> user?.let {
+        listOf(it.userUuid, it.provider, it.email, it.nickname, it.role, it.isAlerted, it.signupStatus.name)
+    } },
+    restore = { saved -> LoginResponse(
+        userUuid = saved[0] as String?,
+        provider = saved[1] as String?,
+        email = saved[2] as String?,
+        nickname = saved[3] as String?,
+        role = saved[4] as String?,
+        isAlerted = saved[5] as Boolean?,
+        signupStatus = SignupStatus.valueOf(saved[6] as String),
+    ) },
 )
 
 @Composable
@@ -77,143 +70,119 @@ fun Navigation(
     hideSystemBars: (Boolean) -> Unit,
     userDataViewModel: UserDataViewModel = viewModel(),
     autoLoginViewModel: AutoLoginViewModel = viewModel(),
-    deepLinkPopupUuid: String? = null
+    deepLinkPopupUuid: String? = null,
 ) {
     val navController = rememberNavController()
-    var loginResponse by rememberSaveable(stateSaver = LoginResponseSaver) {
-        mutableStateOf<LoginResponse?>(null)
-    }
-    val latestUserData by userDataViewModel.userData.collectAsState()
-    var fcmToken by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
+    val session = AuthTokenStore.session
+    val sessionState by session.state.collectAsState()
+    var loginResponse by rememberSaveable(stateSaver = LoginResponseSaver) { mutableStateOf<LoginResponse?>(null) }
+    val latestUserData by userDataViewModel.userData.collectAsState()
+    val appPreferences = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
+    val fcmToken by com.poppang.PopPang.datastore.FcmTokenStore.token.collectAsState()
 
-    LaunchedEffect(Unit) {
-        val prefs = context.getSharedPreferences("fcm", Context.MODE_PRIVATE)
-        fcmToken = prefs.getString("fcm_token", null)
-    }
-
-    LaunchedEffect(latestUserData) {
-        if (latestUserData != null) {
-            loginResponse = latestUserData
+    LaunchedEffect(latestUserData, sessionState) {
+        if (sessionState.status == SessionStatus.SIGNED_IN && latestUserData?.userUuid == session.userUuid()) {
+            latestUserData?.let { loginResponse = it }
         }
-        Log.d("Navigation", "Latest user data updated: $latestUserData, loginResponse: $loginResponse")
     }
-    Scaffold(
-        modifier = Modifier
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = "splash",
-            modifier = Modifier.padding(innerPadding)
-        ) {
+    LaunchedEffect(sessionState) {
+        if (sessionState.status == SessionStatus.SIGNED_OUT) {
+            loginResponse = null
+            userDataViewModel.reset()
+            popupprogressViewModel.reset()
+            popupcomingViewModel.reset()
+            popupViewModel.reset()
+            recommendPopupViewModel.reset()
+            nicknameViewModel.onNicknameChange("")
+            keywordViewModel.keywordList.clear()
+            categoryViewModel.selectedCategories.clear()
+            if (navController.currentDestination?.route in listOf("main", "signup")) {
+                navController.navigate("login") { popUpTo(0) { inclusive = true } }
+            }
+        }
+    }
+
+    Scaffold { innerPadding ->
+        NavHost(navController, startDestination = "splash", modifier = Modifier.padding(innerPadding)) {
             composable("splash") {
-                SplashScreen()
-
-                val autoLoginResult by autoLoginViewModel.loginResponse.collectAsState()
-                var navigated by remember { mutableStateOf(false) }
-                var hasWaited by remember { mutableStateOf(false) }
-                val userUuid = remember { autoLoginViewModel.getuserUuid(context) }
-
-                LaunchedEffect(userUuid) {
-                    if (!userUuid.isNullOrBlank()) {
-                        autoLoginViewModel.autoLogin(context)
-                    }
-                }
-
-                LaunchedEffect(autoLoginResult) {
-                    delay(1000)
-                    if (navigated) return@LaunchedEffect
-                    if (userUuid.isNullOrBlank()) {
-                        hideSystemBars(false)
-                        navController.navigate("onboarding") {
-                            popUpTo("splash") { inclusive = true }
-                        }
-                        navigated = true
-                    } else if (autoLoginResult != null) {
-                        loginResponse = autoLoginResult
-                        hideSystemBars(false)
-                        if (!autoLoginResult?.nickname.isNullOrEmpty()) {
-                            navController.navigate("main") {
-                                popUpTo("splash") { inclusive = true }
-                            }
-                        } else {
-                            navController.navigate("signup") {
-                                popUpTo("splash") { inclusive = true }
-                            }
-                        }
-                        navigated = true
-                    } else {
-                        delay(2000)
-                        if (!navigated) {
-                            hideSystemBars(false)
-                            navController.navigate("login") {
-                                popUpTo("splash") { inclusive = true }
-                            }
-                            navigated = true
+                val restoreState by autoLoginViewModel.state.collectAsState()
+                LaunchedEffect(Unit) { autoLoginViewModel.restoreSession() }
+                LaunchedEffect(restoreState) {
+                    val target = when (val restored = restoreState) {
+                        SessionRestoreState.Loading, is SessionRestoreState.Failed -> null
+                        SessionRestoreState.SignedOut -> if (appPreferences.getBoolean("onboarding_seen", false)) "login" else "onboarding"
+                        is SessionRestoreState.Restored -> {
+                            loginResponse = restored.user
+                            if (restored.user.signupStatus == SignupStatus.PENDING) "signup" else "main"
                         }
                     }
+                    if (target != null) {
+                        hideSystemBars(false)
+                        navController.navigate(target) { popUpTo("splash") { inclusive = true } }
+                    }
                 }
-
+                val failure = restoreState as? SessionRestoreState.Failed
+                if (failure != null) {
+                    Column {
+                        Text(failure.message)
+                        Button(onClick = { autoLoginViewModel.restoreSession() }) { Text("다시 시도") }
+                        Button(onClick = { autoLoginViewModel.signOut() }) { Text("로그인 화면으로") }
+                    }
+                } else {
+                    SplashScreen()
+                }
             }
             composable("onboarding") {
-                OnboardingScreen(
-                    onStartClick = {
-                        navController.navigate("login") {
-                            popUpTo("onboarding") { inclusive = true }
-                        }
-                    }
-                )
+                OnboardingScreen(onStartClick = {
+                    appPreferences.edit().putBoolean("onboarding_seen", true).apply()
+                    navController.navigate("login") { popUpTo("onboarding") { inclusive = true } }
+                })
             }
             composable("login") {
-                LoginScreen(onNextClick = { response, token ->
+                LoginScreen(onNextClick = { response, _ ->
                     loginResponse = response
-                    fcmToken = token
-                    if (!response.nickname.isNullOrBlank()) {
-                        navController.navigate("main") {
-                            popUpTo("login") { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate("signup") {
-                            popUpTo("login") { inclusive = true }
-                        }
-                    }
+                    val target = if (response.signupStatus == SignupStatus.PENDING) "signup" else "main"
+                    navController.navigate(target) { popUpTo("login") { inclusive = true } }
                 })
             }
             composable("signup") {
-                if (loginResponse != null) {
-                    val prefs = context.getSharedPreferences("fcm", Context.MODE_PRIVATE)
-                    val latestFcmToken = prefs.getString("fcm_token", null)
+                BackHandler { session.cancelSignup() }
+                val user = loginResponse
+                if (user?.signupStatus == SignupStatus.PENDING) {
                     SignUpScreen(
-                        loginResponse = loginResponse!!,
-                        fcmToken = latestFcmToken,
+                        loginResponse = user,
+                        fcmToken = fcmToken,
                         nicknameViewModel = nicknameViewModel,
                         keywordViewModel = keywordViewModel,
                         categoryViewModel = categoryViewModel,
-                        onFinish = { updatedLoginResponse ->
-                            loginResponse = updatedLoginResponse
-                            navController.navigate("main") {
-                                popUpTo("signup") { inclusive = true }
-                            }
-                        }
+                        onFinish = { profile ->
+                            loginResponse = profile
+                            navController.navigate("main") { popUpTo("signup") { inclusive = true } }
+                        },
                     )
+                } else if (sessionState.status != SessionStatus.SIGNED_OUT) {
+                    LaunchedEffect(Unit) { navController.navigate("splash") { popUpTo(0) { inclusive = true } } }
                 }
             }
             composable("main") {
-                MainScreen(
-                    popupprogressViewModel = popupprogressViewModel,
-                    popupcomingViewModel = popupcomingViewModel,
-                    popupViewModel = popupViewModel,
-                    recommendPopupViewModel = recommendPopupViewModel,
-                    categoryViewModel = categoryViewModel,
-                    loginResponse = loginResponse,
-                    fcmToken = fcmToken,
-                    navController = navController,
-                    userDataViewModel = userDataViewModel,
-                    onUpdateLoginResponse = { updated ->
-                        loginResponse = updated
-                    },
-                    deepLinkPopupUuid = deepLinkPopupUuid
-                )
+                val user = loginResponse
+                if (user != null && sessionState.status == SessionStatus.SIGNED_IN) {
+                    MainScreen(
+                        popupprogressViewModel = popupprogressViewModel,
+                        popupcomingViewModel = popupcomingViewModel,
+                        popupViewModel = popupViewModel,
+                        recommendPopupViewModel = recommendPopupViewModel,
+                        loginResponse = user,
+                        fcmToken = fcmToken,
+                        navController = navController,
+                        userDataViewModel = userDataViewModel,
+                        onUpdateLoginResponse = { loginResponse = it },
+                        deepLinkPopupUuid = deepLinkPopupUuid,
+                    )
+                } else if (sessionState.status != SessionStatus.SIGNED_OUT) {
+                    LaunchedEffect(Unit) { navController.navigate("splash") { popUpTo(0) { inclusive = true } } }
+                }
             }
         }
     }

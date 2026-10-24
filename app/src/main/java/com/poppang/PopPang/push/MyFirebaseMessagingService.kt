@@ -15,7 +15,9 @@ import com.poppang.PopPang.R
 import com.poppang.PopPang.model.PushMessage
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
-
+    override fun onNewToken(token: String) {
+        com.poppang.PopPang.datastore.FcmTokenStore.update(applicationContext, token)
+    }
 
     override fun onMessageReceived(message: RemoteMessage) {
         val title = message.notification?.title ?: message.data["title"] ?: "알림"

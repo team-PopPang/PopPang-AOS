@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.poppang.PopPang.ui.theme.ExtraBold24
 import com.poppang.PopPang.ui.theme.Medium12
 import com.poppang.PopPang.ui.theme.Medium15
@@ -167,8 +169,9 @@ fun KeywordList(
 @Composable
 @Preview
 fun KeyworldScreenPreview() {
-    val dummyViewModel = AddKeywordViewModel().apply {
-        keywordList.addAll(listOf("화장품", "애니메이션", "게임"))
+    val dummyViewModel: AddKeywordViewModel = viewModel()
+    LaunchedEffect(dummyViewModel) {
+        listOf("화장품", "애니메이션", "게임").forEach(dummyViewModel::addKeyword)
     }
     KeywordScreen(keywordViewModel = dummyViewModel)
 }

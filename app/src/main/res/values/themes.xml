@@ -2,4 +2,12 @@
 <resources>
 
     <style name="Theme.PopPangAOS" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.PopPangReactNative" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/white</item>
+        <item name="android:navigationBarColor">@android:color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
 </resources>

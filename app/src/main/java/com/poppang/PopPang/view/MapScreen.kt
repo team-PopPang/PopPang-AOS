@@ -1,10 +1,9 @@
 package com.poppang.PopPang.view
 
-import android.annotation.SuppressLint
 import android.graphics.PointF
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-import android.util.Log
+import android.location.Location
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,6 +11,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Arrangement.Center
 import androidx.compose.foundation.layout.Arrangement.SpaceBetween
@@ -42,7 +42,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
@@ -72,7 +71,6 @@ import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
 import coil.transform.RoundedCornersTransformation
-import com.google.android.gms.location.LocationServices
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
@@ -88,11 +86,11 @@ import com.naver.maps.map.compose.MapProperties
 import com.naver.maps.map.compose.MapUiSettings
 import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.rememberCameraPositionState
-import com.naver.maps.map.compose.rememberFusedLocationSource
 import com.naver.maps.map.overlay.Marker
 import com.naver.maps.map.overlay.Overlay
 import com.naver.maps.map.overlay.OverlayImage
 import com.poppang.PopPang.R
+import com.poppang.PopPang.location.rememberMapLocationControls
 import com.poppang.PopPang.model.LoginResponse
 import com.poppang.PopPang.model.PopupEvent
 import com.poppang.PopPang.ui.theme.Bold15
@@ -116,9 +114,6 @@ import com.poppang.PopPang.viewmodel.MapViewModel
 import com.poppang.PopPang.viewmodel.RegionsViewModel
 import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 import com.poppang.PopPang.viewmodel.ViewCountViewModel
-import io.morfly.compose.bottomsheet.material3.BottomSheetScaffold
-import io.morfly.compose.bottomsheet.material3.rememberBottomSheetScaffoldState
-import io.morfly.compose.bottomsheet.material3.rememberBottomSheetState
 import kotlinx.coroutines.launch
 
 enum class MapSheetValue {
@@ -128,7 +123,6 @@ enum class MapSheetValue {
 }
 
 @OptIn(ExperimentalNaverMapApi::class, ExperimentalFoundationApi::class)
-@SuppressLint("MissingPermission")
 @Composable
 fun MapScreen(
     popupprogressList: List<PopupEvent>,
@@ -145,9 +139,9 @@ fun MapScreen(
     var selectedRegion by remember { mutableStateOf("전체") }
     var selectedDistrict by remember { mutableStateOf("전체") }
     var selectedSort by remember { mutableStateOf("CLOSEST") }
-    val context = LocalContext.current
     var latitude by remember { mutableStateOf(37.5665) }
     var longitude by remember { mutableStateOf(126.9780) }
+    var lastQueryLocation by remember { mutableStateOf<Location?>(null) }
     val mappopupfilterList by mapPopupfilterViewModel.mapPopupfilterList.collectAsState()
     val searchedPopups by mapviewmodel.searchedPopups.collectAsState(initial = emptyList())
     val isSearched = remember { mutableStateOf(false) }
@@ -160,15 +154,7 @@ fun MapScreen(
     val selectPopupList by selectPopupViewModel.selectpopupList.collectAsState()
     var detailPopup by remember { mutableStateOf<PopupEvent?>(null) }
     var selectedDetailPopup by remember { mutableStateOf<PopupEvent?>(null) }
-    val detailSheetState = rememberBottomSheetState(
-        initialValue = MapSheetValue.Middle,
-        defineValues = {
-            MapSheetValue.Hidden at height(percent = 0)
-            MapSheetValue.Middle at height(percent = 60)
-            MapSheetValue.Expanded at height(percent = 90)
-        }
-    )
-    val detailScaffoldState = rememberBottomSheetScaffoldState(detailSheetState)
+    val detailSheetState = rememberMapSheetState()
 
     LaunchedEffect(popupprogressList) { mapviewmodel.setPopups(popupprogressList) }
 
@@ -188,28 +174,6 @@ fun MapScreen(
             detailPopup = selectPopupList.firstOrNull { it.popupUuid == popupUuid }
         }
     }
-    DisposableEffect(Unit) {
-        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-        val locationRequest = com.google.android.gms.location.LocationRequest.create().apply {
-            interval = 5000
-            fastestInterval = 2000
-            priority = com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY
-        }
-        val locationCallback = object : com.google.android.gms.location.LocationCallback() {
-            override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
-                result.lastLocation?.let {
-                    latitude = it.latitude
-                    longitude = it.longitude
-                    Log.e("MapScreen", "Updated location: ($latitude, $longitude)")
-                }
-            }
-        }
-        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
-        onDispose {
-            fusedLocationClient.removeLocationUpdates(locationCallback)
-        }
-    }
-
     LaunchedEffect(
         selectedRegion,
         selectedDistrict,
@@ -232,48 +196,28 @@ fun MapScreen(
             detailSheetState.animateTo(MapSheetValue.Middle)
         }
     }
-    LaunchedEffect(detailSheetState.currentValue) {
-        if (detailSheetState.currentValue == MapSheetValue.Hidden) {
+    LaunchedEffect(detailSheetState.settledValue) {
+        if (detailSheetState.settledValue == MapSheetValue.Hidden) {
             selectedDetailPopup = null
         }
     }
     val listToShow =
         if (isSearched.value && searchedPopups.isNotEmpty()) searchedPopups else mappopupfilterList
-    val sheetState = rememberBottomSheetState(
-        initialValue = MapSheetValue.Middle,
-        defineValues = {
-            MapSheetValue.Hidden at height(percent = 0)
-            MapSheetValue.Middle at height(percent = 45)
-            MapSheetValue.Expanded at height(percent = 85)
-        }
-    )
-    val scaffoldState = rememberBottomSheetScaffoldState(sheetState)
+    val sheetState = rememberMapSheetState()
 
-    BottomSheetScaffold(
-        scaffoldState = scaffoldState,
-        sheetContainerColor = Color.White,
-        sheetShadowElevation = 8.dp,
-        sheetTonalElevation = 8.dp,
-        sheetDragHandle = {
-            Column {
-                Spacer(modifier = Modifier.height(20.dp))
-                Box(
-                    modifier = Modifier
-                        .width(40.dp)
-                        .height(4.dp)
-                        .background(
-                            color = mainBlack,
-                            shape = RoundedCornerShape(2.dp)
-                        )
-                        .align(Alignment.CenterHorizontally)
-                )
-            }
+    MapSheetScaffold(
+        sheetState = sheetState,
+        sheetHeader = {
+            MapSheetSortHeader(
+                selectedSort = selectedSort,
+                onSortSelected = { selectedSort = it }
+            )
         },
         sheetContent = {
             MapSheetContent(
                 popupList = listToShow,
                 onPopupClick = { popup ->
-                    cameraPositionState.move(
+                    if (popup.latitude != null && popup.longitude != null) cameraPositionState.move(
                         CameraUpdate.toCameraPosition(
                             CameraPosition(
                                 LatLng(popup.latitude, popup.longitude),
@@ -290,18 +234,13 @@ fun MapScreen(
                 viewCountViewModel = viewCountViewModel,
                 favoriteViewModel = favoriteViewModel,
                 refreshTrigger = showDetail,
-                loginResponse = loginResponse,
-                selectedSort = selectedSort,
-                onSortChange = { sort ->
-                    selectedSort = sort
-                }
+                loginResponse = loginResponse
             )
         }
-    ) { innerPadding ->
+    ) {
         Box(
             Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
         ) {
             MapView(
                 mapviewmodel = mapviewmodel,
@@ -311,8 +250,14 @@ fun MapScreen(
                     selectedPopup = popup
                     selectedPopupUuid = popup?.popupUuid
                 },
-                latitude = latitude,
-                longitude = longitude
+                onLocationUpdated = { location ->
+                    // Keep the camera current without reloading the popup list for every GPS jitter.
+                    if (lastQueryLocation?.distanceTo(location)?.let { it >= 50f } != false) {
+                        lastQueryLocation = Location(location)
+                        latitude = location.latitude
+                        longitude = location.longitude
+                    }
+                }
             )
             MapSearchBar(
                 mapViewModel = mapviewmodel,
@@ -326,7 +271,7 @@ fun MapScreen(
                 }
             )
             AnimatedVisibility(
-                visible = scaffoldState.sheetState.currentValue == MapSheetValue.Hidden,
+                visible = sheetState.settledValue == MapSheetValue.Hidden,
                 enter = fadeIn(),
                 exit = fadeOut(),
                 modifier = Modifier
@@ -383,26 +328,10 @@ fun MapScreen(
     }
 
     if (selectedDetailPopup != null) {
-        BottomSheetScaffold(
-            scaffoldState = detailScaffoldState,
-            sheetContainerColor = Color.White,
-            sheetShadowElevation = 8.dp,
-            sheetTonalElevation = 8.dp,
-            sheetDragHandle = {
-                Column {
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Box(
-                        modifier = Modifier
-                            .width(40.dp)
-                            .height(4.dp)
-                            .background(
-                                color = mainBlack,
-                                shape = RoundedCornerShape(2.dp)
-                            )
-                            .align(Alignment.CenterHorizontally)
-                    )
-                }
-            },
+        MapSheetScaffold(
+            sheetState = detailSheetState,
+            middleHeightFraction = 0.60f,
+            expandedHeightFraction = 0.90f,
             sheetContent = {
                 MapSheetContentDeltail(
                     popup = selectedDetailPopup!!,
@@ -427,17 +356,24 @@ fun MapView(
     mapviewmodel: MapViewModel,
     cameraPositionState: CameraPositionState,
     setShowDetail: (Boolean, PopupEvent?) -> Unit,
-    latitude: Double,
-    longitude: Double
+    onLocationUpdated: (Location) -> Unit,
 ) {
     val popups by mapviewmodel.popups.collectAsState(initial = emptyList())
     val popupMapById by mapviewmodel.popupMapById.collectAsState(initial = emptyMap())
     val iconSizeDp by mapviewmodel.iconSizeDp.collectAsState(initial = 48f)
     val cornerDp by mapviewmodel.cornerDp.collectAsState(initial = 8f)
 
-    val locationSource = rememberFusedLocationSource()
-
-    var trackingMode by remember { mutableStateOf(LocationTrackingMode.Follow) }
+    var nativeMap by remember { mutableStateOf<com.naver.maps.map.NaverMap?>(null) }
+    val locationControls = rememberMapLocationControls(
+        onLocationUpdated = onLocationUpdated,
+        onCenter = { location ->
+            cameraPositionState.move(
+                CameraUpdate.toCameraPosition(CameraPosition(LatLng(location.latitude, location.longitude), 14.0))
+            )
+            nativeMap?.locationTrackingMode = com.naver.maps.map.LocationTrackingMode.Follow
+        },
+        onFollowRequested = { nativeMap?.locationTrackingMode = com.naver.maps.map.LocationTrackingMode.Follow },
+    )
     val uiSettings = remember { MapUiSettings(isZoomControlEnabled = false, isLocationButtonEnabled = false) }
 
     val clustererState = remember { mutableStateOf<Clusterer<ItemKey>?>(null) }
@@ -452,10 +388,24 @@ fun MapView(
         NaverMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            locationSource = locationSource,
-            properties = MapProperties(locationTrackingMode = trackingMode),
-            uiSettings = uiSettings
+            locationSource = locationControls.source,
+            properties = MapProperties(
+                locationTrackingMode = if (locationControls.permissionGranted) LocationTrackingMode.Follow else LocationTrackingMode.None,
+            ),
+            uiSettings = uiSettings,
+            onLocationChange = locationControls.onLocationChanged,
+            onOptionChange = {
+                if (nativeMap?.locationTrackingMode == com.naver.maps.map.LocationTrackingMode.NoFollow) {
+                    locationControls.cancelPendingCenter()
+                }
+            },
         ) {
+            DisposableMapEffect(Unit) { map ->
+                nativeMap = map
+                // A cached camera update may have been queued before the map was attached.
+                if (locationControls.permissionGranted) map.locationTrackingMode = com.naver.maps.map.LocationTrackingMode.Follow
+                onDispose { nativeMap = null }
+            }
             MapEffect(popups) { naverMap ->
                 val clusterer = clustererState.value ?: Clusterer.Builder<ItemKey>()
                     .minZoom(5)
@@ -500,12 +450,14 @@ fun MapView(
                         clustererState.value = it
                     }
 
-                val keyTagMap = popups.associateBy { p ->
+                val keyTagMap = popups.mapNotNull { popup ->
+                    val latitude = popup.latitude ?: return@mapNotNull null
+                    val longitude = popup.longitude ?: return@mapNotNull null
                     ItemKey(
-                        id = p.popupUuid.hashCode(),
-                        position = LatLng(p.latitude, p.longitude)
-                    )
-                }
+                        id = popup.popupUuid.hashCode(),
+                        position = LatLng(latitude, longitude)
+                    ) to popup
+                }.toMap()
 
                 clusterer.clear()
                 clusterer.addAll(keyTagMap)
@@ -523,11 +475,7 @@ fun MapView(
             }
         }
         IconButton(
-            onClick = {
-                cameraPositionState.move(
-                    CameraUpdate.toCameraPosition(CameraPosition(LatLng(latitude, longitude), 14.0))
-                )
-            },
+            onClick = locationControls.requestCenter,
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 16.dp)
@@ -547,15 +495,29 @@ fun MapView(
 
 
 @Composable
+internal fun MapSheetSortHeader(
+    selectedSort: String,
+    onSortSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 24.dp, end = 24.dp, bottom = 4.dp),
+        contentAlignment = Alignment.CenterEnd
+    ) {
+        MapSortType(selectedSort = selectedSort, onSortSelected = onSortSelected)
+    }
+}
+
+@Composable
 fun MapSheetContent(
     popupList: List<PopupEvent>,
     onPopupClick: (PopupEvent) -> Unit,
     viewCountViewModel: ViewCountViewModel,
     favoriteViewModel: FavoriteViewModel,
     refreshTrigger: Boolean,
-    loginResponse: LoginResponse?,
-    selectedSort: String,
-    onSortChange: (String) -> Unit
+    loginResponse: LoginResponse?
 ) {
     var showSheet by remember { mutableStateOf(true) }
     val userUuid = loginResponse?.userUuid.orEmpty()
@@ -565,31 +527,19 @@ fun MapSheetContent(
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
     ) {
-        Spacer(modifier = Modifier.height(10.dp))
-        Box(
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            MapSortType(
-                selectedSort = selectedSort,
-                onSortSelected = { onSortChange(it) },
-            )
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-        LazyColumn(
-            contentPadding = PaddingValues(bottom = 120.dp)
-        ) {
+        MapSheetList {
             items(popupList.size) { popup ->
                 val isLiked = favoritePopupUuids.contains(popupList[popup].popupUuid)
                 val popup = popupList[popup]
-                var favoriteCount by remember { mutableStateOf(0) }
-                var viewCount by remember { mutableStateOf(0) }
+                var favoriteCount by remember { mutableStateOf(0L) }
+                var viewCount by remember { mutableStateOf(0L) }
 
                 LaunchedEffect(popup.popupUuid, refreshTrigger) {
                     favoriteViewModel.getFavoriteCount(userUuid, popup.popupUuid) { count ->
-                        favoriteCount = count.toInt()
+                        favoriteCount = count
                     }
                     viewCountViewModel.getTotalViewCount(userUuid, popup.popupUuid) { count ->
-                        viewCount = count.toInt()
+                        viewCount = count
                     }
                 }
                 Box(
@@ -688,7 +638,7 @@ fun MapSheetContent(
                                                     userUuid,
                                                     popup.popupUuid
                                                 ) { count ->
-                                                    favoriteCount = count.toInt()
+                                                    favoriteCount = count
                                                 }
                                             },
                                             modifier = Modifier.padding(end = 4.dp).size(12.dp)

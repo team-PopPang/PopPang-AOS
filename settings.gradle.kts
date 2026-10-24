@@ -16,6 +16,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven {
+            name = "PopPangReactNative"
+            url = uri("$rootDir/Vendor/PopPangRN/repository")
+        }
         maven("https://devrepo.kakao.com/nexus/content/groups/public/")
         maven("https://repository.map.naver.com/archive/maven")
     }

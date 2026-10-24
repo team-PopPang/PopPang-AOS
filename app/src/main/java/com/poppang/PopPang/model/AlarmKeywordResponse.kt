@@ -5,11 +5,9 @@ data class KeywordSelectResponse(
 )
 
 data class KeywordInsertRequest(
-    val userUuid: String,
-    val newAlertKeyword: String
+    val keyword: String
 )
 
 data class KeywordDeleteRequest(
-    val userUuid: String,
-    val deleteAlertKeyword: String
+    val keyword: String
 )

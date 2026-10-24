@@ -105,7 +105,7 @@ fun NicknameScreen(viewModel: DuplicateNickname = viewModel()) {
                     )
                 )
                 CustomButton2(
-                    onClick = { if (isCheckEnabled) viewModel.checkNickname() },
+                    onClick = { if (isCheckEnabled) viewModel.checkNickname(forSignup = true) },
                     text = "중복확인",
                     modifier = Modifier
                         .weight(3f)
