@@ -107,6 +107,7 @@ fun MainScreen(
     }
     LaunchedEffect(userUuid) {
         if (userUuid.isNotEmpty()) {
+            userDataViewModel.updateSignupOsOnce(userUuid)
             popupprogressViewModel.fetchPopupProgressEventsOnce(userUuid)
             popupcomingViewModel.fetchPopupComingEventsOnce(userUuid)
             popupViewModel.fetchPopupEventsOnce(userUuid)

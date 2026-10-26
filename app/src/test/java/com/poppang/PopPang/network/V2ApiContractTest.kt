@@ -11,6 +11,27 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 class V2ApiContractTest {
     @Test
+    fun signupOsBackfillUsesAccessTokenPatchAndAcceptsEmpty200Body() = runBlocking {
+        LocalApiServer().use { server ->
+            server.respond = { ApiReply(body = "") }
+            val session = SessionManager(MemorySessionStorage(storedSession()), refreshTokens = { error("unused") })
+            val client = OkHttpClient.Builder().addInterceptor(SessionInterceptor({ session })).build()
+            val api = retrofit(server, client).create(UserDataApi::class.java)
+
+            api.updateSignupOs(SignupOsRequest())
+
+            val recorded = server.takeRequest()
+            assertEquals("PATCH", recorded.method)
+            assertEquals("/api/v2/user/signup-os", recorded.path)
+            assertEquals("Bearer old-access", recorded.authorization)
+            assertEquals("application/json", recorded.contentType?.substringBefore(';'))
+            val json = JsonParser.parseString(recorded.body).asJsonObject
+            assertEquals(setOf("signupOs"), json.keySet())
+            assertEquals("ANDROID", json["signupOs"].asString)
+        }
+    }
+
+    @Test
     fun signupBothProvidersSendAndroidOsAndSignupTokenWithoutLegacyIdentityFields() = runBlocking {
         LocalApiServer().use { server ->
             val session = SessionManager(

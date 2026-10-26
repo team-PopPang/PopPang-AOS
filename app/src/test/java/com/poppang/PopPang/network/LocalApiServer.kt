@@ -13,6 +13,7 @@ internal data class RecordedApiRequest(
     val path: String,
     val authorization: String?,
     val body: String,
+    val contentType: String?,
 )
 
 internal data class ApiReply(val status: Int = 200, val body: String = "{}")
@@ -32,6 +33,7 @@ internal class LocalApiServer : Closeable {
                     checkNotNull(request.path),
                     request.getHeader("Authorization"),
                     request.body.readUtf8(),
+                    request.getHeader("Content-Type"),
                 )
                 requests.put(recorded)
                 val reply = respond(recorded)
