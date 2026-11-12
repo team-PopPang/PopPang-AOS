@@ -6,6 +6,8 @@
    See https://developer.android.com/about/versions/12/backup-restore
 -->
 <full-backup-content>
+    <!-- Onboarding completion belongs to this installation, not a restored backup. -->
+    <exclude domain="sharedpref" path="app_prefs.xml"/>
     <exclude domain="sharedpref" path="v2_session.xml"/>
     <exclude domain="sharedpref" path="auth_prefs.xml"/>
     <!--

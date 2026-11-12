@@ -16,8 +16,8 @@ android {
         minSdk = 28
         //noinspection OldTargetApi
         targetSdk = 36
-        versionCode = 24
-        versionName = "1.1.7"
+        versionCode = 26
+        versionName = "1.2.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -29,42 +29,11 @@ android {
             ?: "ca-app-pub-3940256099942544~3347511713"
         val admobNativeKey = localProperties.getProperty("ADMOB_NATIVE_KEY")
             ?: "ca-app-pub-3940256099942544/2247696110"
-        val authurl = localProperties.getProperty("AUTH_BASE_URL") ?: ""
-        val userurl = localProperties.getProperty("USER_BASE_URL") ?: ""
-        val usersurl = localProperties.getProperty("USERS_BASE_URL") ?: ""
         val adminbaseurl = localProperties.getProperty("ADMIN_BASE_URL") ?: ""
-        val baseurl = localProperties.getProperty("BASE_URL") ?: ""
         val v2BaseUrl = localProperties.getProperty("V2_BASE_URL")
-            ?: baseurl.replace(Regex("/api/v1/?$"), "/api/v2/")
+            ?: "https://api.poppang.co.kr/api/v2/"
         val urlimage = localProperties.getProperty("URL_IMAGE") ?: ""
-        val authapikakao = localProperties.getProperty("AUTH_API_KAKAO") ?: ""
-        val authapigoogle = localProperties.getProperty("AUTH_API_GOOGLE") ?: ""
-        val authapiautologin = localProperties.getProperty("AUTH_API_AUTOLOGIN") ?: ""
-        val duplicateapi = localProperties.getProperty("DUPLICATE_API") ?: ""
-        val signupapikakao = localProperties.getProperty("SIGNUP_API_KAKAO") ?: ""
-        val signupapigoogle = localProperties.getProperty("SIGNUP_API_GOOGLE") ?: ""
-        val catagoryitemapi = localProperties.getProperty("CATEGORY_ITEM_API") ?: ""
-        val popupprogressapi = localProperties.getProperty("POPUP_PROGRESS_API") ?: ""
-        val popupcomingapi = localProperties.getProperty("POPUP_COMING_API") ?: ""
-        val popupapi = localProperties.getProperty("POPUP_API") ?: ""
-        val popupselectapi = localProperties.getProperty("POPUP_SELECT_API") ?: ""
-        val searchapi = localProperties.getProperty("SEARCH_API") ?: ""
-        val keywordapi = localProperties.getProperty("KEYWORD_API") ?: ""
         val navermapkey = localProperties.getProperty("NAVER_MAP_KEY") ?: ""
-        val favoriteapi = localProperties.getProperty("FAVORITE_API") ?: ""
-        val viewcountapi = localProperties.getProperty("VIEW_COUNT_API") ?: ""
-        val fcmapi = localProperties.getProperty("FCM_API") ?: ""
-        val alertapi = localProperties.getProperty("ALERT_API") ?: ""
-        val regionsapi = localProperties.getProperty("REGIONS_API") ?: ""
-        val userapi = localProperties.getProperty("USER_API") ?: ""
-        val userwithdrawapi = localProperties.getProperty("USER_WITHDRAW_API") ?: ""
-        val recommendpopupapi = localProperties.getProperty("RECOMMEND_POPUP_API") ?: ""
-        val homepopupapi = localProperties.getProperty("HOME_POPUP_API") ?: ""
-        val mapopupapi = localProperties.getProperty("MAP_POPUP_API") ?: ""
-        val alertpopupapi = localProperties.getProperty("ALERT_POPUP_API") ?: ""
-        val alertreadapi = localProperties.getProperty("ALERT_READ_API") ?: ""
-        val alertdeleteapi = localProperties.getProperty("ALERT_DELETE_API") ?: ""
-        val relatedpopupapi = localProperties.getProperty("RELATED_POPUP_API") ?: ""
         val popupdeactivateapi = localProperties.getProperty("POPUP_DEACTIVATE_API") ?: ""
         buildConfigField("String", "KAKAO_KEY", "\"$kakaoKey\"")
         buildConfigField("String", "GOOGLE_KEY", "\"$googleKey\"")
@@ -72,41 +41,10 @@ android {
         buildConfigField("String", "ADMOB_NATIVE_KEY", "\"$admobNativeKey\"")
         manifestPlaceholders["KAKAO_KEY"] = kakaoKey
         manifestPlaceholders["ADMOB_KEY"] = admobKey
-        buildConfigField("String", "AUTH_BASE_URL", "\"$authurl\"")
-        buildConfigField("String", "USER_BASE_URL", "\"$userurl\"")
-        buildConfigField("String", "USERS_BASE_URL", "\"$usersurl\"")
         buildConfigField("String", "ADMIN_BASE_URL", "\"$adminbaseurl\"")
-        buildConfigField("String", "BASE_URL", "\"$baseurl\"")
         buildConfigField("String", "V2_BASE_URL", "\"$v2BaseUrl\"")
-        buildConfigField("String", "AUTH_API_KAKAO", "\"$authapikakao\"")
-        buildConfigField("String", "AUTH_API_GOOGLE", "\"$authapigoogle\"")
-        buildConfigField("String", "AUTH_API_AUTOLOGIN", "\"$authapiautologin\"")
-        buildConfigField("String", "DUPLICATE_API", "\"$duplicateapi\"")
-        buildConfigField("String", "SIGNUP_API_KAKAO", "\"$signupapikakao\"")
-        buildConfigField("String", "SIGNUP_API_GOOGLE", "\"$signupapigoogle\"")
-        buildConfigField("String", "CATEGORY_ITEM_API", "\"$catagoryitemapi\"")
-        buildConfigField("String", "POPUP_PROGRESS_API", "\"$popupprogressapi\"")
         buildConfigField("String", "URL_IMAGE", "\"$urlimage\"")
-        buildConfigField("String", "POPUP_COMING_API", "\"$popupcomingapi\"")
-        buildConfigField("String", "POPUP_API", "\"$popupapi\"")
-        buildConfigField("String", "POPUP_SELECT_API", "\"$popupselectapi\"")
-        buildConfigField("String", "SEARCH_API", "\"$searchapi\"")
-        buildConfigField("String", "KEYWORD_API", "\"$keywordapi\"")
         manifestPlaceholders["NAVER_MAP_KEY"] = navermapkey
-        buildConfigField("String", "FAVORITE_API", "\"$favoriteapi\"")
-        buildConfigField("String", "VIEW_COUNT_API", "\"$viewcountapi\"")
-        buildConfigField("String", "FCM_API", "\"$fcmapi\"")
-        buildConfigField("String", "ALERT_API", "\"$alertapi\"")
-        buildConfigField("String", "REGIONS_API", "\"$regionsapi\"")
-        buildConfigField("String", "USER_WITHDRAW_API", "\"$userwithdrawapi\"")
-        buildConfigField("String", "USER_API", "\"$userapi\"")
-        buildConfigField("String", "RECOMMEND_POPUP_API", "\"$recommendpopupapi\"")
-        buildConfigField("String", "HOME_POPUP_API", "\"$homepopupapi\"")
-        buildConfigField("String", "MAP_POPUP_API", "\"$mapopupapi\"")
-        buildConfigField("String", "ALERT_POPUP_API", "\"$alertpopupapi\"")
-        buildConfigField("String", "ALERT_READ_API", "\"$alertreadapi\"")
-        buildConfigField("String", "ALERT_DELETE_API", "\"$alertdeleteapi\"")
-        buildConfigField("String", "RELATED_POPUP_API", "\"$relatedpopupapi\"")
         buildConfigField("String", "POPUP_DEACTIVATE_API", "\"$popupdeactivateapi\"")
     }
 

@@ -2,8 +2,15 @@ package com.poppang.PopPang.navigation
 
 import android.content.Context
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -133,13 +140,25 @@ fun Navigation(
                     SplashScreen()
                 }
             }
-            composable("onboarding") {
-                OnboardingScreen(onStartClick = {
-                    appPreferences.edit().putBoolean("onboarding_seen", true).apply()
-                    navController.navigate("login") { popUpTo("onboarding") { inclusive = true } }
-                })
+            composable(
+                "onboarding",
+                exitTransition = { fadeOut(tween(220)) + slideOutHorizontally(tween(220)) { -it / 8 } },
+            ) {
+                Box(Modifier.consumeWindowInsets(innerPadding)) {
+                    OnboardingScreen(onStartClick = {
+                        appPreferences.edit().putBoolean("onboarding_seen", true).apply()
+                        navController.navigate("login") { popUpTo("onboarding") { inclusive = true } }
+                    })
+                }
             }
-            composable("login") {
+            composable(
+                "login",
+                enterTransition = {
+                    if (initialState.destination.route == "onboarding") {
+                        fadeIn(tween(220)) + slideInHorizontally(tween(220)) { it / 8 }
+                    } else null
+                },
+            ) {
                 LoginScreen(onNextClick = { response, _ ->
                     loginResponse = response
                     val target = if (response.signupStatus == SignupStatus.PENDING) "signup" else "main"
@@ -150,17 +169,20 @@ fun Navigation(
                 BackHandler { session.cancelSignup() }
                 val user = loginResponse
                 if (user?.signupStatus == SignupStatus.PENDING) {
-                    SignUpScreen(
-                        loginResponse = user,
-                        fcmToken = fcmToken,
-                        nicknameViewModel = nicknameViewModel,
-                        keywordViewModel = keywordViewModel,
-                        categoryViewModel = categoryViewModel,
-                        onFinish = { profile ->
-                            loginResponse = profile
-                            navController.navigate("main") { popUpTo("signup") { inclusive = true } }
-                        },
-                    )
+                    Box(Modifier.consumeWindowInsets(innerPadding)) {
+                        SignUpScreen(
+                            loginResponse = user,
+                            fcmToken = fcmToken,
+                            nicknameViewModel = nicknameViewModel,
+                            keywordViewModel = keywordViewModel,
+                            categoryViewModel = categoryViewModel,
+                            onBack = session::cancelSignup,
+                            onFinish = { profile ->
+                                loginResponse = profile
+                                navController.navigate("main") { popUpTo("signup") { inclusive = true } }
+                            },
+                        )
+                    }
                 } else if (sessionState.status != SessionStatus.SIGNED_OUT) {
                     LaunchedEffect(Unit) { navController.navigate("splash") { popUpTo(0) { inclusive = true } } }
                 }

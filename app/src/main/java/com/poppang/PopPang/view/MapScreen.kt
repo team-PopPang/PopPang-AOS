@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Arrangement.Center
 import androidx.compose.foundation.layout.Arrangement.SpaceBetween
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -49,6 +50,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -75,6 +77,8 @@ import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.clustering.Clusterer
+import com.naver.maps.map.clustering.ClusterMarkerInfo
+import com.naver.maps.map.clustering.DefaultClusterMarkerUpdater
 import com.naver.maps.map.clustering.DefaultLeafMarkerUpdater
 import com.naver.maps.map.clustering.LeafMarkerInfo
 import com.naver.maps.map.compose.CameraPositionState
@@ -90,6 +94,11 @@ import com.naver.maps.map.overlay.Marker
 import com.naver.maps.map.overlay.Overlay
 import com.naver.maps.map.overlay.OverlayImage
 import com.poppang.PopPang.R
+import com.poppang.PopPang.view.renewal.RenewalCategories
+import com.poppang.PopPang.view.renewal.RenewalMapUi
+import com.poppang.PopPang.view.renewal.RenewalMarkerRenderer
+import com.poppang.PopPang.view.renewal.renewalText
+import com.poppang.PopPang.view.renewal.toRenewalPopup
 import com.poppang.PopPang.location.rememberMapLocationControls
 import com.poppang.PopPang.model.LoginResponse
 import com.poppang.PopPang.model.PopupEvent
@@ -122,7 +131,7 @@ enum class MapSheetValue {
     Expanded
 }
 
-@OptIn(ExperimentalNaverMapApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalNaverMapApi::class)
 @Composable
 fun MapScreen(
     popupprogressList: List<PopupEvent>,
@@ -134,217 +143,73 @@ fun MapScreen(
     viewCountViewModel: ViewCountViewModel = viewModel(),
     regionsViewModel: RegionsViewModel,
     mapPopupfilterViewModel: MapPopupfilterViewModel = viewModel(),
-    selectPopupViewModel: SelectPopupViewModel
+    selectPopupViewModel: SelectPopupViewModel,
 ) {
-    var selectedRegion by remember { mutableStateOf("전체") }
-    var selectedDistrict by remember { mutableStateOf("전체") }
-    var selectedSort by remember { mutableStateOf("CLOSEST") }
+    var selectedRegion by rememberSaveable { mutableStateOf("전체") }
+    var selectedDistrict by rememberSaveable { mutableStateOf("전체") }
+    var selectedSort by rememberSaveable { mutableStateOf("CLOSEST") }
     var latitude by remember { mutableStateOf(37.5665) }
     var longitude by remember { mutableStateOf(126.9780) }
     var lastQueryLocation by remember { mutableStateOf<Location?>(null) }
-    val mappopupfilterList by mapPopupfilterViewModel.mapPopupfilterList.collectAsState()
-    val searchedPopups by mapviewmodel.searchedPopups.collectAsState(initial = emptyList())
-    val isSearched = remember { mutableStateOf(false) }
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition(LatLng(latitude, longitude), 14.0)
+    var detailId by rememberSaveable { mutableStateOf<String?>(null) }
+    val popups by mapPopupfilterViewModel.mapPopupfilterList.collectAsState()
+    val favorites by favoriteViewModel.favoritePopupUuids.collectAsState()
+    val details by selectPopupViewModel.selectpopupList.collectAsState()
+    val userUuid = loginResponse?.userUuid.orEmpty()
+    val camera = rememberCameraPositionState { position = CameraPosition(LatLng(latitude, longitude), 14.0) }
+    LaunchedEffect(selectedRegion, selectedDistrict, selectedSort, latitude, longitude, userUuid) {
+        mapPopupfilterViewModel.fetchmappopupfilter(userUuid, selectedRegion, selectedDistrict, longitude, latitude, selectedSort)
     }
-    val coroutineScope = rememberCoroutineScope()
-    var selectedPopup by remember { mutableStateOf<PopupEvent?>(null) }
-    var selectedPopupUuid by rememberSaveable { mutableStateOf<String?>(null) }
-    val selectPopupList by selectPopupViewModel.selectpopupList.collectAsState()
-    var detailPopup by remember { mutableStateOf<PopupEvent?>(null) }
-    var selectedDetailPopup by remember { mutableStateOf<PopupEvent?>(null) }
-    val detailSheetState = rememberMapSheetState()
-
-    LaunchedEffect(popupprogressList) { mapviewmodel.setPopups(popupprogressList) }
-
-    LaunchedEffect(showDetail, selectedPopupUuid) {
-        val popupUuid = selectedPopupUuid
-        if (showDetail && popupUuid != null) {
-            selectPopupViewModel.SelectPopupEvents(
-                userUuid = loginResponse?.userUuid.orEmpty(),
-                popupUuid = popupUuid
-            )
-        }
+    LaunchedEffect(showDetail, detailId) {
+        if (showDetail) detailId?.let { selectPopupViewModel.SelectPopupEvents(userUuid, it) }
     }
-
-    LaunchedEffect(selectPopupList, showDetail, selectedPopupUuid) {
-        val popupUuid = selectedPopupUuid
-        if (showDetail && popupUuid != null) {
-            detailPopup = selectPopupList.firstOrNull { it.popupUuid == popupUuid }
-        }
-    }
-    LaunchedEffect(
-        selectedRegion,
-        selectedDistrict,
-        selectedSort,
-        latitude,
-        longitude,
-        loginResponse?.userUuid
-    ) {
-        mapPopupfilterViewModel.fetchmappopupfilter(
-            userUuid = loginResponse?.userUuid.orEmpty(),
-            region = selectedRegion,
-            district = selectedDistrict,
-            longitude = longitude,
-            latitude = latitude,
-            mapSortStandard = selectedSort
-        )
-    }
-    LaunchedEffect(selectedDetailPopup) {
-        if (selectedDetailPopup != null) {
-            detailSheetState.animateTo(MapSheetValue.Middle)
-        }
-    }
-    LaunchedEffect(detailSheetState.settledValue) {
-        if (detailSheetState.settledValue == MapSheetValue.Hidden) {
-            selectedDetailPopup = null
-        }
-    }
-    val listToShow =
-        if (isSearched.value && searchedPopups.isNotEmpty()) searchedPopups else mappopupfilterList
-    val sheetState = rememberMapSheetState()
-
-    MapSheetScaffold(
-        sheetState = sheetState,
-        sheetHeader = {
-            MapSheetSortHeader(
-                selectedSort = selectedSort,
-                onSortSelected = { selectedSort = it }
-            )
-        },
-        sheetContent = {
-            MapSheetContent(
-                popupList = listToShow,
-                onPopupClick = { popup ->
-                    if (popup.latitude != null && popup.longitude != null) cameraPositionState.move(
-                        CameraUpdate.toCameraPosition(
-                            CameraPosition(
-                                LatLng(popup.latitude, popup.longitude),
-                                14.0
-                            )
-                        )
-                    )
-                    coroutineScope.launch {
-                        sheetState.animateTo(MapSheetValue.Middle)
-                        selectedDetailPopup = popup
-                        detailSheetState.animateTo(MapSheetValue.Middle)
-                    }
-                },
-                viewCountViewModel = viewCountViewModel,
-                favoriteViewModel = favoriteViewModel,
-                refreshTrigger = showDetail,
-                loginResponse = loginResponse
-            )
-        }
-    ) {
-        Box(
-            Modifier
-                .fillMaxSize()
-        ) {
+    val display = remember(popups) { popups.mapNotNull { it.toRenewalPopup() } }
+    Box(Modifier.fillMaxSize()) {
+        RenewalMapUi(
+            popups = display,
+            favoriteIds = favorites.toSet(),
+            onFavorite = { id -> if (id in favorites) favoriteViewModel.deleteFavorite(userUuid, id) else favoriteViewModel.addFavorite(userUuid, id) },
+            onDetail = { id -> detailId = id; setShowDetail(true) },
+            categories = (RenewalCategories + display.flatMap { it.categories }).distinct(),
+            onSortChanged = { selectedSort = it },
+            regionButton = {
+                MapLocalFilterButton(selectedRegion, { selected ->
+                    val parts = selected.split(" ", limit = 2)
+                    selectedRegion = parts.firstOrNull().orEmpty().ifBlank { "전체" }
+                    selectedDistrict = parts.getOrNull(1) ?: "전체"
+                }, regionsViewModel)
+            },
+        ) { visible, selectedId, onSelect ->
+            LaunchedEffect(visible) {
+                val ids = visible.map { it.id }.toSet()
+                mapviewmodel.setPopups(popups.filter { it.popupUuid in ids })
+            }
             MapView(
                 mapviewmodel = mapviewmodel,
-                cameraPositionState = cameraPositionState,
-                setShowDetail = { show, popup ->
-                    setShowDetail(show)
-                    selectedPopup = popup
-                    selectedPopupUuid = popup?.popupUuid
-                },
+                cameraPositionState = camera,
+                setShowDetail = { _, popup -> popup?.let { onSelect(it.popupUuid) } },
                 onLocationUpdated = { location ->
-                    // Keep the camera current without reloading the popup list for every GPS jitter.
                     if (lastQueryLocation?.distanceTo(location)?.let { it >= 50f } != false) {
                         lastQueryLocation = Location(location)
                         latitude = location.latitude
                         longitude = location.longitude
                     }
-                }
+                },
+                selectedPopupUuid = selectedId,
+                renewalMarkers = true,
             )
-            MapSearchBar(
-                mapViewModel = mapviewmodel,
-                isSearched = isSearched,
-                loginResponse = loginResponse,
-                regionsViewModel = regionsViewModel,
-                selectedRegion = selectedRegion,
-                onRegionChange = { region, district ->
-                    selectedRegion = region
-                    selectedDistrict = district
-                }
-            )
-            AnimatedVisibility(
-                visible = sheetState.settledValue == MapSheetValue.Hidden,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 15.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .background(Color.White, RoundedCornerShape(20.dp))
-                        .padding(vertical = 10.dp, horizontal = 10.dp)
-                        .clickable {
-                            coroutineScope.launch {
-                                sheetState.animateTo(MapSheetValue.Middle)
-                            }
-                        },
-                ) {
-                    Row(
-                        verticalAlignment = CenterVertically,
-                        horizontalArrangement = Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.menu_icon),
-                            contentDescription = "리스트 아이콘",
-                            tint = Color.Unspecified,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Text(
-                            text = "목록 보기",
-                            style = Regular12,
-                            color = mainBlack,
-                            modifier = Modifier.padding(start = 5.dp)
-                        )
-                    }
-                }
-            }
         }
-    }
-
-    if (showDetail && detailPopup != null) {
-        ContentDetail(
-            popup = detailPopup!!,
-            onClose = {
-                selectedPopup = null
-                selectedPopupUuid = null
-                detailPopup = null
-                setShowDetail(false)
-            },
-            loginResponse = loginResponse,
-            favoriteViewModel = favoriteViewModel,
-            showDetail = showDetail,
-            setShowDetail = setShowDetail,
-            selectPopupViewModel = selectPopupViewModel
-        )
-    }
-
-    if (selectedDetailPopup != null) {
-        MapSheetScaffold(
-            sheetState = detailSheetState,
-            middleHeightFraction = 0.60f,
-            expandedHeightFraction = 0.90f,
-            sheetContent = {
-                MapSheetContentDeltail(
-                    popup = selectedDetailPopup!!,
-                    onClose = {
-                        coroutineScope.launch {
-                            detailSheetState.animateTo(MapSheetValue.Hidden)
-                            // 애니메이션이 끝난 뒤에 null 처리
-                            selectedDetailPopup = null
-                        }
-                    }
-                )
-            }
-        ) {
+        val popup = details.firstOrNull { it.popupUuid == detailId } ?: popups.firstOrNull { it.popupUuid == detailId }
+        if (showDetail && popup != null) {
+            ContentDetail(
+                popup = popup,
+                onClose = { detailId = null; setShowDetail(false) },
+                loginResponse = loginResponse,
+                favoriteViewModel = favoriteViewModel,
+                showDetail = showDetail,
+                setShowDetail = setShowDetail,
+                selectPopupViewModel = selectPopupViewModel,
+            )
         }
     }
 }
@@ -357,7 +222,10 @@ fun MapView(
     cameraPositionState: CameraPositionState,
     setShowDetail: (Boolean, PopupEvent?) -> Unit,
     onLocationUpdated: (Location) -> Unit,
+    selectedPopupUuid: String? = null,
+    renewalMarkers: Boolean = false,
 ) {
+    val currentSelection by rememberUpdatedState(selectedPopupUuid)
     val popups by mapviewmodel.popups.collectAsState(initial = emptyList())
     val popupMapById by mapviewmodel.popupMapById.collectAsState(initial = emptyMap())
     val iconSizeDp by mapviewmodel.iconSizeDp.collectAsState(initial = 48f)
@@ -374,17 +242,34 @@ fun MapView(
         },
         onFollowRequested = { nativeMap?.locationTrackingMode = com.naver.maps.map.LocationTrackingMode.Follow },
     )
+    var centeredPopupId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(selectedPopupUuid, popups, nativeMap) {
+        if (selectedPopupUuid == null) centeredPopupId = null
+        if (renewalMarkers && nativeMap != null && selectedPopupUuid != null && centeredPopupId != selectedPopupUuid) {
+            val popup = popups.firstOrNull { it.popupUuid == selectedPopupUuid }
+            val selectedLatitude = popup?.latitude
+            val selectedLongitude = popup?.longitude
+            if (selectedLatitude != null && selectedLongitude != null) {
+                // A selected popup keeps the camera until the user asks for their location again.
+                locationControls.cancelPendingCenter()
+                nativeMap?.locationTrackingMode = com.naver.maps.map.LocationTrackingMode.NoFollow
+                cameraPositionState.move(CameraUpdate.scrollTo(LatLng(selectedLatitude, selectedLongitude)))
+                centeredPopupId = selectedPopupUuid
+            }
+        }
+    }
     val uiSettings = remember { MapUiSettings(isZoomControlEnabled = false, isLocationButtonEnabled = false) }
 
     val clustererState = remember { mutableStateOf<Clusterer<ItemKey>?>(null) }
     val context = LocalContext.current
+    val markerRenderer = remember(context) { RenewalMarkerRenderer(context) }
 
     val density = context.resources.displayMetrics.density
     val iconSizePx = (iconSizeDp.toFloat() * density).toInt()
     val cornerPx = cornerDp.toFloat() * density
 
 
-    Box(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
         NaverMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
@@ -406,14 +291,36 @@ fun MapView(
                 if (locationControls.permissionGranted) map.locationTrackingMode = com.naver.maps.map.LocationTrackingMode.Follow
                 onDispose { nativeMap = null }
             }
-            MapEffect(popups) { naverMap ->
+            MapEffect(popups, selectedPopupUuid) { naverMap ->
                 val clusterer = clustererState.value ?: Clusterer.Builder<ItemKey>()
                     .minZoom(5)
                     .maxZoom(12)
+                    .clusterMarkerUpdater(object : DefaultClusterMarkerUpdater() {
+                        override fun updateClusterMarker(info: ClusterMarkerInfo, marker: Marker) {
+                            super.updateClusterMarker(info, marker)
+                            if (renewalMarkers) {
+                                marker.icon = OverlayImage.fromBitmap(markerRenderer.cluster(info.size))
+                                marker.captionText = ""
+                                marker.subCaptionText = ""
+                            }
+                        }
+                    })
                     .leafMarkerUpdater(object : DefaultLeafMarkerUpdater() {
                         override fun updateLeafMarker(info: LeafMarkerInfo, marker: Marker) {
                             val key = info.key as? ItemKey ?: return
                             val popup = popupMapById[key.id] ?: return
+                            if (renewalMarkers) {
+                                val selected = popup.popupUuid == currentSelection
+                                val image = markerRenderer.popup(popup.name, selected, currentSelection != null && !selected)
+                                marker.icon = OverlayImage.fromBitmap(image.bitmap)
+                                marker.anchor = image.anchor
+                                marker.captionText = ""
+                                marker.subCaptionText = ""
+                                marker.captionRequestedWidth = 0
+                                marker.zIndex = if (selected) 100 else 0
+                                marker.onClickListener = Overlay.OnClickListener { setShowDetail(true, popup); true }
+                                return
+                            }
                             val url = popup.fullImageUrlList.firstOrNull() ?: return
 
                             marker.anchor = PointF(0.5f, 1.0f)
@@ -474,9 +381,14 @@ fun MapView(
                 }
             }
         }
-        IconButton(
+        if (!renewalMarkers || selectedPopupUuid == null) IconButton(
             onClick = locationControls.requestCenter,
-            modifier = Modifier
+            modifier = if (renewalMarkers) Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 20.dp, top = minOf(370.dp, maxHeight * .6f))
+                .size(42.dp)
+                .background(Color.White, shape = RoundedCornerShape(21.dp))
+            else Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 16.dp)
                 .size(48.dp)
@@ -484,10 +396,10 @@ fun MapView(
                 .border(1.dp, mainGray3, RoundedCornerShape(24.dp))
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.my_location_icon), // 내 위치 아이콘 리소스
+                painter = painterResource(id = if (renewalMarkers) R.drawable.renewal_asset_86d6d else R.drawable.my_location_icon),
                 contentDescription = "내 위치",
-                tint = mainOrange,
-                modifier = Modifier.size(24.dp)
+                tint = if (renewalMarkers) Color.Unspecified else mainOrange,
+                modifier = Modifier.size(if (renewalMarkers) 22.dp else 24.dp)
             )
         }
     }
@@ -908,23 +820,22 @@ fun MapLocalFilterButton(selectedRegion: String, onRegionSelected: (String) -> U
     Box(
         modifier = Modifier
             .clickable { showSheet = true }
-            .background(Color.White)
-            .padding(vertical = 8.dp),
+            .background(Color.White),
         contentAlignment = Alignment.Center
     ) {
-        Row {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = currentRegion ,
                 color = mainBlack,
-                style = Regular12
+                style = renewalText(15, true).copy(letterSpacing = (-.3).sp)
             )
             Icon(
-                painter = painterResource(R.drawable.arrow_up),
+                painter = painterResource(R.drawable.renewal_asset_b7881),
                 contentDescription = "지역 선택",
                 modifier = Modifier
-                    .padding(start = 3.dp)
-                    .size(10.dp)
-                    .rotate(if (showSheet) 270f else 90f),
+                    .padding(start = 2.dp)
+                    .size(14.dp)
+                    .rotate(if (showSheet) 180f else 0f),
                 tint = mainGray2
             )
         }

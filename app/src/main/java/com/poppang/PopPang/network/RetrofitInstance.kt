@@ -8,14 +8,26 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitInstance {
     private val publicClient = OkHttpClient.Builder().retryOnConnectionFailure(false).build()
-    private val accessClient = publicClient.newBuilder()
-        .addInterceptor(SessionInterceptor({ AuthTokenStore.session })).build()
-    private val signupClient = publicClient.newBuilder()
-        .addInterceptor(SessionInterceptor({ AuthTokenStore.session }, signup = true)).build()
+    private val accessClient =
+        publicClient
+            .newBuilder()
+            .addInterceptor(SessionInterceptor({ AuthTokenStore.session }))
+            .build()
+    private val signupClient =
+        publicClient
+            .newBuilder()
+            .addInterceptor(SessionInterceptor({ AuthTokenStore.session }, signup = true))
+            .build()
 
-    private fun retrofit(baseUrl: String, client: OkHttpClient) = Retrofit.Builder()
-        .baseUrl(baseUrl).client(client)
-        .addConverterFactory(GsonConverterFactory.create()).build()
+    private fun retrofit(
+        baseUrl: String,
+        client: OkHttpClient,
+    ) = Retrofit
+        .Builder()
+        .baseUrl(baseUrl)
+        .client(client)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
 
     private val publicV2 by lazy { retrofit(BuildConfig.V2_BASE_URL, publicClient) }
     private val accessV2 by lazy { retrofit(BuildConfig.V2_BASE_URL, accessClient) }
@@ -27,6 +39,8 @@ object RetrofitInstance {
     val userSignUpApi: UserSignUpApi by lazy { signupV2.create(UserSignUpApi::class.java) }
     val duplicateNicknameApi: DuplicateNicknameApi by lazy { accessV2.create(DuplicateNicknameApi::class.java) }
     val signupNicknameApi: DuplicateNicknameApi by lazy { signupV2.create(DuplicateNicknameApi::class.java) }
+    val suggestionApi: SignupSuggestionApi by lazy { accessV2.create(SignupSuggestionApi::class.java) }
+    val signupSuggestionApi: SignupSuggestionApi by lazy { signupV2.create(SignupSuggestionApi::class.java) }
     val categoryItemApi: CategoryItemApi by lazy { accessV2.create(CategoryItemApi::class.java) }
     val signupCategoryApi: CategoryItemApi by lazy { signupV2.create(CategoryItemApi::class.java) }
     val adminPopupApi: AdminPopupApi by lazy { admin.create(AdminPopupApi::class.java) }

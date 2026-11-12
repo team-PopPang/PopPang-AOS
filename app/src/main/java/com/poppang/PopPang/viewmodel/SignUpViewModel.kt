@@ -19,6 +19,8 @@ class SignUpViewModel : ViewModel() {
         private set
     var errorMessage by mutableStateOf<String?>(null)
         private set
+    var completedProfile by mutableStateOf<LoginResponse?>(null)
+        private set
 
     fun signUpUser(
         loginResponse: LoginResponse,
@@ -26,15 +28,16 @@ class SignUpViewModel : ViewModel() {
         nicknameViewModel: DuplicateNickname,
         keywordViewModel: AddKeywordViewModel,
         categoryViewModel: CategoryItemViewModel,
+        skipKeywords: Boolean = false,
         onResult: (LoginResponse?) -> Unit,
     ) {
-        if (isSubmitting) return
+        if (isSubmitting || completedProfile != null) return
         val provider = loginResponse.provider ?: return
         val request = UserSignUpRequest(
             nickname = nicknameViewModel.nickname.trim(),
             isAlerted = loginResponse.isAlerted ?: false,
             fcmToken = fcmToken,
-            alertKeywordList = keywordViewModel.keywordList.toList(),
+            alertKeywordList = if (skipKeywords) emptyList() else keywordViewModel.keywordList.toList(),
             recommendList = categoryViewModel.selectedCategories.map { it.id },
             signupOs = "ANDROID",
         )
@@ -50,7 +53,9 @@ class SignUpViewModel : ViewModel() {
                 check(response.isSuccessful) { apiErrorMessage(response, "회원가입에 실패했습니다.") }
                 val data = checkNotNull(response.body()).requireData()
                 check(data.signupStatus == SignupStatus.COMPLETED) { "회원가입이 완료되지 않았습니다." }
-                onResult(AuthTokenStore.session.acceptLogin(data, provider))
+                val profile = AuthTokenStore.session.acceptLogin(data, provider)
+                completedProfile = profile
+                onResult(profile)
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {

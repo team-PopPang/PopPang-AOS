@@ -7,16 +7,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults.colors
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -27,18 +19,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.poppang.PopPang.view.renewal.RenewalBottomBar
 import com.poppang.PopPang.model.BottomNavItem
 import com.poppang.PopPang.model.LoginResponse
-import com.poppang.PopPang.model.NavIcon
-import com.poppang.PopPang.ui.theme.Light10
-import com.poppang.PopPang.ui.theme.Medium10
-import com.poppang.PopPang.ui.theme.mainBlack
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.FcmTokenViewModel
 import com.poppang.PopPang.viewmodel.AdminPopupViewModel
@@ -124,41 +110,7 @@ fun MainScreen(
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (!hideBottomNav) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    color = Color.White,
-                    shadowElevation = 20.dp
-                ) {
-                    NavigationBar(
-                        containerColor = Color.White,
-                        windowInsets = WindowInsets(0)
-                    ) {
-                        items.forEachIndexed { index, item ->
-                            val isSelected = selectedIndex == index
-                            NavigationBarItem(
-                                selected = isSelected,
-                                onClick = { selectedIndex = index },
-                                icon = {
-                                    val icon =
-                                        if (isSelected) item.selectedIcon else item.unselectedIcon
-                                    (icon as? NavIcon.ResIcon)?.let {
-                                        Icon(
-                                            painter = painterResource(it.id),
-                                            contentDescription = item.label,
-                                            modifier = Modifier.size(26.dp),
-                                            tint = Color.Unspecified
-                                        )
-                                    }
-                                },
-                                label = { Text(item.label, style = if(isSelected)Medium10 else Light10 ,color= if (isSelected)Color(0xFF2B060D) else mainBlack) },
-                                colors = colors(
-                                    indicatorColor = Color.Transparent,
-                                )
-                            )
-                        }
-                    }
-                }
+                RenewalBottomBar(selectedIndex) { selectedIndex = it }
             }
         }
     ) { innerPadding ->

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -53,6 +54,7 @@ internal fun MapSheetScaffold(
     modifier: Modifier = Modifier,
     middleHeightFraction: Float = 0.45f,
     expandedHeightFraction: Float = 0.85f,
+    renewalAppearance: Boolean = false,
     sheetHeader: (@Composable ColumnScope.() -> Unit)? = null,
     sheetContent: @Composable ColumnScope.() -> Unit,
     content: @Composable () -> Unit
@@ -66,13 +68,13 @@ internal fun MapSheetScaffold(
                     modifier = Modifier
                         .widthIn(max = BottomSheetDefaults.SheetMaxWidth)
                         .fillMaxWidth(),
-                    shape = BottomSheetDefaults.ExpandedShape,
+                    shape = if (renewalAppearance) RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp) else BottomSheetDefaults.ExpandedShape,
                     color = Color.White,
-                    shadowElevation = 8.dp,
-                    tonalElevation = 8.dp
+                    shadowElevation = if (renewalAppearance && sheetState.settledValue == MapSheetValue.Expanded) 0.dp else 8.dp,
+                    tonalElevation = if (renewalAppearance) 0.dp else 8.dp
                 ) {
                     Column {
-                        MapSheetHeader(sheetState, sheetHeader)
+                        MapSheetHeader(sheetState, sheetHeader, renewalAppearance)
                         sheetContent()
                     }
                 }
@@ -107,7 +109,8 @@ internal fun MapSheetScaffold(
 @Composable
 private fun MapSheetHeader(
     sheetState: AnchoredDraggableState<MapSheetValue>,
-    content: (@Composable ColumnScope.() -> Unit)?
+    content: (@Composable ColumnScope.() -> Unit)?,
+    renewalAppearance: Boolean = false,
 ) {
     val scope = rememberCoroutineScope()
     val dragThreshold = with(LocalDensity.current) { 24.dp.toPx() }
@@ -149,15 +152,16 @@ private fun MapSheetHeader(
                 )
             }
     ) {
-        Box(
-            modifier = Modifier.fillMaxWidth().height(if (content == null) 48.dp else 32.dp),
+        if (!(renewalAppearance && sheetState.settledValue == MapSheetValue.Expanded)) Box(
+            modifier = Modifier.fillMaxWidth().height(if (content == null) 48.dp else if (renewalAppearance) 22.dp else 32.dp),
             contentAlignment = Alignment.Center
         ) {
             Box(
                 Modifier
+                    .offset(y = if (renewalAppearance) (-1).dp else 0.dp)
                     .width(40.dp)
                     .height(4.dp)
-                    .background(mainBlack, RoundedCornerShape(2.dp))
+                    .background(if (renewalAppearance) Color(0xFFDDDDDD) else mainBlack, RoundedCornerShape(2.dp))
             )
         }
         content?.invoke(this)

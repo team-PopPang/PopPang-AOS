@@ -5,6 +5,7 @@
 -->
 <data-extraction-rules>
     <cloud-backup>
+        <exclude domain="sharedpref" path="app_prefs.xml"/>
         <exclude domain="sharedpref" path="v2_session.xml"/>
         <exclude domain="sharedpref" path="auth_prefs.xml"/>
         <!-- TODO: Use <include> and <exclude> to control what is backed up.
@@ -13,6 +14,7 @@
         -->
     </cloud-backup>
     <device-transfer>
+        <exclude domain="sharedpref" path="app_prefs.xml"/>
         <exclude domain="sharedpref" path="v2_session.xml"/>
         <exclude domain="sharedpref" path="auth_prefs.xml"/>
     </device-transfer>

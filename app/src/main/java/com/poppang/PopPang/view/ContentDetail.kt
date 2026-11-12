@@ -11,9 +11,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Arrangement.SpaceBetween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -413,8 +415,14 @@ fun ContentDetail(
                             modifier = Modifier
                                 .padding(bottom = 5.dp)
                         )
-                        popup.recommendList.forEach { recommend ->
-                            RecommendListPlaceholder(text = recommend, modifier = Modifier)
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth().padding(end = 20.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            popup.recommendList.forEach { recommend ->
+                                RecommendListPlaceholder(text = recommend, modifier = Modifier)
+                            }
                         }
                     }
                     Column(

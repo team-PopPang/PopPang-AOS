@@ -27,3 +27,8 @@
 
 # Keep the encrypted session JSON compatible across optimized app updates.
 -keep class com.poppang.PopPang.network.StoredSession { *; }
+
+# Kakao's GenericEnumSerializer uses getDeclaredField(enum.name) at runtime.
+# Preserve SDK model fields, including error-code enum constants.
+# https://developers.kakao.com/docs/ko/android/getting-started#proguard
+-keep class com.kakao.sdk.**.model.* { <fields>; }

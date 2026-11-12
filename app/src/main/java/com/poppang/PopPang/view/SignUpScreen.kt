@@ -1,170 +1,101 @@
 package com.poppang.PopPang.view
 
-import android.widget.Toast
-
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment.Companion.BottomCenter
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.poppang.PopPang.model.LoginResponse
-import com.poppang.PopPang.ui.theme.mainGray5
-import com.poppang.PopPang.ui.theme.mainOrange
+import com.poppang.PopPang.view.renewal.RenewalSignupFlow
 import com.poppang.PopPang.viewmodel.AddKeywordViewModel
 import com.poppang.PopPang.viewmodel.CategoryItemViewModel
 import com.poppang.PopPang.viewmodel.DuplicateNickname
+import com.poppang.PopPang.viewmodel.PopularKeywordViewModel
 import com.poppang.PopPang.viewmodel.SignUpViewModel
+import com.poppang.PopPang.viewmodel.SignupNotificationViewModel
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun SignUpScreen(
-    pageCount: Int = 2,
     loginResponse: LoginResponse,
     fcmToken: String?,
     onFinish: (LoginResponse) -> Unit = {},
     nicknameViewModel: DuplicateNickname,
     keywordViewModel: AddKeywordViewModel,
-    categoryViewModel: CategoryItemViewModel
+    categoryViewModel: CategoryItemViewModel,
+    onBack: () -> Unit = {},
 ) {
-    val currentPage = remember { mutableStateOf(0) }
-    val context = LocalContext.current
-    val signUpViewModel: SignUpViewModel = viewModel()
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFFFFFFF))
-    ) {
-        Column {
-            ProgressIndicator(
-                currentPage = currentPage.value,
-                pageCount = pageCount,
-                modifier = Modifier
-                    .padding(top = 44.dp)
-            )
-            AnimatedContent(
-                targetState = currentPage.value,
-                transitionSpec = {
-                    slideInHorizontally(
-                        initialOffsetX = { fullWidth -> fullWidth },
-                        animationSpec = tween(350)
-                    ) togetherWith slideOutHorizontally(
-                        targetOffsetX = { fullWidth -> -fullWidth },
-                        animationSpec = tween(350)
-                    )
-                }
-            ) { page ->
-                when (page) {
-                    0 -> NicknameScreen(viewModel = nicknameViewModel)
-                    1 -> KeywordScreen(
-                        keywordViewModel = keywordViewModel,
-                        onSkip = {
-                            signUpViewModel.signUpUser(
-                                loginResponse = loginResponse,
-                                fcmToken = fcmToken,
-                                nicknameViewModel = nicknameViewModel,
-                                keywordViewModel = keywordViewModel,
-                                categoryViewModel = categoryViewModel
-                            ) { profile ->
-                                if (profile != null) {
-                                    onFinish(profile)
-                                } else {
-                                    Toast.makeText(context, signUpViewModel.errorMessage, Toast.LENGTH_LONG).show()
-                                    currentPage.value = 0
-                                }
-                            }
-                        }
-                    )
-                }
-            }
-        }
-        CustomButton(
-            onClick = {
-                if (signUpViewModel.isSubmitting) return@CustomButton
-                if (currentPage.value == 0) {
-                    if (nicknameViewModel.isSuccess && currentPage.value < pageCount - 1) {
-                        currentPage.value += 1
-                    }
-                } else {
-                    signUpViewModel.signUpUser(
-                        loginResponse = loginResponse,
-                        fcmToken = fcmToken,
-                        nicknameViewModel = nicknameViewModel,
-                        keywordViewModel = keywordViewModel,
-                        categoryViewModel = categoryViewModel
-                    ) { profile ->
-                                if (profile != null) {
-                                    onFinish(profile)
-                                } else {
-                                    Toast.makeText(context, signUpViewModel.errorMessage, Toast.LENGTH_LONG).show()
-                                    currentPage.value = 0
-                                }
-                            }
-                }
-                      },
-            text = if (signUpViewModel.isSubmitting) "가입 중…" else if (currentPage.value < pageCount - 1) "다음" else "시작하기",
-            modifier = Modifier
-                .align(BottomCenter)
-                .padding(
-                    bottom = WindowInsets.navigationBars.asPaddingValues()
-                        .calculateBottomPadding() + 20.dp
-                ),
-            backgroundColor = when (currentPage.value) {
-                0 -> if (nicknameViewModel.isSuccess) mainOrange else mainGray5
-                else -> mainOrange
-            }
+    val signup: SignUpViewModel = viewModel()
+    val popularKeywords: PopularKeywordViewModel = viewModel()
+    val notifications: SignupNotificationViewModel = viewModel()
+    val finishWithoutOptIn: () -> Unit = { signup.completedProfile?.let(onFinish) }
+    val notificationOptIn =
+        rememberNotificationOptIn(
+            onAllowed = { signup.completedProfile?.let { notifications.enable(it, onFinish) } },
+            onLater = finishWithoutOptIn,
+        )
+    notifications.errorMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = {
+                notifications.clearError()
+                finishWithoutOptIn()
+            },
+            title = { Text("알림 설정을 켜지 못했어요") },
+            text = { Text(message) },
+            confirmButton = {
+                TextButton(onClick = {
+                    notifications.clearError()
+                    notificationOptIn.request()
+                }) { Text("다시 시도") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    notifications.clearError()
+                    finishWithoutOptIn()
+                }) { Text("나중에") }
+            },
         )
     }
-}
-
-@Composable
-fun ProgressIndicator(currentPage: Int, pageCount: Int, modifier: Modifier) {
-    var progress by remember { mutableStateOf(0f) }
-    val targetProgress = (currentPage + 1).toFloat() / pageCount
-
-    LaunchedEffect(targetProgress) {
-        progress = targetProgress
-    }
-
-    val animatedProgress = animateFloatAsState(
-        targetValue = progress,
-        animationSpec = tween(durationMillis = 400)
-    ).value
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(3.dp)
-            .background(Color(0xFFEEEEEE))
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(animatedProgress)
-                .height(3.dp)
-                .background(mainOrange)
-        )
-    }
+    LaunchedEffect(Unit) { categoryViewModel.fetchCategoryItems(forSignup = true) }
+    LaunchedEffect(nicknameViewModel) { nicknameViewModel.recommendInitialSignupNickname() }
+    RenewalSignupFlow(
+        nickname = signup.completedProfile?.nickname ?: nicknameViewModel.nickname,
+        onNicknameChange = nicknameViewModel::onNicknameChange,
+        onExit = onBack,
+        nicknameMessage = nicknameViewModel.checkResult,
+        nicknameValid = nicknameViewModel.isSuccess,
+        nicknameError = nicknameViewModel.isError,
+        onCheckNickname = { nicknameViewModel.checkNickname(forSignup = true) },
+        onRecommendNickname = { nicknameViewModel.recommendNickname(forSignup = true) },
+        nicknameRecommending = nicknameViewModel.isRecommending,
+        nicknameChecking = nicknameViewModel.isChecking,
+        nicknameRecommendationError = nicknameViewModel.recommendationError,
+        categories = categoryViewModel.categories.map { it.recommendName },
+        selectedCategories = categoryViewModel.selectedCategories.map { it.recommendName },
+        onToggleCategory = { name ->
+            categoryViewModel.categories.firstOrNull { it.recommendName == name }?.let(categoryViewModel::toggleCategory)
+        },
+        keywords = keywordViewModel.keywordList,
+        onAddKeyword = keywordViewModel::addKeyword,
+        onRemoveKeyword = keywordViewModel::removeKeyword,
+        popularKeywords = popularKeywords.keywords,
+        popularKeywordsLoading = popularKeywords.isLoading,
+        popularKeywordsError = popularKeywords.errorMessage,
+        onKeywordStepEntered = { popularKeywords.load(forSignup = true) },
+        onRetryPopularKeywords = { popularKeywords.load(forSignup = true, force = true) },
+        // The existing server contract stays at five until the renewal API is agreed.
+        keywordLimit = 5,
+        categoryLoading = categoryViewModel.isLoading,
+        categoryError = categoryViewModel.errorMessage,
+        onRetryCategories = categoryViewModel::retryFetchCategoryItems,
+        submitting = signup.isSubmitting,
+        submitError = signup.errorMessage,
+        completed = signup.completedProfile != null,
+        starting = notifications.isEnabling || notificationOptIn.waiting,
+        onCompletedBack = finishWithoutOptIn,
+        onSubmit = { skip ->
+            signup.signUpUser(loginResponse, fcmToken, nicknameViewModel, keywordViewModel, categoryViewModel, skipKeywords = skip) {}
+        },
+        onStart = notificationOptIn.request,
+    )
 }
