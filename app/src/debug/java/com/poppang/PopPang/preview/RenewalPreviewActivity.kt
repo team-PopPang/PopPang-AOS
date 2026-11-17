@@ -23,8 +23,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -43,6 +41,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.input.pointer.pointerInput
@@ -63,6 +62,9 @@ import com.poppang.PopPang.view.renewal.RenewalIcon
 import com.poppang.PopPang.view.renewal.RenewalMapUi
 import com.poppang.PopPang.view.renewal.RenewalMarkerRenderer
 import com.poppang.PopPang.view.renewal.RenewalPopup
+import com.poppang.PopPang.view.renewal.RenewalRegionButton
+import com.poppang.PopPang.view.renewal.RenewalRegionPicker
+import com.poppang.PopPang.model.RegionsResponse
 import com.poppang.PopPang.view.renewal.RenewalSignupFlow
 import com.poppang.PopPang.view.renewal.renewalText
 import com.poppang.PopPang.view.renewal.renewalToday
@@ -154,6 +156,7 @@ private fun PreviewMap() {
     var sort by rememberSaveable { mutableStateOf("CLOSEST") }
     var region by rememberSaveable { mutableStateOf("전체") }
     var regionsOpen by remember { mutableStateOf(false) }
+    val regionFocus = LocalFocusManager.current
     val ordered =
         when (sort) {
             "NEWEST" -> popups.sortedByDescending { it.start }
@@ -163,7 +166,7 @@ private fun PreviewMap() {
     Column(Modifier.fillMaxSize().background(Color.White).systemBarsPadding()) {
         Box(Modifier.weight(1f)) {
             RenewalMapUi(
-                ordered.filter { region == "전체" || it.region == region },
+                ordered.filter { region == "전체" || it.region == region || it.region.startsWith("$region ") },
                 favorites.toSet(),
                 {
                     favorites =
@@ -178,42 +181,22 @@ private fun PreviewMap() {
                 { detailId = it },
                 onSortChanged = { sort = it },
                 regionButton = {
-                    Box {
-                        Row(
-                            Modifier.clickable { regionsOpen = true }.semantics { contentDescription = "지역 선택" },
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(region, style = renewalText(15, true).copy(letterSpacing = (-.3).sp))
-                            RenewalIcon(R.drawable.renewal_asset_b7881, size = 14.dp)
-                        }
-                        DropdownMenu(regionsOpen, { regionsOpen = false }, containerColor = Color.White) {
-                            (listOf("전체") + popups.map { it.region }.distinct()).forEach { option ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            option,
-                                            style = renewalText(13),
-                                            color =
-                                                if (region ==
-                                                    option
-                                                ) {
-                                                    mainOrange
-                                                } else {
-                                                    Color(0xFF191919)
-                                                },
-                                        )
-                                    },
-                                    onClick = {
-                                        region = option
-                                        regionsOpen = false
-                                    },
-                                    modifier = Modifier.semantics { contentDescription = "지역 $option" },
-                                )
-                            }
-                        }
+                    RenewalRegionButton(region.substringBefore(" "), regionsOpen) {
+                        regionFocus.clearFocus()
+                        regionsOpen = true
                     }
                 },
                 mapContent = { visible, selected, onSelect -> SampleMap(visible, selected, onSelect) },
+            )
+            RenewalRegionPicker(
+                visible = regionsOpen,
+                selectedRegion = region.substringBefore(" "),
+                regions = popups.groupBy { it.region.substringBefore(" ") }.map { (province, entries) ->
+                    RegionsResponse(province, listOf("전체") + entries.map { it.region.substringAfter(" ", "") }.filter(String::isNotBlank).distinct())
+                },
+                onDismiss = { regionsOpen = false },
+                onSelect = { region = it },
+                modifier = Modifier.matchParentSize(),
             )
         }
         RenewalBottomBar(2) {}

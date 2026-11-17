@@ -17,10 +17,22 @@ import kotlinx.coroutines.launch
 class AlertViewModel: ViewModel() {
     private val _popupList = MutableStateFlow<List<PopupEvent>>(emptyList())
     val alertPopupList: StateFlow<List<PopupEvent>> = _popupList
-    var alertedState by mutableStateOf(false)
+    var alertedState by mutableStateOf(true)
         private set
-    fun loadAlertStatus(isAlerted: Boolean) {
-        alertedState = isAlerted
+    private var loadedUserUuid: String? = null
+    private var hasLoadedAlertStatus = false
+
+    fun loadAlertStatus(userUuid: String, isAlerted: Boolean?) {
+        if (userUuid.isBlank()) return
+        if (loadedUserUuid != userUuid) {
+            loadedUserUuid = userUuid
+            hasLoadedAlertStatus = false
+            alertedState = true
+        }
+        if (!hasLoadedAlertStatus && isAlerted != null) {
+            alertedState = isAlerted
+            hasLoadedAlertStatus = true
+        }
     }
 
     fun AlertStatus(userUuid: String, isAlerted: Boolean) {
@@ -29,7 +41,10 @@ class AlertViewModel: ViewModel() {
                 val updated = RetrofitInstance.alertApi.updateAlertStatus(
                     body = AlertStatusResponse(isAlerted)
                 ).requireData()
-                alertedState = updated.isAlerted
+                if (loadedUserUuid == userUuid) {
+                    alertedState = updated.isAlerted
+                    hasLoadedAlertStatus = true
+                }
                 Log.e("AlertViewModel", "Alert status updated successfully to $isAlerted")
             } catch (e: Exception) {
                 Log.e("AlertViewModel", "Error updating alert status: ${e.message}")

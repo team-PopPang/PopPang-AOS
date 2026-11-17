@@ -279,7 +279,7 @@ internal fun RenewalSignupFlow(
                     }
                 }
             },
-            Modifier.padding(horizontal = 23.dp).testTag("signup-next"),
+            Modifier.padding(start = 23.dp, end = 23.dp, bottom = 16.dp).testTag("signup-next"),
             enabled = canProceed(),
         )
     }
@@ -651,7 +651,7 @@ private fun SignupComplete(
         RenewalPrimaryButton(
             if (starting) "알림 설정 확인 중…" else "알림 켜고 시작하기",
             onStart,
-            Modifier.padding(start = 20.dp, end = 26.dp),
+            Modifier.padding(start = 20.dp, end = 26.dp, bottom = 16.dp),
             enabled = !starting,
         )
     }

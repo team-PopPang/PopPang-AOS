@@ -60,6 +60,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
@@ -123,6 +124,8 @@ import com.poppang.PopPang.viewmodel.MapViewModel
 import com.poppang.PopPang.viewmodel.RegionsViewModel
 import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 import com.poppang.PopPang.viewmodel.ViewCountViewModel
+import com.poppang.PopPang.view.renewal.RenewalRegionButton
+import com.poppang.PopPang.view.renewal.RenewalRegionPicker
 import kotlinx.coroutines.launch
 
 enum class MapSheetValue {
@@ -147,6 +150,9 @@ fun MapScreen(
 ) {
     var selectedRegion by rememberSaveable { mutableStateOf("전체") }
     var selectedDistrict by rememberSaveable { mutableStateOf("전체") }
+    var showRegions by rememberSaveable { mutableStateOf(false) }
+    val regionOptions by regionsViewModel.regions.collectAsState()
+    val regionFocus = LocalFocusManager.current
     var selectedSort by rememberSaveable { mutableStateOf("CLOSEST") }
     var latitude by remember { mutableStateOf(37.5665) }
     var longitude by remember { mutableStateOf(126.9780) }
@@ -173,11 +179,10 @@ fun MapScreen(
             categories = (RenewalCategories + display.flatMap { it.categories }).distinct(),
             onSortChanged = { selectedSort = it },
             regionButton = {
-                MapLocalFilterButton(selectedRegion, { selected ->
-                    val parts = selected.split(" ", limit = 2)
-                    selectedRegion = parts.firstOrNull().orEmpty().ifBlank { "전체" }
-                    selectedDistrict = parts.getOrNull(1) ?: "전체"
-                }, regionsViewModel)
+                RenewalRegionButton(selectedRegion, showRegions) {
+                    regionFocus.clearFocus()
+                    showRegions = true
+                }
             },
         ) { visible, selectedId, onSelect ->
             LaunchedEffect(visible) {
@@ -199,6 +204,18 @@ fun MapScreen(
                 renewalMarkers = true,
             )
         }
+        RenewalRegionPicker(
+            visible = showRegions,
+            selectedRegion = selectedRegion,
+            regions = regionOptions,
+            onDismiss = { showRegions = false },
+            onSelect = { selected ->
+                val parts = selected.split(" ", limit = 2)
+                selectedRegion = parts.firstOrNull().orEmpty().ifBlank { "전체" }
+                selectedDistrict = parts.getOrNull(1) ?: "전체"
+            },
+            modifier = Modifier.matchParentSize(),
+        )
         val popup = details.firstOrNull { it.popupUuid == detailId } ?: popups.firstOrNull { it.popupUuid == detailId }
         if (showDetail && popup != null) {
             ContentDetail(

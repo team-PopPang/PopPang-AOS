@@ -1,26 +1,19 @@
 package com.poppang.PopPang.view.renewal
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.unit.dp
 import androidx.test.espresso.Espresso
 import com.poppang.PopPang.ui.theme.PopPangAOSTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import java.time.LocalDate
@@ -28,28 +21,6 @@ import java.time.LocalDate
 class RenewalDateRangeTest {
     @get:Rule val compose = createComposeRule()
     private val today = LocalDate.of(2026, 11, 3)
-
-    @Test fun anAppliedRangeScrollsFullyIntoViewOnANarrowScreen() {
-        compose.setContent {
-            PopPangAOSTheme(false) {
-                Box(Modifier.width(300.dp).testTag("shortcut-viewport")) {
-                    FilterShortcuts(
-                        RenewalMapFilters(
-                            period = PopupPeriod.Custom,
-                            start = LocalDate.of(2026, 11, 8),
-                            end = LocalDate.of(2026, 11, 12),
-                        ),
-                        RenewalCategories,
-                        {},
-                        {},
-                    )
-                }
-            }
-        }
-        val viewport = compose.onNodeWithTag("shortcut-viewport").getUnclippedBoundsInRoot()
-        val chip = compose.onNodeWithTag("map-period-chip").getUnclippedBoundsInRoot()
-        assertTrue("The complete range chip should be visible", chip.left >= viewport.left - 1.dp && chip.right <= viewport.right + 1.dp)
-    }
 
     @Test fun twoDatesConfirmTheRangeAndCloseTheCalendar() {
         val visible = mutableStateOf(true)
@@ -135,34 +106,5 @@ class RenewalDateRangeTest {
         Espresso.pressBack()
         compose.onNodeWithTag("map-date-picker").assertDoesNotExist()
         compose.runOnIdle { assertEquals(original, applied) }
-    }
-
-    @Test fun choosingDatesInTheFilterSheetStaysADraftUntilApply() {
-        var applied: RenewalMapFilters? = null
-        val start = renewalToday().withDayOfMonth(8)
-        val end = start.withDayOfMonth(12)
-        compose.setContent {
-            PopPangAOSTheme(false) {
-                RenewalFilterSheet(
-                    initial = RenewalMapFilters(),
-                    categories = RenewalCategories,
-                    popups = emptyList(),
-                    query = "",
-                    onDismiss = {},
-                    onApply = { applied = it },
-                )
-            }
-        }
-        compose.onNodeWithText("날짜 선택").performClick()
-        compose.onNodeWithTag("date-$start").performClick()
-        compose.onNodeWithTag("date-$end").performClick()
-        compose.onNodeWithTag("map-date-picker").assertDoesNotExist()
-        compose.runOnIdle { assertNull(applied) }
-        compose.onNodeWithTag("map-filter-apply").performClick()
-        compose.runOnIdle {
-            assertEquals(PopupPeriod.Custom, applied?.period)
-            assertEquals(start, applied?.start)
-            assertEquals(end, applied?.end)
-        }
     }
 }

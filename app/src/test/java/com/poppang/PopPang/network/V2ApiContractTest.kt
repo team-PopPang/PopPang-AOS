@@ -41,7 +41,12 @@ class V2ApiContractTest {
             server.respond = { ApiReply(body = completedLogin) }
             val client = OkHttpClient.Builder().addInterceptor(SessionInterceptor({ session }, signup = true)).build()
             val api = retrofit(server, client).create(UserSignUpApi::class.java)
-            val request = UserSignUpRequest("테스트", false, null, emptyList(), listOf(3L))
+            val request = UserSignUpRequest(
+                nickname = "테스트",
+                fcmToken = null,
+                alertKeywordList = emptyList(),
+                recommendList = listOf(3L),
+            )
             assertEquals(SignupStatus.COMPLETED, api.signUpWithKakao(request).body()?.requireData()?.signupStatus)
             assertEquals(SignupStatus.COMPLETED, api.signUpWithGoogle(request).body()?.requireData()?.signupStatus)
             for (provider in listOf("kakao", "google")) {
@@ -51,6 +56,7 @@ class V2ApiContractTest {
                 assertEquals("Bearer signup", recorded.authorization)
                 val json = JsonParser.parseString(recorded.body).asJsonObject
                 assertEquals("ANDROID", json["signupOs"].asString)
+                assertTrue(json["isAlerted"].asBoolean)
                 for (removed in listOf("uid", "userUuid", "provider", "email", "role")) assertFalse(json.has(removed))
             }
         }

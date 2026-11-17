@@ -75,7 +75,7 @@ class FilterMenuMotionTest {
             }
         }
         compose.onNodeWithText("카테고리").performClick()
-        compose.onNodeWithText("디저트").performClick()
+        compose.onNodeWithText("디저트 (0)").performClick()
         compose.onNodeWithText("1개 적용").assertExists()
         compose.mainClock.autoAdvance = false
         try {

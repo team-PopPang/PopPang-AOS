@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
@@ -67,7 +68,8 @@ internal fun MapSheetScaffold(
                 Surface(
                     modifier = Modifier
                         .widthIn(max = BottomSheetDefaults.SheetMaxWidth)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .testTag("map-sheet-surface"),
                     shape = if (renewalAppearance) RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp) else BottomSheetDefaults.ExpandedShape,
                     color = Color.White,
                     shadowElevation = if (renewalAppearance && sheetState.settledValue == MapSheetValue.Expanded) 0.dp else 8.dp,

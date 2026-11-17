@@ -187,10 +187,8 @@ fun MeContent(
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentContext by rememberUpdatedState(context)
 
-    LaunchedEffect(Unit) {
-        if (!alertViewModel.alertedState && (loginResponse?.isAlerted == true)) {
-            alertViewModel.loadAlertStatus(true)
-        }
+    LaunchedEffect(userUuid, loginResponse?.isAlerted) {
+        alertViewModel.loadAlertStatus(userUuid, loginResponse?.isAlerted)
     }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->

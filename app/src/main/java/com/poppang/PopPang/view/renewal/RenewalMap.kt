@@ -56,6 +56,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -69,10 +70,13 @@ import java.time.format.DateTimeFormatter
 
 private val RenewalMapFiltersSaver =
     listSaver<RenewalMapFilters, String>(
-        // Keep the legacy slot so previously saved category and date values retain their positions.
-        save = { listOf("All", it.period.name, it.start?.toString().orEmpty(), it.end?.toString().orEmpty()) + it.categories },
+        // Keep the removed filter slots so existing category selections can still be restored.
+        save = { listOf("All", "All", "", "") + it.categories },
         restore = ::restoreRenewalMapFilters,
     )
+
+internal fun renewalMapMiddleFraction(viewportHeight: Dp): Float =
+    if (viewportHeight <= 0.dp) .30f else ((viewportHeight - 446.dp) / viewportHeight).coerceIn(.30f, .65f)
 
 @Composable
 internal fun RenewalMapUi(
@@ -92,6 +96,7 @@ internal fun RenewalMapUi(
     var sort by rememberSaveable { mutableStateOf("가까운순") }
     val today = renewalToday()
     val visible = remember(popups, filters, query, today) { filters.apply(popups, query, today) }
+    val categoryCounts = remember(popups, query, today) { renewalCategoryCounts(popups, query, today) }
     val selected = visible.firstOrNull { it.id == selectedId }
     val sheet = rememberMapSheetState()
     val scope = rememberCoroutineScope()
@@ -104,7 +109,7 @@ internal fun RenewalMapUi(
     }
     Column(Modifier.fillMaxSize().background(Color.White)) {
         BoxWithConstraints(Modifier.weight(1f)) {
-            val middleFraction = ((maxHeight - 446.dp) / maxHeight).coerceIn(.30f, .65f)
+            val middleFraction = renewalMapMiddleFraction(maxHeight)
             val expandedFraction = (1f - 118.dp / maxHeight).coerceIn(.60f, .90f)
             MapSheetScaffold(
                 sheetState = sheet,
@@ -236,7 +241,9 @@ internal fun RenewalMapUi(
                         }
                     }
                 }
-                Box(Modifier.padding(start = 3.dp)) { FilterShortcuts(filters, categories, { filters = it }, { showFilter = true }) }
+                Box(Modifier.padding(start = 3.dp)) {
+                    FilterShortcuts(filters, categories, { filters = it }, { showFilter = true }, categoryCounts)
+                }
             }
             if (sheet.settledValue == MapSheetValue.Hidden) {
                 Column(

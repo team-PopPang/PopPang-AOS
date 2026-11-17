@@ -355,7 +355,7 @@ class RenewalInteractionTest {
             }
         }
         compose.onNodeWithTag("map-filters").performClick()
-        compose.onNode(hasText("캐릭터") and hasAnyAncestor(hasTestTag("map-filter-sheet"))).performClick()
+        compose.onNode(hasText("캐릭터 (1)") and hasAnyAncestor(hasTestTag("map-filter-sheet"))).performClick()
         compose.onNodeWithTag("map-filter-apply").performClick()
         compose.onNodeWithTag("map-result-count").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "1개"))
         compose.onNodeWithText("내일 캐릭터").assertIsDisplayed()

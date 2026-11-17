@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -75,6 +76,7 @@ import com.poppang.PopPang.ui.theme.mainOrange
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.HomePopupfilterViewModel
 import com.poppang.PopPang.viewmodel.RegionsViewModel
+import com.poppang.PopPang.view.renewal.RenewalRegionPicker
 import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 import com.poppang.PopPang.viewmodel.ViewCountViewModel
 import kotlinx.coroutines.launch
@@ -102,6 +104,8 @@ fun CalendarScreen(
     val coroutineScope = rememberCoroutineScope()
     var showScrollToTop by remember { mutableStateOf(false) }
     var selectedRegion by remember { mutableStateOf("전체") }
+    var showRegions by rememberSaveable { mutableStateOf(false) }
+    val regionOptions by regionsViewModel.regions.collectAsState()
     var selectedDistrict by remember { mutableStateOf("전체") }
     var selectedSort by remember { mutableStateOf("NEWEST") }
 
@@ -223,14 +227,8 @@ fun CalendarScreen(
                                 Row {
                                     CalendarLocalFilterButton(
                                         selectedRegion = selectedRegion,
-                                        onRegionSelected = { regionWithDistrict ->
-                                            val parts = regionWithDistrict.split(" ")
-                                            val region = parts.getOrNull(0) ?: "전체"
-                                            val district = parts.getOrNull(1) ?: "전체"
-                                            selectedRegion = region
-                                            selectedDistrict = district
-                                        },
-                                        regionsViewModel = regionsViewModel
+                                        onClick = { showRegions = true },
+                                        expanded = showRegions
                                     )
                                     Spacer(modifier = Modifier.width(10.dp))
                                     CalendarSortType(
@@ -404,6 +402,18 @@ fun CalendarScreen(
                     )
                 }
             }
+            RenewalRegionPicker(
+                visible = showRegions,
+                selectedRegion = selectedRegion,
+                regions = regionOptions,
+                onDismiss = { showRegions = false },
+                onSelect = { selected ->
+                    val parts = selected.split(" ", limit = 2)
+                    selectedRegion = parts.firstOrNull().orEmpty().ifBlank { "전체" }
+                    selectedDistrict = parts.getOrNull(1) ?: "전체"
+                },
+                modifier = Modifier.matchParentSize(),
+            )
         }
 
         if (showDetail && detailPopup != null) {
@@ -625,182 +635,24 @@ fun CustomCalendar(popupList: List<PopupEvent>,
 }
 
 @Composable
-fun CalendarLocalFilterButton(selectedRegion: String, onRegionSelected: (String) -> Unit, regionsViewModel: RegionsViewModel) {
-    var showSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var currentRegion by remember { mutableStateOf(selectedRegion) }
-    val regionsList by regionsViewModel.regions.collectAsState()
-    val baseMap: Map<String, List<String>> = if (regionsList.isNotEmpty()) {
-        regionsList.associate { it.region to it.districtList }
-    } else {
-        emptyMap()
-    }
-    val regionMap: Map<String, List<String>> = if (baseMap.isEmpty()) {
-        mapOf("전체" to listOf("전체"))
-    } else {
-        val ordered = linkedMapOf<String, List<String>>()
-        ordered["전체"] = listOf("전체")
-        baseMap["서울"]?.let { ordered["서울"] = it }
-        for ((k, v) in baseMap) {
-            if (k != "서울") ordered.putIfAbsent(k, v)
-        }
-        ordered
-    }
-    val regionItems = regionMap.keys.toList()
-    val subAreaList = regionMap[currentRegion] ?: listOf("전체")
-    val cellHeight = 46.dp
-    val tableHeight = (regionItems.size * 46).dp
-
+fun CalendarLocalFilterButton(selectedRegion: String, onClick: () -> Unit, expanded: Boolean = false) {
     Box(
         modifier = Modifier
-            .clickable { showSheet = true }
+            .clickable(onClick = onClick)
             .background(Color.White, RoundedCornerShape(20.dp))
             .border(0.dp, mainGray1, RoundedCornerShape(20.dp))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(horizontal = 10.dp, vertical = 8.dp)
+            .testTag("calendar-region-button"),
         contentAlignment = Alignment.Center
     ) {
         Row {
-            Text(
-                text = selectedRegion,
-                color = mainGray1,
-                style = Light10
-            )
+            Text(selectedRegion, color = mainGray1, style = Light10)
             Icon(
                 painter = painterResource(R.drawable.arrow_up),
                 contentDescription = "지역 선택",
-                modifier = Modifier
-                    .padding(start = 3.dp)
-                    .size(10.dp)
-                    .rotate(if (showSheet) 270f else 90f),
+                modifier = Modifier.padding(start = 3.dp).size(10.dp).rotate(if (expanded) 270f else 90f),
                 tint = mainGray2
             )
-        }
-    }
-    if (showSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showSheet = false },
-            sheetState = sheetState,
-            dragHandle = null,
-            containerColor = Color.White
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 28.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 28.dp, bottom = 30.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "지역",
-                        style = Bold17,
-                        color = mainBlack
-                    )
-                    Icon(
-                        painter = painterResource(id = R.drawable.close_icon),
-                        contentDescription = "닫기",
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clickable { showSheet = false },
-                        tint = mainBlack
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(mainGray3)
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(tableHeight)
-                        .background(Color.White)
-                ) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .width(65.dp)
-                            .background(mainGray4)
-                            .height(tableHeight)
-                    ) {
-                        itemsIndexed(regionItems) { idx, region ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(cellHeight)
-                                    .background(if (currentRegion == region) Color.White else mainGray4)
-                                    .clickable { currentRegion = region },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = region,
-                                    style = Medium12,
-                                    color = if (currentRegion == region) mainOrange else mainGray1
-                                )
-                            }
-                            if (idx != regionItems.lastIndex) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(1.dp)
-                                        .background(mainGray4)
-                                )
-                            }
-                        }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .fillMaxHeight()
-                            .background(mainGray5)
-                    )
-                    LazyColumn(
-                        modifier = Modifier
-                            .weight(1f)
-                            .background(Color.White)
-                            .height(tableHeight)
-                    ) {
-                        itemsIndexed(subAreaList) { idx, subArea ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(cellHeight)
-                                    .clickable {
-                                        onRegionSelected(
-                                            if (subArea == "전체") currentRegion else "$currentRegion $subArea"
-                                        )
-                                        showSheet = false
-                                    }
-                                    .padding(horizontal = 12.dp),
-                                contentAlignment = Alignment.CenterStart
-                            ) {
-                                Text(
-                                    text = subArea,
-                                    style = Medium12,
-                                    color = mainBlack
-                                )
-                            }
-                            if (idx != subAreaList.lastIndex) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(1.dp)
-                                        .background(mainGray5)
-                                )
-                            }
-                        }
-                    }
-                }
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(mainGray3)
-                )
-                Spacer(modifier = Modifier.padding(bottom = 20.dp))
-            }
         }
     }
 }

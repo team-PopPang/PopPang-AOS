@@ -35,7 +35,6 @@ class SignUpViewModel : ViewModel() {
         val provider = loginResponse.provider ?: return
         val request = UserSignUpRequest(
             nickname = nicknameViewModel.nickname.trim(),
-            isAlerted = loginResponse.isAlerted ?: false,
             fcmToken = fcmToken,
             alertKeywordList = if (skipKeywords) emptyList() else keywordViewModel.keywordList.toList(),
             recommendList = categoryViewModel.selectedCategories.map { it.id },
