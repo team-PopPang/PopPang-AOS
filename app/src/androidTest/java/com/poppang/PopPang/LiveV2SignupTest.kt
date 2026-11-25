@@ -36,8 +36,9 @@ class LiveV2SignupTest {
     @Test
     fun signupQueriesRequireAuthentication() {
         val client = OkHttpClient.Builder().callTimeout(20, TimeUnit.SECONDS).build()
-        for (path in listOf("user/nickname/duplicated?nickname=poppang_v2_probe", "recommend")) {
-            val request = Request.Builder().url(BuildConfig.V2_BASE_URL.trimEnd('/') + "/" + path).build()
+        val paths = listOf("${BuildConfig.V2_NICKNAME_CHECK_PATH}?nickname=poppang_v2_probe", BuildConfig.V2_CATEGORIES_PATH)
+        for (path in paths) {
+            val request = Request.Builder().url(RetrofitInstance.mobileBaseUrl(BuildConfig.V2_BASE_URL) + path).build()
             client.newCall(request).execute().use { response ->
                 assertEquals("GET $path", 401, response.code)
                 val error = Gson().fromJson(response.body!!.string(), ApiError::class.java)
@@ -56,13 +57,13 @@ class LiveV2SignupTest {
         val response = RetrofitInstance.signupNicknameApi.checkNickname(nickname)
         assertTrue("Nickname check HTTP ${response.code()}", response.isSuccessful)
         val result = response.body()!!.requireData()
-        report("GET user/nickname/duplicated: HTTP ${response.code()}, code=0, parsed isDuplicated=${result.isDuplicated}")
+        report("GET ${BuildConfig.V2_NICKNAME_CHECK_PATH}: HTTP ${response.code()}, code=0, parsed isDuplicated=${result.isDuplicated}")
 
         val categories = RetrofitInstance.signupCategoryApi.getCategoryItems()
         assertFalse("Server returned no signup categories", categories.isEmpty())
         assertTrue("Invalid category response", categories.all { it.id > 0 && it.recommendName.isNotBlank() })
         assertEquals(SessionStatus.SIGNING_UP, session.state.value.status)
-        report("GET recommend: HTTP 200, parsed categoryCount=${categories.size}, session=SIGNING_UP")
+        report("GET ${BuildConfig.V2_CATEGORIES_PATH}: HTTP 200, parsed categoryCount=${categories.size}, session=SIGNING_UP")
     }
 
     @Test
@@ -80,7 +81,7 @@ class LiveV2SignupTest {
         val categories = RetrofitInstance.categoryItemApi.getCategoryItems()
         assertFalse("Server returned no member categories", categories.isEmpty())
         assertEquals(SessionStatus.SIGNED_IN, session.state.value.status)
-        report("GET recommend: HTTP 200, parsed categoryCount=${categories.size}, session=SIGNED_IN")
+        report("GET ${BuildConfig.V2_CATEGORIES_PATH}: HTTP 200, parsed categoryCount=${categories.size}, session=SIGNED_IN")
     }
 
     private fun report(message: String) {

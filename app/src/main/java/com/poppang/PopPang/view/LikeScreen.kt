@@ -168,8 +168,6 @@ fun LikeScreen(
                                 },
                                 favoriteViewModel = favoriteViewModel,
                                 viewCountViewModel = viewCountViewModel,
-                                refreshTrigger = showDetail,
-                                loginResponse = loginResponse
                             )
                         }
                     }
@@ -602,10 +600,13 @@ fun LikeCalendarItem(
     onShowDetail: (PopupEvent) -> Unit,
     favoriteViewModel: FavoriteViewModel,
     viewCountViewModel: ViewCountViewModel,
-    refreshTrigger:Boolean,
-    loginResponse: LoginResponse?
 ) {
-    val userUuid = loginResponse?.userUuid.orEmpty()
+    val favoriteCounts by favoriteViewModel.favoriteCounts.collectAsState()
+    val viewCounts by viewCountViewModel.viewCounts.collectAsState()
+    LaunchedEffect(popupList) {
+        favoriteViewModel.updateCountsFromList(popupList)
+        viewCountViewModel.updateCountsFromList(popupList)
+    }
     val filteredList = if (selectedDate != null) {
         popupList.filter { popup ->
             val start = LocalDate.parse(popup.startDate)
@@ -648,17 +649,8 @@ fun LikeCalendarItem(
             ) {
                 Column {
                     filteredList.forEach { popup ->
-                        var favoriteCount by remember { mutableStateOf(0L) }
-                        var viewCount by remember { mutableStateOf(0L) }
-
-                        LaunchedEffect(popup.popupUuid,refreshTrigger) {
-                            favoriteViewModel.getFavoriteCount(userUuid,popup.popupUuid) { count ->
-                                favoriteCount = count
-                            }
-                            viewCountViewModel.getTotalViewCount(userUuid,popup.popupUuid) { count ->
-                                viewCount = count
-                            }
-                        }
+                        val favoriteCount = favoriteCounts[popup.popupUuid] ?: popup.favoriteCount
+                        val viewCount = viewCounts[popup.popupUuid] ?: popup.viewCount
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()

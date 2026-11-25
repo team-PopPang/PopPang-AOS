@@ -29,9 +29,13 @@ object RetrofitInstance {
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
-    private val publicV2 by lazy { retrofit(BuildConfig.V2_BASE_URL, publicClient) }
-    private val accessV2 by lazy { retrofit(BuildConfig.V2_BASE_URL, accessClient) }
-    private val signupV2 by lazy { retrofit(BuildConfig.V2_BASE_URL, signupClient) }
+    internal fun mobileBaseUrl(v2BaseUrl: String) =
+        v2BaseUrl.trimEnd('/') + "/" + BuildConfig.V2_MOBILE_PATH.trimEnd('/') + "/"
+
+    private val mobileUrl by lazy { mobileBaseUrl(BuildConfig.V2_BASE_URL) }
+    private val publicV2 by lazy { retrofit(mobileUrl, publicClient) }
+    private val accessV2 by lazy { retrofit(mobileUrl, accessClient) }
+    private val signupV2 by lazy { retrofit(mobileUrl, signupClient) }
     private val admin by lazy { retrofit(BuildConfig.ADMIN_BASE_URL, publicClient) }
 
     val authApi: AuthApi by lazy { publicV2.create(AuthApi::class.java) }
@@ -44,14 +48,11 @@ object RetrofitInstance {
     val categoryItemApi: CategoryItemApi by lazy { accessV2.create(CategoryItemApi::class.java) }
     val signupCategoryApi: CategoryItemApi by lazy { signupV2.create(CategoryItemApi::class.java) }
     val adminPopupApi: AdminPopupApi by lazy { admin.create(AdminPopupApi::class.java) }
-    val popupProgressApi: PopupProgressApi by lazy { accessV2.create(PopupProgressApi::class.java) }
     val popupComingApi: PopupComingApi by lazy { accessV2.create(PopupComingApi::class.java) }
     val popupApi: PopupApi by lazy { accessV2.create(PopupApi::class.java) }
     val searchApi: SearchApi by lazy { accessV2.create(SearchApi::class.java) }
     val keywordApi: KeywordApi by lazy { accessV2.create(KeywordApi::class.java) }
     val favoriteApi: FavoriteApi by lazy { accessV2.create(FavoriteApi::class.java) }
-    val favoriteCountApi: FavoriteCountApi by lazy { accessV2.create(FavoriteCountApi::class.java) }
-    val viewCountApi: ViewCountApi by lazy { accessV2.create(ViewCountApi::class.java) }
     val viewCountIncrementApi: ViewCountIncrementApi by lazy { accessV2.create(ViewCountIncrementApi::class.java) }
     val fcmTokenApi: FcmTokenApi by lazy { accessV2.create(FcmTokenApi::class.java) }
     val alertApi: AlertApi by lazy { accessV2.create(AlertApi::class.java) }
@@ -59,7 +60,10 @@ object RetrofitInstance {
     val userDrawApi: UserDrawApi by lazy { accessV2.create(UserDrawApi::class.java) }
     val changeNicknameApi: ChangeNicknameApi by lazy { accessV2.create(ChangeNicknameApi::class.java) }
     val userDataApi: UserDataApi by lazy { accessV2.create(UserDataApi::class.java) }
-    val recommendPopupApi: RecommendPopupApi by lazy { accessV2.create(RecommendPopupApi::class.java) }
+    val recommendPopupApi: RecommendPopupApi by lazy {
+        // Interest-based home recommendations retain the V2 route pending the product decision.
+        retrofit(BuildConfig.V2_BASE_URL, accessClient).create(RecommendPopupApi::class.java)
+    }
     val homePopupFilterApi: HomePopupfilterApi by lazy { accessV2.create(HomePopupfilterApi::class.java) }
     val alertPopupApi: AlertPopupApi by lazy { accessV2.create(AlertPopupApi::class.java) }
     val mapPopupFilterApi: MapPopupfilterApi by lazy { accessV2.create(MapPopupfilterApi::class.java) }

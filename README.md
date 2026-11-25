@@ -2,16 +2,41 @@
 <img width="1024" height="500" alt="그래핀디자인" src="https://github.com/user-attachments/assets/24b8fe0b-798c-45e6-b10b-b9d861bdecfa" />
 # React Native integration
 
-The React Native screens are distributed from `PopPang-RN` as a prebuilt Android SDK and a JavaScript bundle. Install the matching release artifacts before building the Android app:
+팝업 제보·제보 관리 화면은 `PopPang-RN`의 Nativepiece Android SDK `1.6.0`을 사용한다. SDK와 Compose 모듈의 버전은 `gradle/libs.versions.toml`에서 함께 관리한다. RN 소스는 AOS에서 수정하지 않는다.
+
+GitHub Packages 인증 없이 사용할 때는 전체 로컬 Maven 저장소가 들어 있는 Android SDK ZIP을 설치한다. `repository/com/poppang/...` 구조의 SDK·Compose·네이티브 모듈이 모두 필요하다. AAR 하나만 복사하면 네이티브 모듈 의존성이 빠진다.
 
 ```powershell
-.\scripts\install-rn-android.ps1 v0.1.0
+.\scripts\install-rn-nativepiece.ps1 -Archive <SDK-ZIP-경로> -Version 1.6.0 -Sha256 <배포된-SHA256>
+.\gradlew.bat :app:assembleDebug
+```
+
+설치 스크립트는 이전 버전의 별도 JS 번들과 이미지 중 Git에서 관리하지 않는 파일을 `build/`에 백업한다. 로컬 저장소·SDK ZIP·빌드 작업 폴더는 Git에 추가하지 않는다. RN 원본을 수정하지 않고 별도 복사본에서 SDK를 빌드해도 같은 ZIP으로 설치할 수 있다.
+
+GitHub Packages에서 직접 받을 때만 `read:packages` 권한의 계정과 토큰을 사용자 홈의 `.gradle/gradle.properties`에 설정한다. 이 파일과 토큰은 저장소에 추가하지 않는다.
+
+```properties
+gpr.user=YOUR_GITHUB_USERNAME
+gpr.key=YOUR_GITHUB_PACKAGES_READ_TOKEN
+```
+
+CI에서는 `GITHUB_ACTOR`, `GITHUB_TOKEN` 환경 변수를 사용할 수 있다. 인증을 설정한 경우에만 GitHub Packages 저장소를 추가한다. 새 SDK는 JS 번들과 이미지 리소스를 패키지에 포함하므로 이전 버전용 `install-rn-android.ps1`과 별도 `index.android.bundle` 설치는 사용하지 않는다.
+
+```powershell
 .\gradlew.bat :app:assembleDebug
 ```
 
 The Android build requires JDK 17 or newer. In Android Studio, select a compatible Gradle JDK before syncing.
 
-The generated Maven repository under `Vendor/PopPangRN` and `app/src/main/assets/index.android.bundle` are local build artifacts and are intentionally excluded from Git. When the RN release version changes, update both the install command and the `com.poppang:poppang-rn-android` version in `app/build.gradle.kts`.
+`PopPangRnActivity`가 처음 열릴 때 SDK를 한 번 초기화한다. 제보 완료 이벤트는 기존 메인 화면에 결과를 돌려주며, RN의 닫기와 시스템 뒤로가기는 이 Activity를 닫는다. 로그아웃·계정 전환 때도 이전 계정의 RN 화면을 닫는다. Intent에는 화면 종류와 사용자 UUID만 전달하고 토큰은 넣지 않는다.
+
+`react-native-screens`가 Application Context에서 AppCompat 위젯을 초기화하므로 Application 테마에도 `Theme.PopPangReactNative`를 선언하고 SDK 초기화 직전에 `Application.setTheme`으로 적용한다. `MainActivity`는 명시된 `Theme.PopPangAOS`를 사용한다.
+
+RN 전용 Activity는 `AppCompatActivity`로 Fragment를 지원하고, `RNScreensFragmentFactory`를 등록해 화면 재생성을 처리한다. 시스템 사진 선택 결과는 현재 RN 화면에 전달해 제보 이미지 첨부를 완료한다.
+
+팝업 표시 순서는 서버 응답을 그대로 사용한다. 메인·캘린더는 `homeSortStandard`, 지도는 `mapSortStandard`로 선택한 조건을 서버에 보내며, 추천 배너·오픈 예정·관련 팝업도 응답을 시작일로 다시 정렬하지 않는다. 카테고리·검색·선택 날짜로 목록을 거를 때도 남은 팝업의 상대 순서는 유지한다.
+
+RN이 `getAccessToken`을 호출하면 `PopPangRnBridge`가 별도 작업 스레드에서 AOS의 `SessionManager`를 사용한다. 401을 받은 토큰이 이미 교체됐다면 새 토큰을 반환하고, 만료(서버 코드 5002)라면 네이티브 API와 같은 갱신 작업을 공유한다. 유효하지 않은 현재 토큰은 로그아웃 처리하며, 네트워크·서버 장애는 `temporary_failure`로 전달한다. 인증 정보는 로그나 오류 메시지에 포함하지 않는다.
 
 ## 배포 빌드 최적화
 
@@ -43,13 +68,13 @@ Figma `팝팡 리뉴얼 최종` (`asdKpjfFHPVtvKvDT3mMLs`, `2467:10300`) 기준�
 
 신규 회원가입의 키워드 알림 기본값은 `isAlerted: true`이며 카카오·구글 가입 요청에 동일하게 전송한다. 키워드 입력을 건너뛰어도 기본 수신 설정은 켜짐이다. 마이 화면은 기본 켜짐으로 시작하고 사용자 정보가 도착하면 저장된 ON/OFF 값을 반영한다. 화면 재진입 시 오래된 프로필 값이 현재 설정을 덮어쓰지 않으며 계정이 바뀌면 해당 계정의 값을 다시 불러온다.
 
-가입 완료의 `알림 켜고 시작하기`는 OS 알림 권한을 다시 확인하고, 권한이 없으면 재요청한다. 재요청이 막혔거나 시스템에서 알림을 차단한 경우 앱 알림 설정으로 안내한다. 실제 허용을 확인한 뒤 설정 화면과 같은 `PATCH /api/v2/user/alert-status`에 Access Token과 `{"isAlerted":true}`를 보내고, 저장된 ON 상태를 메인에 전달한다. 권한 거절·뒤로가기·`나중에`는 OS 권한을 부여하지 않고 계속하며, 저장 오류는 재시도하거나 나중에 계속할 수 있다. 서버의 키워드 알림 설정이 켜져 있어도 OS에서 알림을 차단하면 실제 알림은 표시되지 않는다. 요청 중 중복 탭을 막는다. 별도 UI 미리보기에서는 OS 권한 흐름만 확인하며 실제 계정의 알림 API를 호출하지 않는다.
+가입 완료의 `알림 켜고 시작하기`는 OS 알림 권한을 다시 확인하고, 권한이 없으면 재요청한다. 재요청이 막혔거나 시스템에서 알림을 차단한 경우 앱 알림 설정으로 안내한다. 실제 허용을 확인한 뒤 설정 화면과 같은 `PATCH /api/v2/mobile/user/alert-status`에 Access Token과 `{"isAlerted":true}`를 보내고, 저장된 ON 상태를 메인에 전달한다. 권한 거절·뒤로가기·`나중에`는 OS 권한을 부여하지 않고 계속하며, 저장 오류는 재시도하거나 나중에 계속할 수 있다. 서버의 키워드 알림 설정이 켜져 있어도 OS에서 알림을 차단하면 실제 알림은 표시되지 않는다. 요청 중 중복 탭을 막는다. 별도 UI 미리보기에서는 OS 권한 흐름만 확인하며 실제 계정의 알림 API를 호출하지 않는다.
 
-닉네임 추천은 `GET /api/v2/user/nickname/recommendation`을 호출한다. 가입 화면에 처음 진입하면 Signup Token으로 추천을 받아 빈 닉네임 입력칸을 채운다. 이미 입력한 값은 화면 재생성·재진입 시 유지한다. 서버에서 받은 수식어+동물 닉네임은 예약이 아니므로 기존 중복확인과 가입 시 서버 검사를 거친다. HTTP 503 / code 4208 또는 네트워크 오류 시 입력값을 보존하고 재시도·직접 입력을 허용한다. 응답을 기다리는 동안 사용자가 수정한 닉네임은 늦은 추천 응답으로 덮어쓰지 않는다.
+닉네임 추천은 `GET /api/v2/mobile/user/nickname/recommendation`을 호출한다. 가입 화면에 처음 진입하면 Signup Token으로 추천을 받아 빈 닉네임 입력칸을 채운다. 이미 입력한 값은 화면 재생성·재진입 시 유지한다. 서버에서 받은 수식어+동물 닉네임은 예약이 아니므로 기존 중복확인과 가입 시 서버 검사를 거친다. HTTP 503 / code 4208 또는 네트워크 오류 시 입력값을 보존하고 재시도·직접 입력을 허용한다. 응답을 기다리는 동안 사용자가 수정한 닉네임은 늦은 추천 응답으로 덮어쓰지 않는다.
 
-키워드 단계에 진입하면 `GET /api/v2/alert-keyword/popular`로 전체 사용자 기준 인기 키워드를 조회한다. 카테고리별 추천이 아니며 서버 순서대로 최대 6개를 표시한다. 정상 빈 목록은 빈 상태로 처리하고, 조회 실패는 직접 입력·가입을 막지 않으며 재시도할 수 있다. 두 API 모두 query/body가 없고 가입 중에는 요청 시점의 최신 Signup Token, 가입 후에는 Access Token을 사용하는 클라이언트를 제공한다. 미리보기에서는 계정 없이 확인할 수 있도록 고정 샘플을 사용한다.
+키워드 단계에 진입하면 `GET /api/v2/mobile/alert-keyword/popular`로 전체 사용자 기준 인기 키워드를 조회한다. 카테고리별 추천이 아니며 서버 순서대로 최대 6개를 표시한다. 정상 빈 목록은 빈 상태로 처리하고, 조회 실패는 직접 입력·가입을 막지 않으며 재시도할 수 있다. 두 API 모두 query/body가 없고 가입 중에는 요청 시점의 최신 Signup Token, 가입 후에는 Access Token을 사용하는 클라이언트를 제공한다. 미리보기에서는 계정 없이 확인할 수 있도록 고정 샘플을 사용한다.
 
-지도 필터는 카테고리만 제공하며, 상단 메뉴와 전체 필터 시트에서 상태·기간 선택을 제거했다. 이전에 저장된 상태·기간·날짜는 복원 시 무시하고 선택한 카테고리만 유지한다. 동일한 필터 결과를 마커·목록·결과 수에 사용하며 검색 0건을 일반 목록으로 바꾸지 않는다. 필터 시트의 선택은 적용 버튼을 눌렀을 때 반영하고, 닫으면 취소한다. 현재 API가 반환한 데이터에서만 검색·카테고리를 필터링하므로 실제 서버의 오픈 예정 결과를 확장한 것으로 해석하면 안 된다. 기존 지역·정렬·좌표 조회와 찜·상세 API는 유지한다.
+지도 필터는 카테고리만 제공하며, 상단 메뉴와 전체 필터 시트에서 상태·기간 선택을 제거했다. 이전에 저장된 상태·기간·날짜는 복원 시 무시하고 선택한 카테고리만 유지한다. 동일한 필터 결과를 마커·목록·결과 수에 사용하며 검색 0건을 일반 목록으로 바꾸지 않는다. 필터 시트의 선택은 적용 버튼을 눌렀을 때 반영하고, 닫으면 취소한다. 지도 조회에 선택한 카테고리 ID(`recommendIds`)와 이름·주소 검색어(`q`)를 보내고, 서버가 반환한 순서와 첫 번째 카테고리를 목록과 배지에 사용한다.
 
 카테고리 메뉴와 전체 필터의 항목명 옆에는 `디저트 (12)`처럼 로컬 팝업 개수를 표시한다. 현재 지역·좌표 조회로 불러온 목록에서 검색어와 종료 여부를 반영하고, 선택된 카테고리로 좁히기 전의 데이터를 센다. 여러 카테고리에 속한 팝업은 각 카테고리에 한 번씩 포함하며 같은 팝업에 동일한 카테고리가 반복돼도 중복 집계하지 않는다. 결과가 없는 카테고리는 `(0)`으로 표시하고 목록·검색어 변경 시 다시 계산한다. 개수 표시를 위한 추가 API는 호출하지 않는다.
 
@@ -70,19 +95,23 @@ RN 소스·SDK·JS 번들은 이번 리뉴얼의 변경 대상이 아니다.
 
 ## AOS V2 API 전환
 
-AOS의 일반 사용자 API는 V2를 사용한다. `local.properties`의 `V2_BASE_URL`을 설정하면 해당 주소를 쓰고, 생략하면 운영 주소 `https://api.poppang.co.kr/api/v2/`를 사용한다. V1 `BASE_URL`로부터 주소를 만드는 호환 처리와 사용하지 않는 V1 API별 BuildConfig 필드는 제거했다. 기존 로컬 파일의 해당 키들은 더 이상 읽지 않는다. 이미지 주소 `URL_IMAGE`와 SDK 키는 별도 로컬 설정을 유지한다. 실제 엔드포인트 경로는 `network/`의 인터페이스에 명시한다.
+RN SDK 1.6.0은 제보·제보 관리 화면에서 카테고리를 `GET /api/v2/mobile/recommend`로 조회하고, 제보를 `POST /api/v2/mobile/popup-submissions`로 등록한다. 관리자 제보 조회와 심사는 기존 관리자 경로를 사용한다.
+
+AOS 네이티브 API의 운영 기본값은 `api-endpoints.properties`에 있다. 경로를 바꾸려면 원하는 키를 루트 `local.properties`에 지정하고 앱을 다시 빌드한다. 예를 들어 `V2_POPUP_SEARCH_PATH=user/popups/search`는 팝업 검색 경로를 지정한다. 로컬에 없는 키는 운영 기본값을 사용한다.
+
+일반 API 주소는 `V2_BASE_URL`(기본값 `https://api.poppang.co.kr/api/v2/`), `V2_MOBILE_PATH`(기본값 `mobile`), 개별 경로 순으로 조합한다. 홈 관심사 추천의 `V2_HOME_RECOMMENDATIONS_PATH`는 `V2_BASE_URL` 바로 아래에 붙는다. 개별 경로는 앞에 `/` 없이 작성하고 팝업 상세처럼 경로에 `{popupUuid}`가 있으면 그대로 둔다. 관리자 API는 기존 `ADMIN_BASE_URL`과 `POPUP_DEACTIVATE_API`로 관리한다.
 
 팝업 이미지가 상대 경로이면 `URL_IMAGE`와 경로 사이의 `/`를 하나로 맞춰 요청한다. 예를 들어 `https://poppang.co.kr/`와 `/images/...`를 합칠 때 `//images/...`가 되면 서버가 404를 반환한다. 완전한 `http://`·`https://` 이미지 URL은 그대로 사용한다. `LivePopupImageTest`는 `liveImages=true`, `imagePath=/images/...` 실행 인자를 명시했을 때만 앱과 같은 Coil 로더로 실제 서버 이미지 로딩·디코딩을 검증한다.
 
 지도는 최근 위치를 먼저 표시하고 최신 위치를 별도로 갱신한다. 화면의 5초 간격 위치 수집은 제거하고 지도 SDK의 위치 변경과 같은 좌표 상태를 사용한다. 최초 위치 또는 ‘내 위치’ 버튼 요청에는 바로 카메라를 이동하고, 버튼을 누를 때마다 SDK의 `Follow` 모드를 복구한다. 지도를 직접 옮기거나 팝업을 선택하면 대기 중인 자동 이동을 취소하며, 오래된 캐시 응답은 최신 위치를 덮어쓰지 않는다. 팝업 목록의 거리 기준은 50m 이상 이동했을 때 갱신한다. `MapLocationInteractionTest`는 `liveMap=true` 인자를 명시한 실기기에서 최초 이동과 버튼 반복 동작을 검증한다.
 
-캘린더 카드는 목록의 `favoriteCount`·`viewCount`를 즉시 표시하며 스크롤이나 상세 닫기로 항목별 카운트 API를 호출하지 않는다. 상세 조회와 관심 등록·해제 후 확인한 수치는 공유 상태로 목록에도 전달한다. 관심 수 조회의 300ms 대기를 제거하고 쓰기 성공 후 수치를 갱신한다. 조회수 기록 후 누적 조회수도 성공 순서대로 조회하되, 서버가 Redis 증가분을 DB에 반영하기 전에는 누적값이 그대로일 수 있다(명세상 약 60초 주기). 실패 시 기존 수치를 0으로 바꾸지 않는다. `CalendarCountInteractionTest`는 가짜 API와 40개 카드로 반복 스크롤 시 추가 요청이 없고 갱신된 수치가 유지되는지 검사한다.
+캘린더 카드는 목록의 `favoriteCount`·`viewCount`를 즉시 표시하며 스크롤이나 상세 닫기로 항목별 카운트 API를 호출하지 않는다. 상세 조회와 관심 등록·해제 후 확인한 수치는 공유 상태로 목록에도 전달한다. 관심 등록 후에는 찜 목록에서, 해제 후에는 팝업 상세에서 서버가 반환한 수치를 받는다. 상세 진입 시 조회를 기록하고 다음 목록·상세 응답의 누적값을 표시한다. 실패 시 기존 수치를 0으로 바꾸지 않는다. `CalendarCountInteractionTest`는 가짜 API와 40개 카드로 반복 스크롤 시 추가 요청이 없고 갱신된 수치가 유지되는지 검사한다.
 
 가입 전 닉네임 확인(`user/nickname/duplicated`)과 관심 카테고리 목록 조회(`recommend`)도 V2를 사용한다. 서버팀의 최신 계약에 따라 가입 중에는 Signup Token을 보내며, 가입 후에는 같은 API에 Access Token을 보낸다. 기존 마이그레이션 명세의 가입 전 조회 제한은 이 계약으로 대체한다.
 
 카카오·구글 로그인은 `signupStatus`로 가입 대기와 완료를 구분한다. 회원가입에는 Signup Token과 `signupOs: "ANDROID"`를 보내며, 성공 응답의 사용자 정보와 Access·Refresh Token을 저장한다. V1 UUID만 저장된 기존 사용자는 소셜 로그인을 다시 해야 한다.
 
-로그인·자동 로그인·가입 완료 후 처음 메인 화면에 진입하면 Access Token으로 `PATCH /api/v2/user/signup-os`에 `{"signupOs":"ANDROID"}`를 비동기 전송한다. 성공 응답은 본문 없는 200이다. 기존 OS 유무는 서버가 판단한다. Activity 범위의 `UserDataViewModel`이 호출 시도를 기억해 화면 재진입·회전·재로그인 시 같은 실행에서 중복 호출하지 않는다. 네트워크·서버 오류는 화면 진입을 막지 않으며 즉시 재시도하지 않는다. 시도 여부를 영구 저장하지 않아 다음 앱 실행에서는 다시 호출한다.
+로그인·자동 로그인·가입 완료 후 처음 메인 화면에 진입하면 Access Token으로 `PATCH /api/v2/mobile/user/signup-os`에 `{"signupOs":"ANDROID"}`를 비동기 전송한다. 성공 응답은 본문 없는 200이다. 기존 OS 유무는 서버가 판단한다. Activity 범위의 `UserDataViewModel`이 호출 시도를 기억해 화면 재진입·회전·재로그인 시 같은 실행에서 중복 호출하지 않는다. 네트워크·서버 오류는 화면 진입을 막지 않으며 즉시 재시도하지 않는다. 시도 여부를 영구 저장하지 않아 다음 앱 실행에서는 다시 호출한다.
 
 온보딩 완료 기록인 `app_prefs.xml`은 클라우드 백업·기기 이전 대상에서 제외한다. Android 11 이하의 `backup_rules.xml`과 Android 12 이상의 `data_extraction_rules.xml` 양쪽에 적용해, 새 설치가 이전 완료 기록을 복원해 온보딩을 건너뛰지 않게 한다. 기존 앱의 업데이트에서는 완료 기록을 유지한다.
 
@@ -90,7 +119,11 @@ JWT는 Android Keystore로 암호화해 저장하고 백업·기기 이전에서
 
 로그아웃은 서버의 성공 응답을 확인한 뒤 로컬 세션을 지운다. 실패하면 로그인 상태를 유지하고 재시도를 안내한다. 회원탈퇴는 V2의 계정 비활성화이며, 같은 소셜 계정의 재가입은 지원하지 않는다. 로그아웃 API는 서버의 FCM 토큰을 삭제하지 않으므로 로그아웃 이후 푸시 정책은 서버와 별도로 정해야 한다.
 
-RN V2 전환은 보류했다. RN SDK `0.1.0`, JS 번들, 팝업 제보·제보 관리의 기존 V1 호출을 유지한다. AOS는 V2 로그인·가입 응답의 사용자 UUID를 기존 RN 진입 인자로 전달한다. AOS 안의 관리자 팝업 비활성화도 아직 `ADMIN_BASE_URL`과 `POPUP_DEACTIVATE_API`를 사용하는 V1 예외다. 해당 V2 계약이 없으므로 기능을 삭제하거나 경로만 임의로 바꾸지 않았다.
+RN SDK `1.6.0`의 팝업 제보·제보 관리·카테고리 조회는 호스트 앱의 Access Token으로 V2 API를 사용한다. AOS 안의 관리자 팝업 비활성화는 아직 `ADMIN_BASE_URL`과 `POPUP_DEACTIVATE_API`를 사용하는 V1 예외다. 해당 V2 계약이 없으므로 기능을 삭제하거나 경로만 임의로 바꾸지 않았다.
+
+`RnAccessTokenProviderTest`는 RN 토큰 요청·회전·기존 네이티브 요청과의 갱신 공유·로그아웃·계정 전환·일시 장애를 검증한다. `RnSdkIntegrationTest`는 SDK 버전·번들·화면 계약·Intent의 토큰 미포함을 기기에서 검사한다. 실서버 제보 화면 조회와 시스템 뒤로가기는 로그인한 테스트 계정과 잠금 해제된 기기에서 `-e liveRn true`로 명시 실행한다. 제보 등록·승인·반려는 자동으로 요청하지 않는다.
+
+`RnSdkSurfaceTest`는 별도 `.rnsdktest` 앱에서 실제 RN 제보·관리 화면의 호스트 호출, 화면 재생성, 닫기를 검사한다. `ServerPopupOrderTest`는 시작일과 반대인 서버 우선순위가 추천·오픈 예정·관련 팝업 화면에서도 유지되는지 검사한다.
 
 검증은 JDK 21과 Android SDK 36 환경에서 수행한다. `:app:testDebugUnitTest`에는 토큰 회전·동시 요청·로그아웃·계정 전환, 실제 로컬 HTTP 요청을 통한 가입 전·후 토큰 구분과 V2 요청/응답 계약 검증이 포함된다. 실제 소셜 로그인·Keystore·푸시는 기기에서 별도로 확인한다.
 

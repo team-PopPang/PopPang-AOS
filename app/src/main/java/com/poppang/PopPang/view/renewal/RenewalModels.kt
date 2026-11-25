@@ -17,6 +17,8 @@ internal data class RenewalPopup(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val isFavorited: Boolean = false,
+    val address: String = region,
+    val categoryColor: String? = null,
 ) {
     fun status(today: LocalDate): String =
         when {
@@ -42,7 +44,7 @@ internal data class RenewalMapFilters(
             val categoryMatches = categories.isEmpty() || popup.categories.any { it in categories }
             val notExpired = !popup.end.isBefore(today)
             val queryMatches =
-                search.isEmpty() || (listOf(popup.name, popup.region) + popup.categories).any { it.contains(search, ignoreCase = true) }
+                search.isEmpty() || popup.name.contains(search, ignoreCase = true) || popup.address.contains(search, ignoreCase = true)
             categoryMatches && notExpired && queryMatches
         }
     }
@@ -62,7 +64,7 @@ internal fun renewalCategoryCounts(
         .groupingBy { it }
         .eachCount()
 
-internal fun PopupEvent.toRenewalPopup(): RenewalPopup? {
+internal fun PopupEvent.toRenewalPopup(categoryColors: Map<String, String?> = emptyMap()): RenewalPopup? {
     val start = runCatching { LocalDate.parse(startDate.take(10)) }.getOrNull() ?: return null
     val end = runCatching { LocalDate.parse(endDate.take(10)) }.getOrNull() ?: return null
     return RenewalPopup(
@@ -76,6 +78,8 @@ internal fun PopupEvent.toRenewalPopup(): RenewalPopup? {
         latitude,
         longitude,
         isFavorited,
+        address,
+        categoryColors[recommendList.firstOrNull()],
     )
 }
 

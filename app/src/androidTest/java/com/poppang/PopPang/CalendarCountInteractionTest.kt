@@ -6,14 +6,11 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollToIndex
 import com.poppang.PopPang.model.ApiResponse
-import com.poppang.PopPang.model.FavoriteCountResponse
 import com.poppang.PopPang.model.FavoriteRequest
 import com.poppang.PopPang.model.PopupEvent
-import com.poppang.PopPang.model.ViewCountResponse
+import com.poppang.PopPang.network.SelectPopupApi
 import com.poppang.PopPang.network.FavoriteApi
-import com.poppang.PopPang.network.FavoriteCountApi
 import com.poppang.PopPang.network.HomePopupfilterApi
-import com.poppang.PopPang.network.ViewCountApi
 import com.poppang.PopPang.network.ViewCountIncrementApi
 import com.poppang.PopPang.view.CalendarScreen
 import com.poppang.PopPang.viewmodel.FavoriteViewModel
@@ -36,7 +33,7 @@ class CalendarCountInteractionTest {
     fun recycledCardsDisplayListAndUpdatedCountsWithoutExtraRequests() {
         val api = CalendarTestApi()
         val favorites = FavoriteViewModel(api, api)
-        val views = ViewCountViewModel(api, api)
+        val views = ViewCountViewModel(api)
         val home = HomePopupfilterViewModel(api)
         val selected = SelectPopupViewModel()
         val regions = RegionsViewModel()
@@ -70,18 +67,19 @@ class CalendarCountInteractionTest {
         assertEquals(0, api.writeRequests.get())
 
         composeRule.runOnIdle {
-            favorites.getFavoriteCount("test", "popup-0") {}
-            views.getTotalViewCount("test", "popup-0") {}
+            val detail = listOf(api.popups.first().copy(favoriteCount = 33_333, viewCount = 44_444))
+            favorites.updateCountsFromList(detail)
+            views.updateCountsFromList(detail)
         }
         scrollToCard(0, 33_333, 44_444)
         scrollToCard(39, 9_039, 10_039)
         scrollToCard(0, 33_333, 44_444)
-        assertEquals(2, api.countRequests.get())
+        assertEquals(0, api.countRequests.get())
         assertEquals(0, api.writeRequests.get())
     }
 }
 
-private class CalendarTestApi : HomePopupfilterApi, FavoriteApi, FavoriteCountApi, ViewCountApi, ViewCountIncrementApi {
+private class CalendarTestApi : HomePopupfilterApi, FavoriteApi, SelectPopupApi, ViewCountIncrementApi {
     val listRequests = AtomicInteger()
     val countRequests = AtomicInteger()
     val writeRequests = AtomicInteger()
@@ -115,14 +113,9 @@ private class CalendarTestApi : HomePopupfilterApi, FavoriteApi, FavoriteCountAp
         return popups
     }
 
-    override suspend fun getFavoriteCheck(popupUuid: String): ApiResponse<FavoriteCountResponse> {
+    override suspend fun getSelectPopup(popupUuid: String): PopupEvent {
         countRequests.incrementAndGet()
-        return ApiResponse(true, 0, null, FavoriteCountResponse(33_333))
-    }
-
-    override suspend fun getTotalViewCount(popupUuid: String): ViewCountResponse {
-        countRequests.incrementAndGet()
-        return ViewCountResponse(44_444)
+        return popups.first { it.popupUuid == popupUuid }
     }
 
     override suspend fun getFavoriteUserCheck(): ApiResponse<List<PopupEvent>> {

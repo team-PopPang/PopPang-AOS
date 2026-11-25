@@ -95,7 +95,9 @@ import com.naver.maps.map.overlay.Marker
 import com.naver.maps.map.overlay.Overlay
 import com.naver.maps.map.overlay.OverlayImage
 import com.poppang.PopPang.R
-import com.poppang.PopPang.view.renewal.RenewalCategories
+import com.poppang.PopPang.model.CategoryItem
+import com.poppang.PopPang.viewmodel.MapArea
+import kotlinx.coroutines.delay
 import com.poppang.PopPang.view.renewal.RenewalMapUi
 import com.poppang.PopPang.view.renewal.RenewalMarkerRenderer
 import com.poppang.PopPang.view.renewal.renewalText
@@ -137,13 +139,11 @@ enum class MapSheetValue {
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
 fun MapScreen(
-    popupprogressList: List<PopupEvent>,
     showDetail: Boolean = false,
     setShowDetail: (Boolean) -> Unit,
     loginResponse: LoginResponse?,
     favoriteViewModel: FavoriteViewModel,
     mapviewmodel: MapViewModel = viewModel(),
-    viewCountViewModel: ViewCountViewModel = viewModel(),
     regionsViewModel: RegionsViewModel,
     mapPopupfilterViewModel: MapPopupfilterViewModel = viewModel(),
     selectPopupViewModel: SelectPopupViewModel,
@@ -158,25 +158,54 @@ fun MapScreen(
     var longitude by remember { mutableStateOf(126.9780) }
     var lastQueryLocation by remember { mutableStateOf<Location?>(null) }
     var detailId by rememberSaveable { mutableStateOf<String?>(null) }
-    val popups by mapPopupfilterViewModel.mapPopupfilterList.collectAsState()
     val favorites by favoriteViewModel.favoritePopupUuids.collectAsState()
     val details by selectPopupViewModel.selectpopupList.collectAsState()
     val userUuid = loginResponse?.userUuid.orEmpty()
     val camera = rememberCameraPositionState { position = CameraPosition(LatLng(latitude, longitude), 14.0) }
-    LaunchedEffect(selectedRegion, selectedDistrict, selectedSort, latitude, longitude, userUuid) {
-        mapPopupfilterViewModel.fetchmappopupfilter(userUuid, selectedRegion, selectedDistrict, longitude, latitude, selectedSort)
+    val area = MapArea(selectedRegion, selectedDistrict, latitude, longitude, selectedSort)
+    var categories by remember(userUuid) { mutableStateOf(emptyList<CategoryItem>()) }
+    var allPopups by remember(userUuid, area) { mutableStateOf(emptyList<PopupEvent>()) }
+    var categoryNames by remember { mutableStateOf(emptySet<String>()) }
+    var query by remember { mutableStateOf("") }
+    val categoryIds = categories.filter { it.recommendName in categoryNames }.map { it.id }
+    var matches by remember(userUuid, area, categoryNames, categoryIds, query) { mutableStateOf<List<PopupEvent>?>(null) }
+
+    LaunchedEffect(userUuid) {
+        if (userUuid.isNotEmpty()) categories = mapPopupfilterViewModel.categories()
+    }
+    LaunchedEffect(userUuid, area) {
+        if (userUuid.isNotEmpty()) mapPopupfilterViewModel.popups(area)?.let { allPopups = it }
+    }
+    LaunchedEffect(userUuid, area, categoryNames, categoryIds, query) {
+        if (userUuid.isEmpty() || (categoryNames.isEmpty() && query.isEmpty())) return@LaunchedEffect
+        if (categoryNames.isNotEmpty() && categoryIds.size != categoryNames.size) return@LaunchedEffect
+        if (query.isNotEmpty()) delay(250)
+        matches = mapPopupfilterViewModel.popups(area, categoryIds, query)
+    }
+    val popups = matches ?: allPopups
+    val favoriteIds = if (favoriteViewModel.hasFavoriteList) {
+        favorites.toSet()
+    } else {
+        popups.filter { it.isFavorited }.map { it.popupUuid }.toSet()
     }
     LaunchedEffect(showDetail, detailId) {
         if (showDetail) detailId?.let { selectPopupViewModel.SelectPopupEvents(userUuid, it) }
     }
-    val display = remember(popups) { popups.mapNotNull { it.toRenewalPopup() } }
+    val colors = remember(categories) { categories.associate { it.recommendName to it.color } }
+    val display = remember(allPopups, colors) { allPopups.mapNotNull { it.toRenewalPopup(colors) } }
+    val filtered = remember(matches, colors) { matches?.mapNotNull { it.toRenewalPopup(colors) } }
     Box(Modifier.fillMaxSize()) {
         RenewalMapUi(
             popups = display,
-            favoriteIds = favorites.toSet(),
-            onFavorite = { id -> if (id in favorites) favoriteViewModel.deleteFavorite(userUuid, id) else favoriteViewModel.addFavorite(userUuid, id) },
+            favoriteIds = favoriteIds,
+            onFavorite = { id -> if (id in favoriteIds) favoriteViewModel.deleteFavorite(userUuid, id) else favoriteViewModel.addFavorite(userUuid, id) },
             onDetail = { id -> detailId = id; setShowDetail(true) },
-            categories = (RenewalCategories + display.flatMap { it.categories }).distinct(),
+            categories = (categories.map { it.recommendName } + display.flatMap { it.categories }).distinct(),
+            filteredPopups = filtered,
+            onFilterChanged = { names, search ->
+                categoryNames = names
+                query = search
+            },
             onSortChanged = { selectedSort = it },
             regionButton = {
                 RenewalRegionButton(selectedRegion, showRegions) {
@@ -185,7 +214,7 @@ fun MapScreen(
                 }
             },
         ) { visible, selectedId, onSelect ->
-            LaunchedEffect(visible) {
+            LaunchedEffect(visible, popups) {
                 val ids = visible.map { it.id }.toSet()
                 mapviewmodel.setPopups(popups.filter { it.popupUuid in ids })
             }
@@ -445,11 +474,16 @@ fun MapSheetContent(
     onPopupClick: (PopupEvent) -> Unit,
     viewCountViewModel: ViewCountViewModel,
     favoriteViewModel: FavoriteViewModel,
-    refreshTrigger: Boolean,
     loginResponse: LoginResponse?
 ) {
     var showSheet by remember { mutableStateOf(true) }
     val userUuid = loginResponse?.userUuid.orEmpty()
+    val favoriteCounts by favoriteViewModel.favoriteCounts.collectAsState()
+    val viewCounts by viewCountViewModel.viewCounts.collectAsState()
+    LaunchedEffect(popupList) {
+        favoriteViewModel.updateCountsFromList(popupList)
+        viewCountViewModel.updateCountsFromList(popupList)
+    }
     val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
     Column(
         modifier = Modifier
@@ -460,17 +494,8 @@ fun MapSheetContent(
             items(popupList.size) { popup ->
                 val isLiked = favoritePopupUuids.contains(popupList[popup].popupUuid)
                 val popup = popupList[popup]
-                var favoriteCount by remember { mutableStateOf(0L) }
-                var viewCount by remember { mutableStateOf(0L) }
-
-                LaunchedEffect(popup.popupUuid, refreshTrigger) {
-                    favoriteViewModel.getFavoriteCount(userUuid, popup.popupUuid) { count ->
-                        favoriteCount = count
-                    }
-                    viewCountViewModel.getTotalViewCount(userUuid, popup.popupUuid) { count ->
-                        viewCount = count
-                    }
-                }
+                val favoriteCount = favoriteCounts[popup.popupUuid] ?: popup.favoriteCount
+                val viewCount = viewCounts[popup.popupUuid] ?: popup.viewCount
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -562,12 +587,6 @@ fun MapSheetContent(
                                                         userUuid,
                                                         popup.popupUuid
                                                     )
-                                                }
-                                                favoriteViewModel.getFavoriteCount(
-                                                    userUuid,
-                                                    popup.popupUuid
-                                                ) { count ->
-                                                    favoriteCount = count
                                                 }
                                             },
                                             modifier = Modifier.padding(end = 4.dp).size(12.dp)

@@ -29,7 +29,6 @@ import com.poppang.PopPang.viewmodel.FavoriteViewModel
 import com.poppang.PopPang.viewmodel.FcmTokenViewModel
 import com.poppang.PopPang.viewmodel.AdminPopupViewModel
 import com.poppang.PopPang.viewmodel.PopupComingViewModel
-import com.poppang.PopPang.viewmodel.PopupProgressViewModel
 import com.poppang.PopPang.viewmodel.PopupViewModel
 import com.poppang.PopPang.viewmodel.RecommendPopupViewModel
 import com.poppang.PopPang.viewmodel.RegionsViewModel
@@ -37,7 +36,6 @@ import com.poppang.PopPang.viewmodel.SelectPopupViewModel
 import com.poppang.PopPang.viewmodel.UserDataViewModel
 @Composable
 fun MainScreen(
-    popupprogressViewModel: PopupProgressViewModel,
     popupcomingViewModel: PopupComingViewModel,
     popupViewModel: PopupViewModel,
     recommendPopupViewModel: RecommendPopupViewModel,
@@ -62,13 +60,10 @@ fun MainScreen(
     val context = LocalContext.current
     val items = BottomNavItem.items
     val userUuid = loginResponse?.userUuid.orEmpty()
-    val popupprogressList by popupprogressViewModel.popupprogressList.collectAsState()
     val popupcomingList by popupcomingViewModel.popupcomingList.collectAsState()
     val recommendpopupList by recommendPopupViewModel.recommedPopupList.collectAsState()
     val popupList by popupViewModel.popupList.collectAsState()
     val deactivatedPopupUuids by adminPopupViewModel.deactivatedPopupUuids.collectAsState()
-    val activePopupProgressList =
-        popupprogressList.filterNot { it.popupUuid in deactivatedPopupUuids }
     val activePopupComingList =
         popupcomingList.filterNot { it.popupUuid in deactivatedPopupUuids }
     val activeRecommendPopupList =
@@ -94,7 +89,6 @@ fun MainScreen(
     LaunchedEffect(userUuid) {
         if (userUuid.isNotEmpty()) {
             userDataViewModel.updateSignupOsOnce(userUuid)
-            popupprogressViewModel.fetchPopupProgressEventsOnce(userUuid)
             popupcomingViewModel.fetchPopupComingEventsOnce(userUuid)
             popupViewModel.fetchPopupEventsOnce(userUuid)
             favoriteViewModel.getFavoriteUserCheck(userUuid)
@@ -128,7 +122,6 @@ fun MainScreen(
                     setSearchScreen = { showSearch = it },
                     showAlarm = showAlarm,
                     setShowAlarm = { showAlarm = it },
-                    popupprogressList = activePopupProgressList,
                     popupcomingList = activePopupComingList,
                     recommendpopupList = activeRecommendPopupList,
                     popupList = activePopupList,
@@ -150,7 +143,6 @@ fun MainScreen(
                     regionsViewModel = regionsViewModel
                 )
                 is BottomNavItem.Map -> MapScreen(
-                    popupprogressList = activePopupProgressList,
                     showDetail = showDetail,
                     setShowDetail = { showDetail = it },
                     loginResponse = loginResponse,

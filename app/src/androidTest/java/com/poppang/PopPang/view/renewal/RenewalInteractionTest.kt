@@ -336,6 +336,41 @@ class RenewalInteractionTest {
         compose.onNodeWithText("테스트 팝업").assertDoesNotExist()
     }
 
+    @Test fun serverMapResultsDriveRowsAndMarkersEvenWhenTheBaseListDiffers() {
+        val today = renewalToday()
+        val base = RenewalPopup("one", "기존 팝업", listOf("뷰티"), "서울", today, today.plusDays(1))
+        val match = base.copy(id = "two", name = "새 팝업", address = "성수동")
+        var serverResult by mutableStateOf<List<RenewalPopup>?>(null)
+        var markerIds = emptyList<String>()
+        compose.setContent {
+            PopPangAOSTheme(false) {
+                RenewalMapUi(
+                    popups = listOf(base),
+                    favoriteIds = emptySet(),
+                    onFavorite = {},
+                    onDetail = {},
+                    filteredPopups = serverResult,
+                    onFilterChanged = { _, query ->
+                        serverResult = when (query) {
+                            "" -> null
+                            "성수" -> listOf(match)
+                            else -> emptyList()
+                        }
+                    },
+                ) { visible, _, _ ->
+                    androidx.compose.runtime.SideEffect { markerIds = visible.map { it.id } }
+                    Box(Modifier.fillMaxSize())
+                }
+            }
+        }
+        compose.onNodeWithTag("map-search").performTextInput("성수")
+        compose.onNodeWithText("새 팝업").assertExists()
+        compose.runOnIdle { assertEquals(listOf("two"), markerIds) }
+        compose.onNodeWithTag("map-search").performTextReplacement("없는 주소")
+        compose.onNodeWithTag("map-result-count").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "0개"))
+        compose.runOnIdle { assertTrue(markerIds.isEmpty()) }
+    }
+
     @Test fun filterDraftOnlyChangesTheMapWhenApplied() {
         val today = renewalToday()
         val popups =
@@ -355,7 +390,7 @@ class RenewalInteractionTest {
             }
         }
         compose.onNodeWithTag("map-filters").performClick()
-        compose.onNode(hasText("캐릭터 (1)") and hasAnyAncestor(hasTestTag("map-filter-sheet"))).performClick()
+        compose.onNode(hasText("캐릭터 (1)") and hasAnyAncestor(hasTestTag("map-filter-safe-area"))).performClick()
         compose.onNodeWithTag("map-filter-apply").performClick()
         compose.onNodeWithTag("map-result-count").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "1개"))
         compose.onNodeWithText("내일 캐릭터").assertIsDisplayed()

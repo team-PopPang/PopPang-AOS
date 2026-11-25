@@ -1,3 +1,4 @@
+import java.net.URI
 import java.util.Properties
 
 plugins {
@@ -16,13 +17,17 @@ android {
         minSdk = 28
         //noinspection OldTargetApi
         targetSdk = 36
-        versionCode = 26
-        versionName = "1.2.2"
+        versionCode = 27
+        versionName = "1.2.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        val localProperties = Properties()
-        localProperties.load(project.rootProject.file("local.properties").inputStream())
+        val endpointDefaults = Properties().apply {
+            rootProject.file("api-endpoints.properties").inputStream().use { load(it) }
+        }
+        val localProperties = Properties(endpointDefaults).apply {
+            rootProject.file("local.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
+        }
         val kakaoKey = localProperties.getProperty("KAKAO_KEY") ?: ""
         val googleKey = localProperties.getProperty("GOOGLE_KEY") ?: ""
         val admobKey = localProperties.getProperty("ADMOB_KEY")
@@ -30,8 +35,11 @@ android {
         val admobNativeKey = localProperties.getProperty("ADMOB_NATIVE_KEY")
             ?: "ca-app-pub-3940256099942544/2247696110"
         val adminbaseurl = localProperties.getProperty("ADMIN_BASE_URL") ?: ""
-        val v2BaseUrl = localProperties.getProperty("V2_BASE_URL")
-            ?: "https://api.poppang.co.kr/api/v2/"
+        val v2BaseUrl = localProperties.getProperty("V2_BASE_URL").trimEnd('/') + "/"
+        val baseUri = URI(v2BaseUrl)
+        require(baseUri.scheme in setOf("http", "https") && baseUri.host != null && baseUri.query == null && baseUri.fragment == null) {
+            "V2_BASE_URL must be an HTTP(S) base URL without a query or fragment"
+        }
         val urlimage = localProperties.getProperty("URL_IMAGE") ?: ""
         val navermapkey = localProperties.getProperty("NAVER_MAP_KEY") ?: ""
         val popupdeactivateapi = localProperties.getProperty("POPUP_DEACTIVATE_API") ?: ""
@@ -43,6 +51,20 @@ android {
         manifestPlaceholders["ADMOB_KEY"] = admobKey
         buildConfigField("String", "ADMIN_BASE_URL", "\"$adminbaseurl\"")
         buildConfigField("String", "V2_BASE_URL", "\"$v2BaseUrl\"")
+        val placeholder = Regex("""\{[a-zA-Z][a-zA-Z0-9_-]*\}""")
+        fun placeholders(path: String) = placeholder.findAll(path).map { it.value }.toSet()
+        for (key in endpointDefaults.stringPropertyNames().filter { it.endsWith("_PATH") }.sorted()) {
+            val path = localProperties.getProperty(key)
+            require(placeholders(path) == placeholders(endpointDefaults.getProperty(key))) {
+                "$key must keep the path parameters from api-endpoints.properties"
+            }
+            val uri = URI(placeholder.replace(path, "id"))
+            require(path.isNotBlank() && !path.startsWith("/") && !uri.isAbsolute &&
+                uri.query == null && uri.fragment == null && uri.path.split('/').none { it == "." || it == ".." }) {
+                "$key must be a relative API path without a query or fragment"
+            }
+            buildConfigField("String", key, "\"$path\"")
+        }
         buildConfigField("String", "URL_IMAGE", "\"$urlimage\"")
         manifestPlaceholders["NAVER_MAP_KEY"] = navermapkey
         buildConfigField("String", "POPUP_DEACTIVATE_API", "\"$popupdeactivateapi\"")
@@ -77,6 +99,7 @@ android {
 dependencies {
 
     implementation(libs.poppang.rn.android)
+    implementation(libs.poppang.rn.android.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

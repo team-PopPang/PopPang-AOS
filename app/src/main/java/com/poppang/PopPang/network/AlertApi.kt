@@ -1,11 +1,12 @@
 package com.poppang.PopPang.network
 
+import com.poppang.PopPang.BuildConfig
 import com.poppang.PopPang.model.ApiResponse
 import com.poppang.PopPang.model.AlertStatusResponse
 import retrofit2.http.Body
 import retrofit2.http.PATCH
 
 interface AlertApi {
-    @PATCH("user/alert-status")
+    @PATCH(BuildConfig.V2_ALERT_STATUS_PATH)
     suspend fun updateAlertStatus(@Body body: AlertStatusResponse): ApiResponse<AlertStatusResponse>
 }

@@ -137,7 +137,7 @@ fun AlarmScreen(onClose: () -> Unit,
                 0 -> ActivityTab(
                     alertViewModel = alertViewModel,
                     alertpopupList = alertpopupList,
-                    refreshTrigger = showDetail, loginResponse = loginResponse,
+                    loginResponse = loginResponse,
                     favoriteViewModel = favoriteViewModel,
                     editMode = editMode,
                     onShowDetail = { popup ->
@@ -273,12 +273,17 @@ fun ActivityTab(
     alertpopupList: List<PopupEvent>,
     favoriteViewModel: FavoriteViewModel,
     viewCountViewModel: ViewCountViewModel = viewModel(),
-    refreshTrigger: Any? = null,
     loginResponse: LoginResponse? = null,
     editMode: Boolean = false,
     onShowDetail: (PopupEvent) -> Unit,
 ) {
     val userUuid = loginResponse?.userUuid.orEmpty()
+    val favoriteCounts by favoriteViewModel.favoriteCounts.collectAsState()
+    val viewCounts by viewCountViewModel.viewCounts.collectAsState()
+    LaunchedEffect(alertpopupList) {
+        favoriteViewModel.updateCountsFromList(alertpopupList)
+        viewCountViewModel.updateCountsFromList(alertpopupList)
+    }
     val favoritePopupUuids by favoriteViewModel.favoritePopupUuids.collectAsState()
     Box(
         modifier = Modifier
@@ -326,16 +331,8 @@ fun ActivityTab(
             LazyColumn {
                 items(alertpopupList) { popup ->
                     val isLiked = favoritePopupUuids.contains(popup.popupUuid)
-                    var favoriteCount by remember { mutableStateOf(0L) }
-                    var viewCount by remember { mutableStateOf(0L) }
-                    LaunchedEffect(popup.popupUuid, refreshTrigger) {
-                        favoriteViewModel.getFavoriteCount(userUuid, popup.popupUuid) { count ->
-                            favoriteCount = count
-                        }
-                        viewCountViewModel.getTotalViewCount(userUuid, popup.popupUuid) { count ->
-                            viewCount = count
-                        }
-                    }
+                    val favoriteCount = favoriteCounts[popup.popupUuid] ?: popup.favoriteCount
+                    val viewCount = viewCounts[popup.popupUuid] ?: popup.viewCount
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -443,12 +440,6 @@ fun ActivityTab(
                                                         userUuid,
                                                         popup.popupUuid
                                                     )
-                                                }
-                                                favoriteViewModel.getFavoriteCount(
-                                                    userUuid,
-                                                    popup.popupUuid
-                                                ) { count ->
-                                                    favoriteCount = count
                                                 }
                                             },
                                             modifier = Modifier.padding(end=4.dp).size(12.dp)

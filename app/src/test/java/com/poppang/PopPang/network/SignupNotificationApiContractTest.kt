@@ -1,5 +1,6 @@
 package com.poppang.PopPang.network
 
+import com.poppang.PopPang.BuildConfig
 import com.google.gson.JsonParser
 import com.poppang.PopPang.model.AlertStatusResponse
 import kotlinx.coroutines.runBlocking
@@ -23,7 +24,7 @@ class SignupNotificationApiContractTest {
                 val api =
                     Retrofit
                         .Builder()
-                        .baseUrl(server.url + "api/v2/")
+                        .baseUrl(RetrofitInstance.mobileBaseUrl(server.url + "api/v2/"))
                         .client(OkHttpClient.Builder().addInterceptor(SessionInterceptor({ session }, false)).build())
                         .addConverterFactory(GsonConverterFactory.create())
                         .build()
@@ -32,7 +33,7 @@ class SignupNotificationApiContractTest {
                 assertTrue(api.updateAlertStatus(AlertStatusResponse(true)).requireData().isAlerted)
                 val request = server.takeRequest()
                 assertEquals("PATCH", request.method)
-                assertEquals("/api/v2/user/alert-status", request.path)
+                assertEquals(server.mobilePath(BuildConfig.V2_ALERT_STATUS_PATH), request.path)
                 assertEquals("Bearer login-access", request.authorization)
                 assertTrue(request.contentType!!.startsWith("application/json"))
                 assertEquals(JsonParser.parseString("""{"isAlerted":true}"""), JsonParser.parseString(request.body))

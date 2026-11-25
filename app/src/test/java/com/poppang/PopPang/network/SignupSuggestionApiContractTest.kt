@@ -1,5 +1,6 @@
 package com.poppang.PopPang.network
 
+import com.poppang.PopPang.BuildConfig
 import com.google.gson.Gson
 import com.poppang.PopPang.model.ApiError
 import com.poppang.PopPang.model.AuthResponse
@@ -19,7 +20,7 @@ class SignupSuggestionApiContractTest {
             for (signup in listOf(true, false)) {
                 LocalApiServer().use { server ->
                     server.respond = { request ->
-                        ApiReply(body = if (request.path.endsWith("recommendation")) nicknameJson else popularJson)
+                        ApiReply(body = if (request.path == server.mobilePath(BuildConfig.V2_NICKNAME_RECOMMENDATION_PATH)) nicknameJson else popularJson)
                     }
                     val session =
                         SessionManager(
@@ -44,7 +45,10 @@ class SignupSuggestionApiContractTest {
                             .map { it.alertKeyword },
                     )
                     val requests = listOf(server.takeRequest(), server.takeRequest())
-                    assertEquals(listOf("/api/v2/user/nickname/recommendation", "/api/v2/alert-keyword/popular"), requests.map { it.path })
+                    assertEquals(
+                        listOf(server.mobilePath(BuildConfig.V2_NICKNAME_RECOMMENDATION_PATH), server.mobilePath(BuildConfig.V2_POPULAR_KEYWORDS_PATH)),
+                        requests.map { it.path },
+                    )
                     requests.forEach {
                         assertEquals("GET", it.method)
                         assertEquals("Bearer " + if (signup) "first-signup" else "old-access", it.authorization)
@@ -78,7 +82,7 @@ class SignupSuggestionApiContractTest {
         runBlocking {
             LocalApiServer().use { server ->
                 server.respond = { request ->
-                    if (request.path.endsWith("recommendation")) {
+                    if (request.path == server.mobilePath(BuildConfig.V2_NICKNAME_RECOMMENDATION_PATH)) {
                         ApiReply(503, """{"success":false,"code":4208,"message":"추천 실패","data":null}""")
                     } else {
                         ApiReply(body = """{"success":true,"code":0,"message":"요청 성공!","data":[]}""")
@@ -108,7 +112,7 @@ class SignupSuggestionApiContractTest {
     ): SignupSuggestionApi =
         Retrofit
             .Builder()
-            .baseUrl(server.url + "api/v2/")
+            .baseUrl(RetrofitInstance.mobileBaseUrl(server.url + "api/v2/"))
             .client(OkHttpClient.Builder().addInterceptor(SessionInterceptor({ session }, signup)).build())
             .addConverterFactory(GsonConverterFactory.create())
             .build()

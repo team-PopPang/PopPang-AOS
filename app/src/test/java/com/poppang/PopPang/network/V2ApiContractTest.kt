@@ -1,7 +1,11 @@
 package com.poppang.PopPang.network
 
 import com.google.gson.JsonParser
+import com.poppang.PopPang.BuildConfig
 import com.poppang.PopPang.model.*
+import com.poppang.PopPang.viewmodel.MapArea
+import com.poppang.PopPang.viewmodel.MapPopupfilterViewModel
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import org.junit.Assert.*
@@ -10,6 +14,18 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class V2ApiContractTest {
+    @Test
+    fun refreshRequestUsesConfiguredMobileEndpoint() {
+        val request = RetrofitInstance.authApi.refresh(RefreshRequest("test-token")).request()
+        val expectedUrl = BuildConfig.V2_BASE_URL.toHttpUrl()
+            .newBuilder()
+            .addEncodedPathSegments(BuildConfig.V2_MOBILE_PATH.trimEnd('/'))
+            .addEncodedPathSegments(BuildConfig.V2_AUTH_REFRESH_PATH)
+            .build()
+
+        assertEquals(expectedUrl, request.url)
+    }
+
     @Test
     fun signupOsBackfillUsesAccessTokenPatchAndAcceptsEmpty200Body() = runBlocking {
         LocalApiServer().use { server ->
@@ -22,7 +38,7 @@ class V2ApiContractTest {
 
             val recorded = server.takeRequest()
             assertEquals("PATCH", recorded.method)
-            assertEquals("/api/v2/user/signup-os", recorded.path)
+            assertEquals(server.mobilePath(BuildConfig.V2_SIGNUP_OS_PATH), recorded.path)
             assertEquals("Bearer old-access", recorded.authorization)
             assertEquals("application/json", recorded.contentType?.substringBefore(';'))
             val json = JsonParser.parseString(recorded.body).asJsonObject
@@ -49,10 +65,10 @@ class V2ApiContractTest {
             )
             assertEquals(SignupStatus.COMPLETED, api.signUpWithKakao(request).body()?.requireData()?.signupStatus)
             assertEquals(SignupStatus.COMPLETED, api.signUpWithGoogle(request).body()?.requireData()?.signupStatus)
-            for (provider in listOf("kakao", "google")) {
+            for (endpoint in listOf(BuildConfig.V2_KAKAO_SIGNUP_PATH, BuildConfig.V2_GOOGLE_SIGNUP_PATH)) {
                 val recorded = server.takeRequest()
                 assertEquals("POST", recorded.method)
-                assertEquals("/api/v2/auth/$provider/signup", recorded.path)
+                assertEquals(server.mobilePath(endpoint), recorded.path)
                 assertEquals("Bearer signup", recorded.authorization)
                 val json = JsonParser.parseString(recorded.body).asJsonObject
                 assertEquals("ANDROID", json["signupOs"].asString)
@@ -65,7 +81,8 @@ class V2ApiContractTest {
     @Test
     fun publicLoginAndRefreshUseDistinctResponsesAndNoAuthorization() = runBlocking {
         LocalApiServer().use { server ->
-            server.respond = { request -> ApiReply(body = if (request.path.endsWith("refresh")) tokenResponse else pendingLogin) }
+            val refreshPath = server.mobilePath(BuildConfig.V2_AUTH_REFRESH_PATH)
+            server.respond = { request -> ApiReply(body = if (request.path == refreshPath) tokenResponse else pendingLogin) }
             val api = retrofit(server).create(AuthApi::class.java)
             val pending = api.kakaoLogin(KakaoLoginRequest("fake-social-credential")).body()!!.requireData()
             assertEquals(SignupStatus.PENDING, pending.signupStatus)
@@ -75,7 +92,7 @@ class V2ApiContractTest {
             assertEquals("new-refresh", tokens.refreshToken)
             assertNull(server.takeRequest().authorization)
             val refresh = server.takeRequest()
-            assertEquals("/api/v2/auth/refresh", refresh.path)
+            assertEquals(refreshPath, refresh.path)
             assertNull(refresh.authorization)
             assertEquals(setOf("refreshToken"), JsonParser.parseString(refresh.body).asJsonObject.keySet())
         }
@@ -85,7 +102,7 @@ class V2ApiContractTest {
     fun signupQueriesUseV2WithSignupTokenAndPreservePendingSession() = runBlocking {
         LocalApiServer().use { server ->
             server.respond = { request -> ApiReply(body = when {
-                request.path == "/api/v2/recommend" -> """[{"id":3,"recommendName":"문화"}]"""
+                request.path == server.mobilePath(BuildConfig.V2_CATEGORIES_PATH) -> """[{"id":3,"recommendName":"문화"}]"""
                 else -> """{"success":true,"code":0,"message":"ok","data":{"isDuplicated":false}}"""
             }) }
             val session = SessionManager(
@@ -98,11 +115,11 @@ class V2ApiContractTest {
             assertEquals(3L, signupV2.create(CategoryItemApi::class.java).getCategoryItems().single().id)
             val nickname = server.takeRequest()
             assertEquals("GET", nickname.method)
-            assertEquals("/api/v2/user/nickname/duplicated?nickname=test", nickname.path)
+            assertEquals(server.mobilePath(BuildConfig.V2_NICKNAME_CHECK_PATH) + "?nickname=test", nickname.path)
             assertEquals("Bearer signup", nickname.authorization)
             val category = server.takeRequest()
             assertEquals("GET", category.method)
-            assertEquals("/api/v2/recommend", category.path)
+            assertEquals(server.mobilePath(BuildConfig.V2_CATEGORIES_PATH), category.path)
             assertEquals("Bearer signup", category.authorization)
             assertEquals(SessionStatus.SIGNING_UP, session.state.value.status)
             assertEquals("signup", session.signupToken())
@@ -113,7 +130,7 @@ class V2ApiContractTest {
     @Test
     fun signedInQueriesUseV2WithAccessToken() = runBlocking {
         LocalApiServer().use { server ->
-            server.respond = { request -> ApiReply(body = if (request.path == "/api/v2/recommend") {
+            server.respond = { request -> ApiReply(body = if (request.path == server.mobilePath(BuildConfig.V2_CATEGORIES_PATH)) {
                 """[{"id":3,"recommendName":"문화"}]"""
             } else """{"success":true,"code":0,"message":"ok","data":{"isDuplicated":false}}""") }
             val session = SessionManager(MemorySessionStorage(storedSession()), refreshTokens = { error("unused") })
@@ -122,11 +139,11 @@ class V2ApiContractTest {
             val result = accessV2.create(DuplicateNicknameApi::class.java).checkNickname("test")
             assertFalse(result.body()!!.requireData().isDuplicated)
             val profile = server.takeRequest()
-            assertEquals("/api/v2/user/nickname/duplicated?nickname=test", profile.path)
+            assertEquals(server.mobilePath(BuildConfig.V2_NICKNAME_CHECK_PATH) + "?nickname=test", profile.path)
             assertEquals("Bearer old-access", profile.authorization)
             assertEquals(3L, accessV2.create(CategoryItemApi::class.java).getCategoryItems().single().id)
             val category = server.takeRequest()
-            assertEquals("/api/v2/recommend", category.path)
+            assertEquals(server.mobilePath(BuildConfig.V2_CATEGORIES_PATH), category.path)
             assertEquals("Bearer old-access", category.authorization)
         }
     }
@@ -144,7 +161,9 @@ class V2ApiContractTest {
             keyword.deleteKeyword(KeywordDeleteRequest("브랜드"))
             val requests = (1..4).map { server.takeRequest() }
             assertEquals(listOf("POST", "DELETE", "POST", "DELETE"), requests.map { it.method })
-            assertEquals(listOf("/api/v2/favorite", "/api/v2/favorite", "/api/v2/alert-keyword", "/api/v2/alert-keyword"), requests.map { it.path })
+            val favoritePath = server.mobilePath(BuildConfig.V2_FAVORITE_PATH)
+            val keywordPath = server.mobilePath(BuildConfig.V2_ALERT_KEYWORDS_PATH)
+            assertEquals(listOf(favoritePath, favoritePath, keywordPath, keywordPath), requests.map { it.path })
             requests.forEach { assertFalse(JsonParser.parseString(it.body).asJsonObject.has("userUuid")) }
             requests.drop(2).forEach { assertEquals(setOf("keyword"), JsonParser.parseString(it.body).asJsonObject.keySet()) }
         }
@@ -153,7 +172,7 @@ class V2ApiContractTest {
     @Test
     fun rawPopupListHandlesNullsAndExact64BitCountsWhileAlertListUsesEnvelope() = runBlocking {
         LocalApiServer().use { server ->
-            server.respond = { request -> ApiReply(body = if (request.path.contains("alert/popups")) {
+            server.respond = { request -> ApiReply(body = if (request.path == server.mobilePath(BuildConfig.V2_ALERT_POPUPS_PATH)) {
                 """{"success":true,"code":0,"data":[$popupWithNulls]}"""
             } else "[$popupWithNulls]") }
             val retrofit = retrofit(server)
@@ -167,8 +186,8 @@ class V2ApiContractTest {
             assertFalse(popup.isRead)
             val alert = retrofit.create(AlertPopupApi::class.java).getAlertPopup().requireData().single()
             assertEquals(popup.popupUuid, alert.popupUuid)
-            assertEquals("/api/v2/user/popups", server.takeRequest().path)
-            assertEquals("/api/v2/user/alert/popups", server.takeRequest().path)
+            assertEquals(server.mobilePath(BuildConfig.V2_POPUPS_PATH), server.takeRequest().path)
+            assertEquals(server.mobilePath(BuildConfig.V2_ALERT_POPUPS_PATH), server.takeRequest().path)
         }
     }
 
@@ -181,17 +200,48 @@ class V2ApiContractTest {
             assertTrue(retrofit.create(LogoutApi::class.java).logout().isSuccessful)
             val withdrawal = server.takeRequest()
             assertEquals("DELETE", withdrawal.method)
-            assertEquals("/api/v2/user", withdrawal.path)
+            assertEquals(server.mobilePath(BuildConfig.V2_USER_PATH), withdrawal.path)
             assertEquals("", withdrawal.body)
             val logout = server.takeRequest()
             assertEquals("POST", logout.method)
-            assertEquals("/api/v2/auth/logout", logout.path)
+            assertEquals(server.mobilePath(BuildConfig.V2_LOGOUT_PATH), logout.path)
             assertEquals("", logout.body)
         }
     }
 
+    @Test
+    fun mapSendsSelectedCategoryIdsAndNameOrAddressQueryInServerOrder() = runBlocking {
+        LocalApiServer().use { server ->
+            val map = MapPopupfilterViewModel(retrofit(server).create(MapPopupfilterApi::class.java))
+            val area = MapArea("서울", "영등포구", 37.52, 126.92, "MOST_VIEWED")
+            server.respond = { ApiReply(body = """[{"id":2,"recommendName":"뷰티","color":"#123456"}]""") }
+            assertEquals("#123456", map.categories().single().color)
+            assertEquals(server.mobilePath(BuildConfig.V2_MAP_CATEGORIES_PATH), server.takeRequest().path)
+
+            server.respond = { ApiReply(body = "[$popupWithNulls,${popupWithNulls.replace("popup-1", "popup-0")}]") }
+            val matches = checkNotNull(map.popups(area, listOf(2, 3), "  성수 & 팝업  "))
+            assertEquals(listOf("popup-1", "popup-0"), matches.map { it.popupUuid })
+            val request = server.takeRequest()
+            val url = (server.url.trimEnd('/') + request.path).toHttpUrl()
+            assertEquals(server.mobilePath(BuildConfig.V2_MAP_FILTER_PATH), url.encodedPath)
+            assertEquals(listOf("2", "3"), url.queryParameterValues("recommendIds"))
+            assertEquals("성수 & 팝업", url.queryParameter("q"))
+            assertEquals("MOST_VIEWED", url.queryParameter("mapSortStandard"))
+            assertEquals("영등포구", url.queryParameter("district"))
+
+            server.respond = { ApiReply(body = "[]") }
+            assertEquals(emptyList<PopupEvent>(), map.popups(area, query = "  "))
+            val all = (server.url.trimEnd('/') + server.takeRequest().path).toHttpUrl()
+            assertNull(all.queryParameter("q"))
+            assertNull(all.queryParameter("recommendIds"))
+
+            server.respond = { ApiReply(status = 503) }
+            assertNull(map.popups(area, listOf(2)))
+        }
+    }
+
     private fun retrofit(server: LocalApiServer, client: OkHttpClient = OkHttpClient()) = Retrofit.Builder()
-        .baseUrl(server.url + "api/v2/").client(client)
+        .baseUrl(RetrofitInstance.mobileBaseUrl(server.url + "api/v2/")).client(client)
         .addConverterFactory(GsonConverterFactory.create()).build()
 
     private val pendingLogin = """{"success":true,"code":0,"data":{"signupStatus":"PENDING","tokenType":"Bearer","signupToken":"signup","signupTokenExpiresIn":900}}"""

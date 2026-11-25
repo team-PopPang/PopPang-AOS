@@ -86,6 +86,8 @@ internal fun RenewalMapUi(
     onDetail: (String) -> Unit,
     categories: List<String> = RenewalCategories,
     onSortChanged: (String) -> Unit = {},
+    filteredPopups: List<RenewalPopup>? = null,
+    onFilterChanged: (Set<String>, String) -> Unit = { _, _ -> },
     regionButton: @Composable () -> Unit = { Text("전체", style = renewalText(13, true)) },
     mapContent: @Composable (visible: List<RenewalPopup>, selectedId: String?, onSelect: (String) -> Unit) -> Unit,
 ) {
@@ -95,7 +97,10 @@ internal fun RenewalMapUi(
     var showFilter by rememberSaveable { mutableStateOf(false) }
     var sort by rememberSaveable { mutableStateOf("가까운순") }
     val today = renewalToday()
-    val visible = remember(popups, filters, query, today) { filters.apply(popups, query, today) }
+    LaunchedEffect(filters.categories, query) { onFilterChanged(filters.categories, query.trim()) }
+    val visible = remember(popups, filteredPopups, filters, query, today) {
+        filteredPopups?.filterNot { it.end.isBefore(today) } ?: filters.apply(popups, query, today)
+    }
     val categoryCounts = remember(popups, query, today) { renewalCategoryCounts(popups, query, today) }
     val selected = visible.firstOrNull { it.id == selectedId }
     val sheet = rememberMapSheetState()
@@ -320,7 +325,11 @@ private fun PopupRow(
                         if (popup.start.isAfter(renewalToday())) Color(0xFFD9530B) else Color(0xFF089700),
                         if (popup.start.isAfter(renewalToday())) Color(0xFFFDEFE6) else Color(0xFFF4FFEE),
                     )
-                    popup.categories.firstOrNull()?.let { RenewalTag(it, Color(0xFFD9530B), Color(0xFFFDEFE6)) }
+                    popup.categories.firstOrNull()?.let { category ->
+                        val rgb = popup.categoryColor?.removePrefix("#")?.takeIf { it.length == 6 }?.toIntOrNull(16)
+                        val color = rgb?.let { Color(0xFF000000.toInt() or it) } ?: Color(0xFFD9530B)
+                        RenewalTag(category, color, color.copy(alpha = .10f))
+                    }
                     if (popup.region.isNotBlank()) RenewalTag(popup.region, Color(0xFFAAAAAA), Color(0xFFF4F4F4))
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.SpaceBetween) {

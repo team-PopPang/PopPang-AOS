@@ -1,19 +1,15 @@
 package com.poppang.PopPang.viewmodel
 
 import com.poppang.PopPang.model.ApiResponse
-import com.poppang.PopPang.model.FavoriteCountResponse
 import com.poppang.PopPang.model.FavoriteRequest
 import com.poppang.PopPang.model.PopupEvent
-import com.poppang.PopPang.model.ViewCountResponse
+import com.poppang.PopPang.network.SelectPopupApi
 import com.poppang.PopPang.network.FavoriteApi
-import com.poppang.PopPang.network.FavoriteCountApi
-import com.poppang.PopPang.network.ViewCountApi
 import com.poppang.PopPang.network.ViewCountIncrementApi
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -51,53 +47,14 @@ class PopupCountViewModelTest {
     }
 
     @Test
-    fun detailQueriesPublishCountsToTheListAsWellAsTheirCallbacks() {
+    fun detailResponsePublishesBothCountsWithoutAnotherRequest() {
         val fixture = CountsFixture()
-        fixture.api.favoriteCount = 12
-        fixture.api.viewCount = 123
-        var favoriteResult: Long? = null
-        var viewResult: Long? = null
-
-        fixture.favorites.getFavoriteCount("user", "a") { favoriteResult = it }
-        fixture.views.getTotalViewCount("user", "a") { viewResult = it }
-
-        assertEquals(12L, favoriteResult)
-        assertEquals(123L, viewResult)
+        val detail = listOf(popup("a", 12, 123))
+        fixture.favorites.updateCountsFromList(detail)
+        fixture.views.updateCountsFromList(detail)
         assertEquals(12L, fixture.favorites.favoriteCounts.value["a"])
         assertEquals(123L, fixture.views.viewCounts.value["a"])
-    }
-
-    @Test
-    fun failedQueriesKeepListCountsInsteadOfDisplayingZero() {
-        val fixture = CountsFixture()
-        val popups = listOf(popup("a", 12, 123))
-        fixture.favorites.updateCountsFromList(popups)
-        fixture.views.updateCountsFromList(popups)
-        fixture.api.readFailure = true
-        var favoriteResult: Long? = null
-        var viewResult: Long? = null
-
-        fixture.favorites.getFavoriteCount("user", "a") { favoriteResult = it }
-        fixture.views.getTotalViewCount("user", "a") { viewResult = it }
-
-        assertEquals(12L, favoriteResult)
-        assertEquals(123L, viewResult)
-        assertEquals(12L, fixture.favorites.favoriteCounts.value["a"])
-        assertEquals(123L, fixture.views.viewCounts.value["a"])
-    }
-
-    @Test
-    fun failedQueriesWithoutCachedCountsDoNotInventZero() {
-        val fixture = CountsFixture()
-        fixture.api.readFailure = true
-        var callbackCalled = false
-
-        fixture.favorites.getFavoriteCount("user", "a") { callbackCalled = true }
-        fixture.views.getTotalViewCount("user", "a") { callbackCalled = true }
-
-        assertFalse(callbackCalled)
-        assertTrue(fixture.favorites.favoriteCounts.value.isEmpty())
-        assertTrue(fixture.views.viewCounts.value.isEmpty())
+        assertTrue(fixture.api.calls.isEmpty())
     }
 
     @Test
@@ -116,6 +73,7 @@ class PopupCountViewModelTest {
         val writeGate = CompletableDeferred<Unit>()
         fixture.api.writeGate = writeGate
         fixture.api.favoriteCount = if (adding) 11 else 9
+        if (adding) fixture.api.favoritePopups = listOf(popup("a", 11, 100, isFavorited = true))
         val operation = if (adding) "add" else "delete"
 
         if (adding) fixture.favorites.addFavorite("user", "a") else fixture.favorites.deleteFavorite("user", "a")
@@ -124,7 +82,8 @@ class PopupCountViewModelTest {
         assertEquals(10L, fixture.favorites.favoriteCounts.value["a"])
         writeGate.complete(Unit)
 
-        assertEquals(listOf("$operation:a", "favorites", "favorite-count:a"), fixture.api.calls)
+        val reads = if (adding) listOf("favorites") else listOf("detail:a", "favorites")
+        assertEquals(reads.sorted(), fixture.api.calls.drop(1).sorted())
         assertEquals(fixture.api.favoriteCount, fixture.favorites.favoriteCounts.value["a"])
     }
 
@@ -154,10 +113,9 @@ class PopupCountViewModelTest {
     }
 
     @Test
-    fun viewRecordRefreshesAfterSuccessWithoutInventingAnImmediateIncrement() {
+    fun viewRecordDoesNotFetchOrInventAnImmediateIncrement() {
         val fixture = CountsFixture()
         fixture.views.updateCountsFromList(listOf(popup("a", 10, 100)))
-        fixture.api.viewCount = 100 // The server has not flushed the Redis delta yet.
         val writeGate = CompletableDeferred<Unit>()
         fixture.api.writeGate = writeGate
 
@@ -167,7 +125,7 @@ class PopupCountViewModelTest {
         assertEquals(100L, fixture.views.viewCounts.value["a"])
         writeGate.complete(Unit)
 
-        assertEquals(listOf("view:a", "view-count:a"), fixture.api.calls)
+        assertEquals(listOf("view:a"), fixture.api.calls)
         assertEquals(100L, fixture.views.viewCounts.value["a"])
     }
 
@@ -187,13 +145,12 @@ class PopupCountViewModelTest {
 private class CountsFixture {
     val api = FakeCountsApi()
     val favorites = FavoriteViewModel(api, api, Dispatchers.Unconfined)
-    val views = ViewCountViewModel(api, api, Dispatchers.Unconfined)
+    val views = ViewCountViewModel(api, Dispatchers.Unconfined)
 }
 
-private class FakeCountsApi : FavoriteApi, FavoriteCountApi, ViewCountApi, ViewCountIncrementApi {
+private class FakeCountsApi : FavoriteApi, SelectPopupApi, ViewCountIncrementApi {
     val calls = mutableListOf<String>()
     var favoriteCount = 0L
-    var viewCount = 0L
     var favoritePopups = emptyList<PopupEvent>()
     var readFailure = false
     var writeFailure = false
@@ -216,14 +173,9 @@ private class FakeCountsApi : FavoriteApi, FavoriteCountApi, ViewCountApi, ViewC
         return ApiResponse(true, 0, null, favoritePopups)
     }
 
-    override suspend fun getFavoriteCheck(popupUuid: String): ApiResponse<FavoriteCountResponse> {
-        read("favorite-count:$popupUuid")
-        return ApiResponse(true, 0, null, FavoriteCountResponse(favoriteCount))
-    }
-
-    override suspend fun getTotalViewCount(popupUuid: String): ViewCountResponse {
-        read("view-count:$popupUuid")
-        return ViewCountResponse(viewCount)
+    override suspend fun getSelectPopup(popupUuid: String): PopupEvent {
+        read("detail:$popupUuid")
+        return popup(popupUuid, favoriteCount, 100)
     }
 
     private fun read(operation: String) {

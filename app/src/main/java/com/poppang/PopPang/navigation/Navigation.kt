@@ -43,7 +43,6 @@ import com.poppang.PopPang.viewmodel.AutoLoginViewModel
 import com.poppang.PopPang.viewmodel.CategoryItemViewModel
 import com.poppang.PopPang.viewmodel.DuplicateNickname
 import com.poppang.PopPang.viewmodel.PopupComingViewModel
-import com.poppang.PopPang.viewmodel.PopupProgressViewModel
 import com.poppang.PopPang.viewmodel.PopupViewModel
 import com.poppang.PopPang.viewmodel.RecommendPopupViewModel
 import com.poppang.PopPang.viewmodel.SessionRestoreState
@@ -70,7 +69,6 @@ fun Navigation(
     nicknameViewModel: DuplicateNickname,
     keywordViewModel: AddKeywordViewModel,
     categoryViewModel: CategoryItemViewModel,
-    popupprogressViewModel: PopupProgressViewModel,
     popupcomingViewModel: PopupComingViewModel,
     popupViewModel: PopupViewModel,
     recommendPopupViewModel: RecommendPopupViewModel,
@@ -97,7 +95,6 @@ fun Navigation(
         if (sessionState.status == SessionStatus.SIGNED_OUT) {
             loginResponse = null
             userDataViewModel.reset()
-            popupprogressViewModel.reset()
             popupcomingViewModel.reset()
             popupViewModel.reset()
             recommendPopupViewModel.reset()
@@ -191,7 +188,6 @@ fun Navigation(
                 val user = loginResponse
                 if (user != null && sessionState.status == SessionStatus.SIGNED_IN) {
                     MainScreen(
-                        popupprogressViewModel = popupprogressViewModel,
                         popupcomingViewModel = popupcomingViewModel,
                         popupViewModel = popupViewModel,
                         recommendPopupViewModel = recommendPopupViewModel,

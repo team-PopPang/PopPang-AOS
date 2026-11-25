@@ -27,6 +27,12 @@ class RenewalMapFiltersTest {
         assertEquals(listOf(upcoming), RenewalMapFilters().apply(all, " character ", today))
     }
 
+    @Test fun searchUsesThePopupNameOrAddress() {
+        val popup = ongoing.copy(name = "여름 팝업", region = "서울", address = "서울 성동구 연무장길", categories = listOf("뷰티"))
+        assertEquals(listOf(popup), RenewalMapFilters().apply(listOf(popup), "연무장길", today))
+        assertTrue(RenewalMapFilters().apply(listOf(popup), "뷰티", today).isEmpty())
+    }
+
     @Test fun countsIncludeEachEligiblePopupInItsCategory() {
         assertEquals(mapOf("디저트" to 2, "캐릭터" to 1), renewalCategoryCounts(all, "", today))
         assertTrue(renewalCategoryCounts(emptyList(), "", today).isEmpty())

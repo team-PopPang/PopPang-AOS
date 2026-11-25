@@ -36,7 +36,6 @@ import com.poppang.PopPang.viewmodel.AddKeywordViewModel
 import com.poppang.PopPang.viewmodel.CategoryItemViewModel
 import com.poppang.PopPang.viewmodel.DuplicateNickname
 import com.poppang.PopPang.viewmodel.PopupComingViewModel
-import com.poppang.PopPang.viewmodel.PopupProgressViewModel
 import com.poppang.PopPang.viewmodel.PopupViewModel
 import com.poppang.PopPang.viewmodel.RecommendPopupViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -51,7 +50,6 @@ class MainActivity : ComponentActivity() {
     private val nicknameViewModel: DuplicateNickname by viewModels()
     private val keywordViewModel: AddKeywordViewModel by viewModels()
     private val categoryViewModel: CategoryItemViewModel by viewModels()
-    private val popupprogressViewModel: PopupProgressViewModel by viewModels()
     private val popupcomingViewModel: PopupComingViewModel by viewModels()
     private val recommendPopupViewModel: RecommendPopupViewModel by viewModels()
 
@@ -152,7 +150,6 @@ class MainActivity : ComponentActivity() {
                     nicknameViewModel = nicknameViewModel,
                     keywordViewModel = keywordViewModel,
                     categoryViewModel = categoryViewModel,
-                    popupprogressViewModel = popupprogressViewModel,
                     popupcomingViewModel = popupcomingViewModel,
                     popupViewModel = popupViewModel,
                     recommendPopupViewModel = recommendPopupViewModel,

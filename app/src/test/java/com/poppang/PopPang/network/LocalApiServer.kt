@@ -1,5 +1,6 @@
 package com.poppang.PopPang.network
 
+import com.poppang.PopPang.BuildConfig
 import java.io.Closeable
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -24,6 +25,11 @@ internal class LocalApiServer : Closeable {
     private val requests = LinkedBlockingQueue<RecordedApiRequest>()
     @Volatile var respond: (RecordedApiRequest) -> ApiReply = { ApiReply() }
     val url: String get() = server.url("/").toString()
+
+    fun mobilePath(endpoint: String) = server.url("/api/v2/").newBuilder()
+        .addEncodedPathSegments(BuildConfig.V2_MOBILE_PATH.trimEnd('/'))
+        .addEncodedPathSegments(endpoint)
+        .build().encodedPath
 
     init {
         server.dispatcher = object : Dispatcher() {

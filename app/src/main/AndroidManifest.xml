@@ -15,7 +15,7 @@
         android:roundIcon="@mipmap/ic_launcher_poppang_round"
         android:label="팝팡"
         android:supportsRtl="true"
-        android:theme="@style/Theme.PopPangAOS"
+        android:theme="@style/Theme.PopPangReactNative"
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"
@@ -45,9 +45,9 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.poppang.rn.PopPangRnActivity"
-            android:theme="@style/Theme.PopPangReactNative"
-            tools:replace="android:theme" />
+            android:name=".rn.PopPangRnActivity"
+            android:exported="false"
+            android:theme="@style/Theme.PopPangReactNative" />
         <activity
             android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
             android:exported="true">

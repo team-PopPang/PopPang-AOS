@@ -88,7 +88,8 @@ import com.poppang.PopPang.viewmodel.HomePopupfilterViewModel
 import com.poppang.PopPang.viewmodel.RegionsViewModel
 import com.poppang.PopPang.view.renewal.RenewalRegionPicker
 import com.poppang.PopPang.viewmodel.SelectPopupViewModel
-import com.poppang.rn.PopPangRnSdk
+import com.poppang.PopPang.rn.PopPangRnActivity
+import com.poppang.PopPang.rn.PopPangRnFeature
 import kotlinx.coroutines.launch
 import java.time.LocalDate.now
 import java.time.LocalDate.parse
@@ -103,7 +104,6 @@ fun HomeScreen(
     setSearchScreen: (Boolean) -> Unit,
     showAlarm: Boolean = false,
     setShowAlarm: (Boolean) -> Unit,
-    popupprogressList: List<PopupEvent>,
     popupcomingList: List<PopupEvent>,
     recommendpopupList: List<PopupEvent>,
     popupList: List<PopupEvent>,
@@ -119,10 +119,9 @@ fun HomeScreen(
     val popupRequestLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        val eventName = result.data?.getStringExtra(PopPangRnSdk.EXTRA_EVENT)
         if (
             result.resultCode == Activity.RESULT_OK &&
-            eventName == PopPangRnSdk.NativeEvent.POPUP_REQUEST_SUBMITTED
+            result.data?.getBooleanExtra(PopPangRnActivity.EXTRA_SUBMITTED, false) == true
         ) {
             Toast.makeText(context, "팝업 제보가 완료되었습니다.", Toast.LENGTH_SHORT).show()
         }
@@ -237,14 +236,10 @@ fun HomeScreen(
                         onSearchBarClick = { setSearchScreen(true) },
                         onPopupReportClick = {
                             popupRequestLauncher.launch(
-                                PopPangRnSdk.createIntent(
+                                PopPangRnActivity.createIntent(
                                     context,
-                                    RN_FEATURE_REQUEST,
+                                    PopPangRnFeature.REQUEST,
                                     userUuid,
-                                    setOf(
-                                        PopPangRnSdk.NativeEvent.POPUP_REQUEST_SUBMITTED,
-                                        PopPangRnSdk.NativeEvent.POPUP_REQUEST_BACK
-                                    )
                                 ),
                                 ActivityOptionsCompat.makeCustomAnimation(
                                     context,
@@ -256,13 +251,10 @@ fun HomeScreen(
                         onAlarmClick = { setShowAlarm(true) },
                         onPopupReportManagementClick = {
                             popupRequestManagementLauncher.launch(
-                                PopPangRnSdk.createIntent(
+                                PopPangRnActivity.createIntent(
                                     context,
-                                    RN_FEATURE_REQUEST_MANAGEMENT,
+                                    PopPangRnFeature.REQUEST_MANAGEMENT,
                                     userUuid,
-                                    setOf(
-                                        PopPangRnSdk.NativeEvent.POPUP_REQUEST_MANAGEMENT_BACK
-                                    )
                                 )
                             )
                         },
@@ -473,13 +465,10 @@ private fun TopSearchBar(
     }
 }
 
-private const val RN_FEATURE_REQUEST = "request"
-private const val RN_FEATURE_REQUEST_MANAGEMENT = "request-management"
 
 @Composable
 fun BannerCarousel(modifier: Modifier = Modifier, recommendpopupList: List<PopupEvent>, onShowDetail: (PopupEvent) -> Unit) {
-    val sortedList = recommendpopupList.sortedBy { it.startDate }
-    val pagerState = rememberPagerState(initialPage = 0) { sortedList.size}
+    val pagerState = rememberPagerState(initialPage = 0) { recommendpopupList.size}
         HorizontalPager(
         state = pagerState,
         pageSize = PageSize.Fixed(194.dp),
@@ -488,7 +477,7 @@ fun BannerCarousel(modifier: Modifier = Modifier, recommendpopupList: List<Popup
         modifier = modifier
             .padding(start = 15.dp)
     ) { page ->
-            val popup = sortedList[page]
+            val popup = recommendpopupList[page]
         Box(
             modifier = Modifier
                 .width(194.dp)
@@ -556,8 +545,7 @@ fun BannerCarousel(modifier: Modifier = Modifier, recommendpopupList: List<Popup
 
 @Composable
 fun BoxCarousel(onShowDetail: (PopupEvent) -> Unit, popupcomingList: List<PopupEvent>,onShowAll: () -> Unit) {
-    val sortedList = popupcomingList.sortedBy { it.startDate }
-    val pagerState = rememberPagerState(initialPage = 0) { sortedList.size }
+    val pagerState = rememberPagerState(initialPage = 0) { popupcomingList.size }
     Column {
         Box(
             modifier = Modifier
@@ -601,7 +589,7 @@ fun BoxCarousel(onShowDetail: (PopupEvent) -> Unit, popupcomingList: List<PopupE
             modifier = Modifier
                 .padding(start = 15.dp),
         ) { page ->
-            val popup = sortedList[page]
+            val popup = popupcomingList[page]
             Box(
                 modifier = Modifier
                     .width(283.dp)

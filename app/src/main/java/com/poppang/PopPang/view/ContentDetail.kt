@@ -119,9 +119,9 @@ fun ContentDetail(
     val userUuid = loginResponse?.userUuid.orEmpty()
     val imageList = popup.fullImageUrlList
     val pagerState = rememberPagerState { imageList.size }
-    var favoriteCount by remember { mutableStateOf(popup.favoriteCount) }
-    val isLikedFromServer = favoritePopupUuids.contains(popup.popupUuid)
-    var localIsLiked by remember { mutableStateOf(isLikedFromServer) }
+    val favoriteCounts by favoriteViewModel.favoriteCounts.collectAsState()
+    val favoriteCount = favoriteCounts[popup.popupUuid] ?: popup.favoriteCount
+    val isLikedFromServer = if (favoriteViewModel.hasFavoriteList) popup.popupUuid in favoritePopupUuids else popup.isFavorited
     val viewCount = viewCounts[popup.popupUuid] ?: popup.viewCount
     val context = LocalContext.current
     var visible by remember { mutableStateOf(false) }
@@ -140,20 +140,15 @@ fun ContentDetail(
         }
     }
     LaunchedEffect(popup.popupUuid) {
-        viewCountViewModel.updateCountsFromList(listOf(popup))
         viewCountViewModel.incrementViewCount(popup.popupUuid)
     }
     BackHandler {
         visible = false
         shouldClose = true
     }
-    LaunchedEffect(popup.popupUuid) {
-        favoriteViewModel.getFavoriteCount(userUuid, popup.popupUuid) { count ->
-            favoriteCount = count
-        }
-    }
-    LaunchedEffect(isLikedFromServer) {
-        localIsLiked = isLikedFromServer
+    LaunchedEffect(popup) {
+        favoriteViewModel.updateCountsFromList(listOf(popup))
+        viewCountViewModel.updateCountsFromList(listOf(popup))
     }
     LaunchedEffect(userUuid, popup.popupUuid) {
         popupRelatedViewModel.fetchRelatedPopups(userUuid, popup.popupUuid)
@@ -250,23 +245,20 @@ fun ContentDetail(
                             ) {
                                 IconButton(
                                     onClick = {
-                                        val newLikeStatus = !localIsLiked
-                                        localIsLiked = newLikeStatus
+                                        val newLikeStatus = !isLikedFromServer
                                         if (newLikeStatus) {
                                             favoriteViewModel.addFavorite(userUuid, popup.popupUuid)
-                                            favoriteCount += 1
                                         } else {
                                             favoriteViewModel.deleteFavorite(userUuid, popup.popupUuid)
-                                            favoriteCount = (favoriteCount - 1).coerceAtLeast(0L)
                                         }
                                     },
                                     modifier = Modifier.size(25.dp)
                                 ) {
                                     Icon(
-                                        painter = painterResource(id = if (localIsLiked) R.drawable.heart_gray_icon else R.drawable.heart_white_icon),
+                                        painter = painterResource(id = if (isLikedFromServer) R.drawable.heart_gray_icon else R.drawable.heart_white_icon),
                                         contentDescription = "좋아요 아이콘",
                                         modifier = Modifier.size(24.dp),
-                                        tint = if (localIsLiked) Color.Red else Color.Unspecified,
+                                        tint = if (isLikedFromServer) Color.Red else Color.Unspecified,
 
                                         )
                                 }
@@ -682,8 +674,7 @@ fun relatedPopupListSection(
     modifier: Modifier = Modifier,
     onShowAll: () -> Unit
 ) {
-    val sortedList = popuprelatedList.sortedBy { it.startDate }
-    val pagerState = rememberPagerState(initialPage = 0) { sortedList.size}
+    val pagerState = rememberPagerState(initialPage = 0) { popuprelatedList.size}
     if (popuprelatedList.isNotEmpty()) {
         Column(
         ) {
@@ -716,7 +707,7 @@ fun relatedPopupListSection(
                 modifier = modifier
             ) {
                 page ->
-                val popup = sortedList[page]
+                val popup = popuprelatedList[page]
                 Box(
                     modifier = Modifier
                         .size(width = 115.dp, height = 162.dp)
